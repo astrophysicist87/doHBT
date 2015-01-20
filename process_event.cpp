@@ -150,11 +150,6 @@ int main(int argc, char *argv[])
 
 
 
-
-
-
-
-
 //cutting out GF calculation for now, just to process individual events via SV method
 //   output << "Beginning calculation of HBT radii via Gaussian fit method" << endl;
 
