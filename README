@@ -1,0 +1,7 @@
+========================================================
+===============README FILE FOR DOHBT CLASS==============
+========================================================
+Author: Christopher Plumberg
+Date: January 20, 2015
+Description: Takes output from iEBE package and computes
+HBT radii from it
