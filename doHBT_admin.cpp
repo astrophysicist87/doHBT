@@ -34,8 +34,18 @@ doHBT::doHBT()
    gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2*M_PI, SP_pphi, SP_pphi_weight);
    SP_p_y = 0.0e0;
    dN_dypTdpTdphi = new double* [n_SP_pT];
+   cosine_iorder = new double* [n_SP_pT];
+   sine_iorder = new double* [n_SP_pT];
+   anisotropic_flows_pTdiff = new double* [n_SP_pT];
+   anisotropic_flows_pTdiff_psin = new double* [n_SP_pT];
    for(int i=0; i<n_SP_pT; i++)
+   {
       dN_dypTdpTdphi[i] = new double [n_SP_pphi];
+      cosine_iorder[i] = new double [n_order];
+      sine_iorder[i] = new double [n_order];
+      anisotropic_flows_pTdiff[i] = new double [n_order];
+      anisotropic_flows_pTdiff_psin[i] = new double [n_order];
+   }
    dN_dydphi = new double [n_SP_pphi];
    dN_dypTdpT = new double [n_SP_pT];
    pTdN_dydphi = new double [n_SP_pphi];
@@ -45,9 +55,18 @@ doHBT::doHBT()
       pTdN_dydphi[i] = 0.0e0;
       for(int j=0; j<n_SP_pT; j++) dN_dypTdpTdphi[j][i] = 0.0e0;
    }
+   for(int i=0; i<n_SP_pT; i++)
+   for(int j=0; j<n_order; j++)
+   {
+      cosine_iorder[i][j] = 0.0e0;
+      sine_iorder[i][j] = 0.0e0;
+      anisotropic_flows_pTdiff[i][j] = 0.0e0;
+      anisotropic_flows_pTdiff_psin[i][j] = 0.0e0;
+   }
    for (int i=0; i<n_SP_pT; i++)
 	dN_dypTdpT[i] = 0.0e0;
    plane_angle = new double [n_order];
+   anisotropic_flows = new double [n_order];
 
    //relative momentum
    q_out = new double [qnpts];
@@ -511,12 +530,22 @@ void doHBT::Update_sourcefunction(particle_info* particle, int FOarray_length, i
       pTdN_dydphi[i] = 0.0e0;
       for(int j=0; j<n_SP_pT; j++) dN_dypTdpTdphi[j][i] = 0.0e0;
    }
+   //erase anisotropic flows
+   for(int i=0; i<n_SP_pT; i++)
+   for(int j=0; j<n_order; j++)
+   {
+      cosine_iorder[i][j] = 0.0e0;
+      sine_iorder[i][j] = 0.0e0;
+      anisotropic_flows_pTdiff[i][j] = 0.0e0;
+      anisotropic_flows_pTdiff_psin[i][j] = 0.0e0;
+   }
 
    //Emission function
    FO_length = FOarray_length;
    Emissionfunction_length = FO_length*eta_s_npts;
 //cerr << "Updated source function and got Emissionfunction_length = " << Emissionfunction_length << endl;
    Emissionfunction_ptr = new vector<Emissionfunction_data> (Emissionfunction_length);
+   avgFOsurf_ptr = new vector<Emissionfunction_data> (FO_length*n_localp_T);
 
    for(int i=0; i<Emissionfunction_length; i++)
    {
@@ -615,9 +644,20 @@ doHBT::~doHBT()
    delete[] dN_dypTdpT;
    delete[] pTdN_dydphi;
    for(int i=0; i<n_SP_pT; i++)
+   {
       delete[] dN_dypTdpTdphi[i];
+      delete[] cosine_iorder[i];
+      delete[] sine_iorder[i];
+      delete[] anisotropic_flows_pTdiff[i];
+      delete[] anisotropic_flows_pTdiff_psin[i];
+   }
    delete[] dN_dypTdpTdphi;
+   delete[] cosine_iorder;
+   delete[] sine_iorder;
+   delete[] anisotropic_flows_pTdiff;
+   delete[] anisotropic_flows_pTdiff_psin;
    delete[] plane_angle;
+   delete[] anisotropic_flows;
 
    delete[] K_T;
    delete[] K_phi;

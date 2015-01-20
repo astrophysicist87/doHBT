@@ -167,9 +167,26 @@ void doHBT::Determine_plane_angle(FO_surf* FOsurf_ptr)
       {
          cosine += dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
          sine += dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+         //get pT-differential v_n here
+         for(int ipt=0; ipt<n_SP_pT; ipt++)
+         {
+             cosine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+             sine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+         }
+      }
+      for(int ipt=0; ipt<n_SP_pT; ipt++)
+      {
+         cosine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
+         sine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
+         anisotropic_flows_pTdiff[ipt][iorder] = sqrt(sine_iorder[ipt][iorder]*sine_iorder[ipt][iorder] + cosine_iorder[ipt][iorder]*cosine_iorder[ipt][iorder]);
+         if( anisotropic_flows_pTdiff[ipt][iorder] < 1e-8)
+            anisotropic_flows_pTdiff_psin[ipt][iorder] = 0.0e0;
+         else
+            anisotropic_flows_pTdiff_psin[ipt][iorder] = atan2(sine_iorder[ipt][iorder], cosine_iorder[ipt][iorder])/double(iorder);
       }
       cosine = cosine/norm;
       sine = sine/norm;
+      anisotropic_flows[iorder] = sqrt(sine*sine + cosine*cosine);
       if( sqrt(sine*sine + cosine*cosine) < 1e-8)
          plane_angle[iorder] = 0.0e0;
       else
@@ -315,6 +332,60 @@ cerr << "Emissionfunction_length in Output_Emission_Function is " << Emissionfun
 	return;
 }
 
+//average over Phi_K, eta_s --> leave x, y, tau, K_T (K_Y == 0)
+double doHBT::Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT)
+{
+    double mass = particle_mass;
+    double K_T_local = K_T[iKT];
+    double mT = sqrt(mass*mass + K_T_local*K_T_local);
+
+    double sum = 0.;
+
+    for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+    {
+	double tempsum = 0.;
+	double K_phi_local = K_phi[iKphi];
+	double px = K_T_local*cos(K_phi_local);
+	double py = K_T_local*sin(K_phi_local);
+
+	for (int ieta = 0; ieta < eta_s_npts; ieta++)
+	{
+		double local_eta_s = eta_s[ieta];
+		//double ch_localetas = cosh(local_eta_s);
+		//double sh_localetas = sinh(local_eta_s);
+
+		double p0 = mT*cosh(K_y-local_eta_s);
+		double pz = mT*sinh(K_y-local_eta_s);
+		double S_p = Emissionfunction(p0, px, py, pz, &FOsurf_ptr[FOcell]);
+		if (S_p < tol) S_p = 0.0e0;
+		tempsum += S_p*FOsurf_ptr[FOcell].tau*eta_s_weight[ieta]*2.0; //2.0 count for the assumed reflection symmetry along eta
+	}
+
+	sum += tempsum*K_phi_weight[iKphi];
+    }
+
+    return sum;
+}
+
+void doHBT::Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr)
+{
+	//avgFOsurf_ptr = new FOsurf[FO_length*n_localp_T];
+	int idx = 0;
+
+	for (int iKT = 0; iKT < n_localp_T; iKT++)
+	for (int iFOcell = 0; iFOcell < FO_length; iFOcell++)
+	{
+		if (iFOcell == 0) *global_out_stream_ptr << "Averaging over Phi_K for K_T = " << K_T[iKT] << endl;
+		(*avgFOsurf_ptr)[idx].tau = FOsurf_ptr[iFOcell].tau;
+		(*avgFOsurf_ptr)[idx].x = FOsurf_ptr[iFOcell].xpt;
+		(*avgFOsurf_ptr)[idx].y = FOsurf_ptr[iFOcell].ypt;
+		(*avgFOsurf_ptr)[idx].data = Average_Emission_Function_on_FOsurface(FOsurf_ptr, iFOcell, iKT);
+		idx++;
+	}
+
+	return;
+}
+
 void doHBT::Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr)
 {
    double sign = particle_sign;
@@ -393,8 +464,8 @@ cout  << endl << endl << endl;
          double deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
 //deltaf=0.;	//doing this temporarily for understanding source variance fluctuations
 
-         double S_p = prefactor*pdsigma*f0*(1+deltaf);
-	 if ((1+deltaf < 0.0)) S_p = 0.0;
+         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
+	 if (1. + deltaf < 0.0) S_p = 0.0;
 //cout << "S_p = " << S_p << endl;
          double S_p_withweight = S_p*tau*eta_s_weight[ieta]*2.0; //2.0 count for the assumed reflection symmetry along eta direction
 //cout << "(ipt, iphi, ieta) = (" << ipt << ", " << iphi << ", " << ieta << "): " << "dN_dypTdpTdphi[ipt][iphi] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
@@ -443,8 +514,8 @@ double doHBT::Emissionfunction(double p0, double px, double py, double pz, FO_su
    double deltaf = (1. - sign*f0)*Wfactor/(2.0*Tdec*Tdec*(Edec+Pdec));
 //deltaf=0.;	//doing this temporarily for understanding source variance fluctuations
 
-   double dN_dyd2pTdphi = 1.0*degen/(8.0*(M_PI*M_PI*M_PI))*pdsigma*f0*(1+deltaf)/hbarC/hbarC/hbarC;
-   if ((1+deltaf < 0.0)) dN_dyd2pTdphi = 0.0;
+   double dN_dyd2pTdphi = 1.0*degen/(8.0*(M_PI*M_PI*M_PI))*pdsigma*f0*(1.+deltaf)/hbarC/hbarC/hbarC;
+   if (1. + deltaf < 0.0) dN_dyd2pTdphi = 0.0;
    //out << "Spectral funct = " << dN_dyd2pTdphi << endl;
 
    return (dN_dyd2pTdphi);
@@ -517,7 +588,8 @@ double fluctuations_term_alt = 0.;
 
 //Readin_AVG_results();
 
-for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
+//for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
+for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
 {
    Readin_results(local_folderindex);
    Update_avgSource_function(iKT, iKphi);
@@ -525,7 +597,8 @@ for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex
 
 Calculate_avgSource_function(iKT, iKphi);
 
-for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
+//for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
+for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
 {
    Readin_results(local_folderindex);
 
@@ -731,6 +804,8 @@ void doHBT::Calculate_avgR2_side(int iKT, int iKphi)
    double term2 = avgxs_S[iKT][iKphi];
 
    avgR2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
+//debug
+//   cout << "avgR2_side[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgR2_side[iKT][iKphi] << endl;
    return;
 }
 
@@ -741,6 +816,12 @@ void doHBT::Calculate_avgR2_out(int iKT, int iKphi)
    double term2 = avgxo_S[iKT][iKphi] - beta_perp*avgt_S[iKT][iKphi];
 
    avgR2_out[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
+//debug
+//   cout << "avgR2_out[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgR2_out[iKT][iKphi] << endl;
+//   cout << "avgxo2_S[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgxo2_S[iKT][iKphi] << endl;
+//   cout << "avgxo_t_S[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgxo_t_S[iKT][iKphi] << endl;
+//   cout << "avgt2_S[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgt2_S[iKT][iKphi] << endl;
+//   cout << "beta_perp = " << beta_perp << endl;
    return;
 }
 

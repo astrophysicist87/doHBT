@@ -42,12 +42,16 @@ const double localp_phi_min = 0.0;
 const double localp_phi_max = 2*M_PI;
 
 const int n_order = 4;
+//const int n_order = 1;
 
-//const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V1/NEW_TDEP_V1_results-";
-//const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V1";
+const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
+const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
-const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.20/results-";
-const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.20";
+//const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.20/results-";
+//const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.20";
+
+//const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-avg-";
+//const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
 const double tol = 1e-15;  //tolarence
 const int flagneg = 1;     //neglect all points that are negative
@@ -58,7 +62,7 @@ const size_t fit_max_iterations = 1000;  // stop at this point if not converged
 const double fit_tolarence = 1e-6;
 
 const int n_events = 1000;
-const int initial_event = 1001;
+const int initial_event = 1;
 
 namespace patch
 {

@@ -144,6 +144,8 @@ int main(int argc, char *argv[])
    Source_function.Output_ev_plane_psi(folderindex);
    Source_function.Output_results(folderindex);
    Source_function.Output_Svars_results(folderindex);
+   Source_function.Output_ev_anisotropic_flows(folderindex);
+   Source_function.Output_ev_anisotropic_flows_pTdiff(folderindex);
    output << "Finished calculating HBT radii via source variances method" << endl;
 
 

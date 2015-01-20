@@ -338,6 +338,35 @@ void doHBT::Output_ev_plane_psis(int folderindex)
 	return;
 }
 
+void doHBT::Output_ev_anisotropic_flows(int folderindex)
+{
+	ostringstream filename_stream_anisotropicflows;
+	filename_stream_anisotropicflows << path << folderindex << "/anisotropic_flows_ev" << folderindex << ".dat";
+	ofstream outputanisotropicflows(filename_stream_anisotropicflows.str().c_str());
+
+	for (int i = 0; i < n_order; i++)
+		outputanisotropicflows << i << "   " << anisotropic_flows[i] << endl;
+
+	outputanisotropicflows.close();
+
+	return;
+}
+
+void doHBT::Output_ev_anisotropic_flows_pTdiff(int folderindex)
+{
+	ostringstream filename_stream_anisotropicflowspTdiff;
+	filename_stream_anisotropicflowspTdiff << path << folderindex << "/anisotropic_flows_pTdiff_ev" << folderindex << ".dat";
+	ofstream outputanisotropicflowspTdiff(filename_stream_anisotropicflowspTdiff.str().c_str());
+
+	for (int i = 0; i < n_SP_pT; i++)
+	for (int j = 0; j < n_order; j++)
+		outputanisotropicflowspTdiff << j << "   " << SP_pT[i] << "   " << anisotropic_flows_pTdiff[i][j] << "   " << anisotropic_flows_pTdiff_psin[i][j] << endl;
+
+	outputanisotropicflowspTdiff.close();
+
+	return;
+}
+
 void doHBT::Output_ev_mean_pT(int folderindex)
 {
 	ostringstream omeanpT_stream;
@@ -421,6 +450,7 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 
 	inputHBT.close();
 	inputHBTcoeffs.close();
+	input_Svars.close();
 
 	return;
 }
@@ -514,6 +544,36 @@ void doHBT::Output_dN_dypTdpT(int folderindex)
 		output_dN_dypTdpT << SP_pT[ipt] << "   " << dN_dypTdpT[ipt] << endl;
 
 	output_dN_dypTdpT.close();
+
+	return;
+}
+
+void doHBT::Output_avgEmission_Function_on_FOsurface(int folderindex)
+{
+	ostringstream filename_stream_S;
+
+	filename_stream_S << path << folderindex << "/averaged_S_on_FOsurface_ev" << folderindex << ".dat";
+	*global_out_stream_ptr << "Output averaged S to " << filename_stream_S.str() << endl;
+
+	ofstream output_S(filename_stream_S.str().c_str());
+
+	int idx = 0;
+
+	for (int iKT = 0; iKT < n_localp_T; iKT++)
+	{
+		for (int iFOcell = 0; iFOcell < FO_length; iFOcell++)
+		{
+			output_S << scientific << setprecision(8) << setw(15)
+				<< K_T[iKT] << "   "
+				<< (*avgFOsurf_ptr)[idx].tau << "   "
+				<< (*avgFOsurf_ptr)[idx].x << "   "
+				<< (*avgFOsurf_ptr)[idx].y << "   "
+				<< (*avgFOsurf_ptr)[idx].data << endl;
+			idx++;
+		}
+	}
+
+	output_S.close();
 
 	return;
 }

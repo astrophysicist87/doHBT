@@ -86,9 +86,14 @@ class doHBT
       double SP_p_y;
       double** dN_dypTdpTdphi;
       double* dN_dypTdpT;
+      double** cosine_iorder;
+      double** sine_iorder;
       double* dN_dydphi;
       double* pTdN_dydphi;
       double* plane_angle;
+      double* anisotropic_flows;
+      double** anisotropic_flows_pTdiff;
+      double** anisotropic_flows_pTdiff_psin;
       double global_plane_psi;
       double mean_pT;
      
@@ -107,6 +112,7 @@ class doHBT
       vector<Emissionfunction_data>* Emissionfunction_ptr;
       int FO_length;
       int Emissionfunction_length;
+      vector<Emissionfunction_data>* avgFOsurf_ptr;
 
       double spectra;
 
@@ -195,6 +201,9 @@ class doHBT
       void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
       void SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, bool includezeroes);
       void Output_Emission_Function(int iKT, int iKphi, int folderindex);
+      double Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT);
+      void Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr);
+      void Output_avgEmission_Function_on_FOsurface(int folderindex);
       void Update_avgSource_function(int iKT, int iKphi);
       void Update_avgSource_function();
       void Calculate_avgSource_function(int, int);
@@ -225,6 +234,8 @@ class doHBT
       void Output_dN_dypTdpTdphi(int folderindex);
       void Output_dN_dypTdpT(int folderindex);
       void Output_ev_plane_psis(int folderindex);
+      void Output_ev_anisotropic_flows(int folderindex);
+      void Output_ev_anisotropic_flows_pTdiff(int folderindex);
       void Output_ev_mean_pT(int folderindex);
 
       void Calculate_R2_side(int, int);
