@@ -280,58 +280,6 @@ if (!includezeroes) Emissionfunction_length = idx;  //only want non-zero values 
   return;
 }
 
-void doHBT::Output_Emission_Function(int iKT, int iKphi, int folderindex)
-{
-int coords = 2;
-//coords:	0 - output in (x,y,z,t,data) format
-//		1 - output in (r,phi,eta,tau,data) format
-//		2 - output in (x,y,eta,tau,data) format
-
-	ostringstream filename_stream_S;
-
-	filename_stream_S << path << folderindex << "/Emissionfunction_S_spacetime_kT_" 
-			<< fixed << setprecision(2) << setw(3) << K_T[iKT] << "_kphi_"
-			<< fixed << setprecision(5) << setw(6) << K_phi[iKphi] << ".dat";
-	cout << "Output Emissionfunction to " << filename_stream_S.str() << endl;
-
-	ofstream output_S(filename_stream_S.str().c_str());
-
-cerr << "Emissionfunction_length in Output_Emission_Function is " << Emissionfunction_length << endl;
-
-	for(int i=0; i<Emissionfunction_length; i++)
-	{
-		if (coords == 2) {
-		output_S << scientific << setprecision(8) << setw(15)
-				<< (*Emissionfunction_ptr)[i].eta << "   "
-				<< (*Emissionfunction_ptr)[i].tau << "   "
-				<< (*Emissionfunction_ptr)[i].x << "   "
-				<< (*Emissionfunction_ptr)[i].y << "   "
-				<< (*Emissionfunction_ptr)[i].data << "   ";
-		}
-		else if (coords == 1) {
-		output_S << scientific << setprecision(8) << setw(15)
-				<< (*Emissionfunction_ptr)[i].r << "   "
-				<< (*Emissionfunction_ptr)[i].phi << "   "
-				<< (*Emissionfunction_ptr)[i].eta << "   "
-				<< (*Emissionfunction_ptr)[i].tau << "   "
-				<< (*Emissionfunction_ptr)[i].data << "   ";
-		}
-		else {
-		output_S << scientific << setprecision(8) << setw(15)
-				<< (*Emissionfunction_ptr)[i].x << "   "
-				<< (*Emissionfunction_ptr)[i].y << "   "
-				<< (*Emissionfunction_ptr)[i].z << "   "
-				<< (*Emissionfunction_ptr)[i].t << "   "
-				<< (*Emissionfunction_ptr)[i].data << "   ";
-		}
-		output_S << endl;
-	}
-
-	output_S.close();
-
-	return;
-}
-
 //average over Phi_K, eta_s --> leave x, y, tau, K_T (K_Y == 0)
 double doHBT::Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT)
 {

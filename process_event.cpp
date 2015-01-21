@@ -33,10 +33,15 @@ int main(int argc, char *argv[])
    }
    doHBT Source_function;
 
+   string mypath = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
+   string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
+
    int folderindex = atoi(argv[1]);
-   string currentworkingdirectory = path + patch::to_string(folderindex);
+   string currentworkingdirectory = mypath + patch::to_string(folderindex);
    //string currentworkingdirectory = "./";
    initialize_PRfile(currentworkingdirectory);
+   Source_function.Set_path(currentworkingdirectory);
+   Source_function.Set_runfolder(myrunfolder);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";
