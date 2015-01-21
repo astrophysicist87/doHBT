@@ -67,4 +67,3 @@ clean:
  
 tarz:
 	tar zcf - $(MAKEFILE) $(SRCS) $(HDRS) > $(COMMAND).tar.gz
- 

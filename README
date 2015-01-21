@@ -4,4 +4,9 @@
 Author: Christopher Plumberg
 Date: January 20, 2015
 Description: Takes output from iEBE package and computes
-HBT radii from it
+HBT radii from it.  Can also compute anisotropic flows.
+
+HBT radii can be calculated by source variances, Gaussian
+fitting, or the so-called "q-moments" method.  Currently,
+only the first two of these have been implemented in this
+package.
