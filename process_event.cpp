@@ -28,15 +28,22 @@ int main(int argc, char *argv[])
    bool generatedcorrfuncs = false;
    if (argc==0)
    {
-	cout << "Error: need to specify folder for processing!" << endl;
+	cout << "Usage: [path to parent results directories] [string stem for individual results directories] [individual result directory index]" << endl;
 	exit(1);
    }
+
+   //string mypath = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
+   //string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
+
+   // Read in data from command-line
+   //int folderindex = atoi(argv[1]);
+   string myrunfolder = argv[1];
+   int folderindex = atoi(argv[3]);
+   string mypath = myrunfolder + '/' + argv[2] + '-';
+
+   //instantiate doHBT class
    doHBT Source_function;
 
-   string mypath = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
-   string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
-
-   int folderindex = atoi(argv[1]);
    string currentworkingdirectory = mypath + patch::to_string(folderindex);
    //string currentworkingdirectory = "./";
    initialize_PRfile(currentworkingdirectory);
