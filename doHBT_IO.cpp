@@ -24,13 +24,16 @@ using namespace std;
 void doHBT::Output_results(int folderindex)
 {
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << path << folderindex << "/HBTradii_ev" << folderindex << ".dat";
+	//filename_stream_HBT << path << folderindex << "/HBTradii_ev" << folderindex << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << ".dat";
 	ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << path << folderindex << "/HBTradii_cfs_ev" << folderindex << ".dat";
+	//filename_stream_HBTcfs << path << folderindex << "/HBTradii_cfs_ev" << folderindex << ".dat";
+	filename_stream_HBTcfs << global_path << "/HBTradii_cfs_ev" << folderindex << ".dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 	ostringstream filename_stream_S;
-	filename_stream_S << path << folderindex << "/Sourcefunction_variances.dat";
+	//filename_stream_S << path << folderindex << "/Sourcefunction_variances.dat";
+	filename_stream_S << global_path << "/Sourcefunction_variances.dat";
 	ofstream output_Svars(filename_stream_S.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -67,10 +70,12 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Output_Svars_results(int folderindex)
 {
 	ostringstream filename_stream_Scos;
-	filename_stream_Scos << path << folderindex << "/Sourcefunction_variances_cfs_COS.dat";
+	//filename_stream_Scos << path << folderindex << "/Sourcefunction_variances_cfs_COS.dat";
+	filename_stream_Scos << global_path << "/Sourcefunction_variances_cfs_COS.dat";
 	ofstream output_SvarscoeffsCOS(filename_stream_Scos.str().c_str(), ios::app);
 	ostringstream filename_stream_Ssin;
-	filename_stream_Ssin << path << folderindex << "/Sourcefunction_variances_cfs_SIN.dat";
+	//filename_stream_Ssin << path << folderindex << "/Sourcefunction_variances_cfs_SIN.dat";
+	filename_stream_Ssin << global_path << "/Sourcefunction_variances_cfs_SIN.dat";
 	ofstream output_SvarscoeffsSIN(filename_stream_Ssin.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -101,13 +106,16 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Output_AVG_results()
 {
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << runfolder << "/avgHBTradii.dat";
+	//filename_stream_HBT << runfolder << "/avgHBTradii.dat";
+	filename_stream_HBT << global_runfolder << "/avgHBTradii.dat";
 	ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
+	//filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
+	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs.dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 	ostringstream filename_stream_S;
-	filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
+	//filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
+	filename_stream_S << global_runfolder << "/avgSourcefunction_variances.dat";
 	ofstream output_Svars(filename_stream_S.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -144,10 +152,12 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Output_CAVG_results()
 {
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << runfolder << "/CavgHBTradii.dat";
+	//filename_stream_HBT << runfolder << "/CavgHBTradii.dat";
+	filename_stream_HBT << global_runfolder << "/CavgHBTradii.dat";
 	ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << runfolder << "/CavgHBTradii_cfs.dat";
+	//filename_stream_HBTcfs << runfolder << "/CavgHBTradii_cfs.dat";
+	filename_stream_HBTcfs << global_runfolder << "/CavgHBTradii_cfs.dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -177,13 +187,16 @@ void doHBT::Readin_results(int folderindex)
 {
 double dummy;
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << path << folderindex << "/HBTradii_ev" << folderindex << ".dat";
+	//filename_stream_HBT << path << folderindex << "/HBTradii_ev" << folderindex << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << ".dat";
 	ifstream inputHBT(filename_stream_HBT.str().c_str());
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << path << folderindex << "/HBTradii_cfs_ev" << folderindex << ".dat";
+	//filename_stream_HBTcfs << path << folderindex << "/HBTradii_cfs_ev" << folderindex << ".dat";
+	filename_stream_HBTcfs << global_path << "/HBTradii_cfs_ev" << folderindex << ".dat";
 	ifstream inputHBTcoeffs(filename_stream_HBTcfs.str().c_str());
 	ostringstream filename_stream_S;
-	filename_stream_S << path << folderindex << "/Sourcefunction_variances.dat";
+	//filename_stream_S << path << folderindex << "/Sourcefunction_variances.dat";
+	filename_stream_S << global_path << "/Sourcefunction_variances.dat";
 	ifstream input_Svars(filename_stream_S.str().c_str());
 //cout << "Reading in from files " << filename_stream_HBT.str() << ", " << filename_stream_HBTcfs.str() << " and " << filename_stream_S.str() << endl;
 
@@ -252,7 +265,8 @@ void doHBT::Readin_HBTev_results_only(int folderindex)
 {
 double dummy;
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << path << folderindex << "/HBTradii_ev" << folderindex << ".dat";
+	//filename_stream_HBT << path << folderindex << "/HBTradii_ev" << folderindex << ".dat";
+	filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << ".dat";
 	ifstream inputHBT(filename_stream_HBT.str().c_str());
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -279,7 +293,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Output_HBTcfsev_results_only(int folderindex)
 {
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << path << folderindex << "/HBTradii_cfs_ev" << folderindex << ".dat";
+	//filename_stream_HBTcfs << path << folderindex << "/HBTradii_cfs_ev" << folderindex << ".dat";
+	filename_stream_HBTcfs << global_path << "/HBTradii_cfs_ev" << folderindex << ".dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -301,7 +316,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Readin_ev_plane_psi(int folderindex)
 {
 	ostringstream filename_stream_planepsi;
-	filename_stream_planepsi << path << folderindex << "/plane_psi_ev" << folderindex << ".dat";
+	//filename_stream_planepsi << path << folderindex << "/plane_psi_ev" << folderindex << ".dat";
+	filename_stream_planepsi << global_path << "/plane_psi_ev" << folderindex << ".dat";
 	ifstream inputplanepsi(filename_stream_planepsi.str().c_str());
 
 	inputplanepsi >> global_plane_psi;
@@ -314,7 +330,8 @@ void doHBT::Readin_ev_plane_psi(int folderindex)
 void doHBT::Output_ev_plane_psi(int folderindex)
 {
 	ostringstream filename_stream_planepsi;
-	filename_stream_planepsi << path << folderindex << "/plane_psi_ev" << folderindex << ".dat";
+	//filename_stream_planepsi << path << folderindex << "/plane_psi_ev" << folderindex << ".dat";
+	filename_stream_planepsi << global_path << "/plane_psi_ev" << folderindex << ".dat";
 	ofstream outputplanepsi(filename_stream_planepsi.str().c_str());
 
 	outputplanepsi << global_plane_psi << endl;
@@ -327,7 +344,8 @@ void doHBT::Output_ev_plane_psi(int folderindex)
 void doHBT::Output_ev_plane_psis(int folderindex)
 {
 	ostringstream filename_stream_planepsis;
-	filename_stream_planepsis << path << folderindex << "/plane_psis_ev" << folderindex << ".dat";
+	//filename_stream_planepsis << path << folderindex << "/plane_psis_ev" << folderindex << ".dat";
+	filename_stream_planepsis << global_path << "/plane_psis_ev" << folderindex << ".dat";
 	ofstream outputplanepsis(filename_stream_planepsis.str().c_str());
 
 	for (int i = 0; i < n_order; i++)
@@ -341,7 +359,8 @@ void doHBT::Output_ev_plane_psis(int folderindex)
 void doHBT::Output_ev_anisotropic_flows(int folderindex)
 {
 	ostringstream filename_stream_anisotropicflows;
-	filename_stream_anisotropicflows << path << folderindex << "/anisotropic_flows_ev" << folderindex << ".dat";
+	//filename_stream_anisotropicflows << path << folderindex << "/anisotropic_flows_ev" << folderindex << ".dat";
+	filename_stream_anisotropicflows << global_path << "/anisotropic_flows_ev" << folderindex << ".dat";
 	ofstream outputanisotropicflows(filename_stream_anisotropicflows.str().c_str());
 
 	for (int i = 0; i < n_order; i++)
@@ -355,7 +374,8 @@ void doHBT::Output_ev_anisotropic_flows(int folderindex)
 void doHBT::Output_ev_anisotropic_flows_pTdiff(int folderindex)
 {
 	ostringstream filename_stream_anisotropicflowspTdiff;
-	filename_stream_anisotropicflowspTdiff << path << folderindex << "/anisotropic_flows_pTdiff_ev" << folderindex << ".dat";
+	//filename_stream_anisotropicflowspTdiff << path << folderindex << "/anisotropic_flows_pTdiff_ev" << folderindex << ".dat";
+	filename_stream_anisotropicflowspTdiff << global_path << "/anisotropic_flows_pTdiff_ev" << folderindex << ".dat";
 	ofstream outputanisotropicflowspTdiff(filename_stream_anisotropicflowspTdiff.str().c_str());
 
 	for (int i = 0; i < n_SP_pT; i++)
@@ -370,7 +390,8 @@ void doHBT::Output_ev_anisotropic_flows_pTdiff(int folderindex)
 void doHBT::Output_ev_mean_pT(int folderindex)
 {
 	ostringstream omeanpT_stream;
-	omeanpT_stream << path << folderindex << "/meanpT_ev" << folderindex << ".dat";
+	//omeanpT_stream << path << folderindex << "/meanpT_ev" << folderindex << ".dat";
+	omeanpT_stream << global_path << "/meanpT_ev" << folderindex << ".dat";
 	ofstream omeanpT;
 	omeanpT.open(omeanpT_stream.str().c_str());
 
@@ -384,13 +405,16 @@ void doHBT::Output_ev_mean_pT(int folderindex)
 void doHBT::Readin_AVG_results()
 {
 	ostringstream filename_stream_HBT;
-	filename_stream_HBT << runfolder << "/avgHBTradii.dat";
+	//filename_stream_HBT << runfolder << "/avgHBTradii.dat";
+	filename_stream_HBT << global_runfolder << "/avgHBTradii.dat";
 	ifstream inputHBT(filename_stream_HBT.str().c_str());
 	ostringstream filename_stream_HBTcfs;
-	filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
+	//filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
+	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs.dat";
 	ifstream inputHBTcoeffs(filename_stream_HBTcfs.str().c_str());
 	ostringstream filename_stream_S;
-	filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
+	//filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
+	filename_stream_S << global_runfolder << "/avgSourcefunction_variances.dat";
 	ifstream input_Svars(filename_stream_S.str().c_str());
 //cout << "Reading in from files " << filename_stream_HBT.str() << " and " << filename_stream_HBTcfs.str() << endl;
 double dummy;
@@ -458,7 +482,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Output_Correlationfunction_1D(int iKT, int iKphi, int folderindex)
 {
    ostringstream oCorrelfun_1D_stream;
-   oCorrelfun_1D_stream << path << folderindex << "/correlfunct1D" << "_" << particle_name << "_kt_" << K_T[iKT] << "_phi_" << K_phi[iKphi] << ".dat";
+   //oCorrelfun_1D_stream << path << folderindex << "/correlfunct1D" << "_" << particle_name << "_kt_" << K_T[iKT] << "_phi_" << K_phi[iKphi] << ".dat";
+   oCorrelfun_1D_stream << global_path << "/correlfunct1D" << "_" << particle_name << "_kt_" << K_T[iKT] << "_phi_" << K_phi[iKphi] << ".dat";
    ofstream oCorrelfun_1D;
    oCorrelfun_1D.open(oCorrelfun_1D_stream.str().c_str(), ios::app);
    for(int i=0; i < qnpts; i++)
@@ -473,7 +498,8 @@ void doHBT::Output_Correlationfunction_1D(int iKT, int iKphi, int folderindex)
 void doHBT::Output_Correlationfunction_3D(int iKT, int iKphi, int folderindex)
 {
    ostringstream oCorrelfun_3D_stream;
-   oCorrelfun_3D_stream << path << folderindex << "/correlfunct3D" << "_" << particle_name << "_kt_" << K_T[iKT] << "_phi_" << K_phi[iKphi] << ".dat";
+   //oCorrelfun_3D_stream << path << folderindex << "/correlfunct3D" << "_" << particle_name << "_kt_" << K_T[iKT] << "_phi_" << K_phi[iKphi] << ".dat";
+   oCorrelfun_3D_stream << global_path << "/correlfunct3D" << "_" << particle_name << "_kt_" << K_T[iKT] << "_phi_" << K_phi[iKphi] << ".dat";
    ofstream oCorrelfun_3D;
    oCorrelfun_3D.open(oCorrelfun_3D_stream.str().c_str(), ios::app);
    for(int i=0; i < qnpts; i++)
@@ -489,10 +515,12 @@ void doHBT::Output_Correlationfunction_3D(int iKT, int iKphi, int folderindex)
 void doHBT::Output_GF_results(int folderindex)
 {
 	ostringstream filename_stream_HBTGF;
-	filename_stream_HBTGF << path << folderindex << "/HBTradii_GF_ev" << folderindex << ".dat";
+	//filename_stream_HBTGF << path << folderindex << "/HBTradii_GF_ev" << folderindex << ".dat";
+	filename_stream_HBTGF << global_path << "/HBTradii_GF_ev" << folderindex << ".dat";
 	ofstream outputHBTGF(filename_stream_HBTGF.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTGFcfs;
-	filename_stream_HBTGFcfs << path << folderindex << "/HBTradii_GF_cfs_ev" << folderindex << ".dat";
+	//filename_stream_HBTGFcfs << path << folderindex << "/HBTradii_GF_cfs_ev" << folderindex << ".dat";
+	filename_stream_HBTGFcfs << global_path << "/HBTradii_GF_cfs_ev" << folderindex << ".dat";
 	ofstream outputHBTGFcoeffs(filename_stream_HBTGFcfs.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -522,7 +550,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 void doHBT::Output_dN_dypTdpTdphi(int folderindex)
 {
 	ostringstream filename_stream_dN_dypTdpTdphi;
-	filename_stream_dN_dypTdpTdphi << path << folderindex << "/dN_dypTdpTdphi_ev" << folderindex << ".dat";
+	//filename_stream_dN_dypTdpTdphi << path << folderindex << "/dN_dypTdpTdphi_ev" << folderindex << ".dat";
+	filename_stream_dN_dypTdpTdphi << global_path << "/dN_dypTdpTdphi_ev" << folderindex << ".dat";
 	ofstream output_dN_dypTdpTdphi(filename_stream_dN_dypTdpTdphi.str().c_str());
 
 	for(int iphi=0; iphi<n_SP_pphi; iphi++)
@@ -537,7 +566,8 @@ void doHBT::Output_dN_dypTdpTdphi(int folderindex)
 void doHBT::Output_dN_dypTdpT(int folderindex)
 {
 	ostringstream filename_stream_dN_dypTdpT;
-	filename_stream_dN_dypTdpT << path << folderindex << "/dN_dypTdpT_ev" << folderindex << ".dat";
+	//filename_stream_dN_dypTdpT << path << folderindex << "/dN_dypTdpT_ev" << folderindex << ".dat";
+	filename_stream_dN_dypTdpT << global_path << "/dN_dypTdpT_ev" << folderindex << ".dat";
 	ofstream output_dN_dypTdpT(filename_stream_dN_dypTdpT.str().c_str());
 
 	for(int ipt=0; ipt<n_SP_pT; ipt++)
@@ -552,7 +582,8 @@ void doHBT::Output_avgEmission_Function_on_FOsurface(int folderindex)
 {
 	ostringstream filename_stream_S;
 
-	filename_stream_S << path << folderindex << "/averaged_S_on_FOsurface_ev" << folderindex << ".dat";
+	//filename_stream_S << path << folderindex << "/averaged_S_on_FOsurface_ev" << folderindex << ".dat";
+	filename_stream_S << global_path << "/averaged_S_on_FOsurface_ev" << folderindex << ".dat";
 	*global_out_stream_ptr << "Output averaged S to " << filename_stream_S.str() << endl;
 
 	ofstream output_S(filename_stream_S.str().c_str());
@@ -578,6 +609,61 @@ void doHBT::Output_avgEmission_Function_on_FOsurface(int folderindex)
 	return;
 }
 
+void doHBT::Output_Emission_Function(int iKT, int iKphi, int folderindex)
+{
+int coords = 2;
+//coords:	0 - output in (x,y,z,t,data) format
+//		1 - output in (r,phi,eta,tau,data) format
+//		2 - output in (x,y,eta,tau,data) format
+
+	ostringstream filename_stream_S;
+
+//	filename_stream_S << path << folderindex << "/Emissionfunction_S_spacetime_kT_" 
+//			<< fixed << setprecision(2) << setw(3) << K_T[iKT] << "_kphi_"
+//			<< fixed << setprecision(5) << setw(6) << K_phi[iKphi] << ".dat";
+	filename_stream_S << global_path << "/Emissionfunction_S_spacetime_kT_" 
+			<< fixed << setprecision(2) << setw(3) << K_T[iKT] << "_kphi_"
+			<< fixed << setprecision(5) << setw(6) << K_phi[iKphi] << ".dat";
+	cout << "Output Emissionfunction to " << filename_stream_S.str() << endl;
+
+	ofstream output_S(filename_stream_S.str().c_str());
+
+cerr << "Emissionfunction_length in Output_Emission_Function is " << Emissionfunction_length << endl;
+
+	for(int i=0; i<Emissionfunction_length; i++)
+	{
+		if (coords == 2) {
+		output_S << scientific << setprecision(8) << setw(15)
+				<< (*Emissionfunction_ptr)[i].eta << "   "
+				<< (*Emissionfunction_ptr)[i].tau << "   "
+				<< (*Emissionfunction_ptr)[i].x << "   "
+				<< (*Emissionfunction_ptr)[i].y << "   "
+				<< (*Emissionfunction_ptr)[i].data << "   ";
+		}
+		else if (coords == 1) {
+		output_S << scientific << setprecision(8) << setw(15)
+				<< (*Emissionfunction_ptr)[i].r << "   "
+				<< (*Emissionfunction_ptr)[i].phi << "   "
+				<< (*Emissionfunction_ptr)[i].eta << "   "
+				<< (*Emissionfunction_ptr)[i].tau << "   "
+				<< (*Emissionfunction_ptr)[i].data << "   ";
+		}
+		else {
+		output_S << scientific << setprecision(8) << setw(15)
+				<< (*Emissionfunction_ptr)[i].x << "   "
+				<< (*Emissionfunction_ptr)[i].y << "   "
+				<< (*Emissionfunction_ptr)[i].z << "   "
+				<< (*Emissionfunction_ptr)[i].t << "   "
+				<< (*Emissionfunction_ptr)[i].data << "   ";
+		}
+		output_S << endl;
+	}
+
+	output_S.close();
+
+	return;
+}
+
 //print output to output filestream, one line at a time
 void doHBT::Set_ofstream(ofstream& myout)
 {
@@ -589,6 +675,21 @@ void doHBT::Set_ofstream(ofstream& myout)
 void doHBT::Set_folderindex(int folderindex)
 {
 	global_folderindex = folderindex;
+
+	return;
+}
+
+//print output to output filestream, one line at a time
+void doHBT::Set_path(string localpath)
+{
+	global_path = localpath;
+
+	return;
+}
+
+void doHBT::Set_runfolder(string localrunfolder)
+{
+	global_runfolder = localrunfolder;
 
 	return;
 }

@@ -186,6 +186,8 @@ class doHBT
       //miscellaneous
       ofstream * global_out_stream_ptr;
       int global_folderindex;
+      string global_path;
+      string global_runfolder;
       //string global_currentworkingdirectory;
 
    public:
@@ -273,7 +275,8 @@ class doHBT
       void Set_ofstream(ofstream& myout);
       void Set_folderindex(int folderindex);
       //void Set_global_folderindex(int folderindex);
-      //void Set_global_currentworkingdirectory(string cwd);
+      void Set_path(string path);
+      void Set_runfolder(string runfolder);
 };
 
 #endif

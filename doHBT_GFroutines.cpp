@@ -275,7 +275,8 @@ int doHBT::Read_correlationfunction_1D(int iKT, int iKphi)
    double localK_phi = K_phi[iKphi];
 
 ostringstream corrfn_stream;
-corrfn_stream << path;
+//corrfn_stream << path;
+corrfn_stream << global_path;
 
 if (fabs(local_K_T) < 1e-16) corrfn_stream << "/correlfunct1D" << "_" << particle_name << "_kt_0.0_phi_";
 else if (fabs(local_K_T - 1.) < 1e-16) corrfn_stream << "/correlfunct1D" << "_" << particle_name << "_kt_1.0_phi_";

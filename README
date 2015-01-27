@@ -10,3 +10,6 @@ HBT radii can be calculated by source variances, Gaussian
 fitting, or the so-called "q-moments" method.  Currently,
 only the first two of these have been implemented in this
 package.
+
+This package does not yet include resonance decay con-
+tributions to the emission function.
