@@ -19,6 +19,7 @@ gauss_quadrature.cpp
 
 
 HDRS= \
+process_event.h \
 parameters.h \
 readindata.h \
 doHBT.h \
@@ -47,7 +48,7 @@ LIBS= -L/sw/lib -I/sw/include
 $(COMMAND): $(OBJS) $(HDRS) $(MAKEFILE) 
 	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS)
                  
-process_event.o : process_event.cpp  parameters.h readindata.h doHBT.h generate_processing_record.h plumberglib.h
+process_event.o : process_event.cpp process_event.h parameters.h readindata.h doHBT.h generate_processing_record.h plumberglib.h
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c process_event.cpp -o process_event.o
  
 readindata.o : parameters.h readindata.h readindata.cpp
