@@ -694,4 +694,11 @@ void doHBT::Set_runfolder(string localrunfolder)
 	return;
 }
 
+/*void doHBT::Set_n_order(int user_def_n_order)
+{
+	n_order = user_def_n_order;
+
+	return;
+}*/
+
 //End of file

@@ -62,12 +62,6 @@ int Fittarget_correlfun3D_f_withlambda (const gsl_vector *xvec_ptr, void *params
 int Fittarget_correlfun3D_df_withlambda (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr);
 int Fittarget_correlfun3D_fdf_withlambda (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr);
 
-/*bool fexists(const char *filename)
-{
-  ifstream ifile(filename);
-  return ifile;
-}*/
-
 class doHBT
 {
    private:
@@ -76,9 +70,10 @@ class doHBT
       double particle_mass;
       int particle_id;     //particle id
       double particle_sign;   //+/- 1 for Fermi/Bose statistics for baryon/meson
-      double particle_gspin;  //particle degeneracy 
+      double particle_gspin;  //particle degeneracy       
 
       //single particle spectra for plane angle determination
+      //int n_order;
       double* SP_pT;
       double* SP_pphi;
       double* SP_pT_weight;
@@ -277,6 +272,9 @@ class doHBT
       //void Set_global_folderindex(int folderindex);
       void Set_path(string path);
       void Set_runfolder(string runfolder);
+
+      //parameters that the user is free to define
+      double plumberg_test_variable;
 };
 
 #endif

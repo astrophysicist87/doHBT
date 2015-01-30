@@ -10,11 +10,12 @@
 #include<gsl/gsl_rng.h>
 #include<gsl/gsl_randist.h>
 
-#include "Stopwatch.h"
-#include "parameters.h"
-#include "readindata.h"
-#include "doHBT.h"
-#include "generate_processing_record.h"
+#include "../src/Stopwatch.h"
+#include "../src/parameters.h"
+#include "../src/readindata.h"
+#include "../src/doHBT.h"
+#include "../src/generate_processing_record.h"
+#include "process_event.h"
 
 using namespace std;
 

@@ -23,6 +23,8 @@ using namespace std;
 
 doHBT::doHBT()
 {
+   //plumberg_test_variable = 3.14159;
+
    Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
 
    //single particle spectra for plane angle determination
@@ -211,8 +213,6 @@ doHBT::doHBT()
 
    lambda_Correl = new double* [n_localp_T];
    lambda_Correl_err = new double* [n_localp_T];
-   //lambda_Correl_C = new double* [n_localp_T];
-   //lambda_Correl_S = new double* [n_localp_T];
 
    avgR2_side = new double* [n_localp_T];
    avgR2_side_C = new double* [n_localp_T];
@@ -335,8 +335,6 @@ doHBT::doHBT()
 
       lambda_Correl[i] = new double [n_localp_phi];
       lambda_Correl_err[i] = new double [n_localp_phi];
-      //lambda_Correl_C[i] = new double [n_order];
-      //lambda_Correl_S[i] = new double [n_order];
 
       avgR2_side[i] = new double [n_localp_phi];
       avgR2_side_C[i] = new double [n_order];
@@ -444,8 +442,6 @@ for(int i=0; i<n_localp_T; i++)
 
 		lambda_Correl[i][j] = 0.;
 		lambda_Correl_err[i][j] = 0.;
-		//lambda_Correl_C[i][j] = 0.;
-		//lambda_Correl_S[i][j] = 0.;
 	}
 	for(int j=0; j<n_order; j++)
 	{
@@ -511,6 +507,7 @@ for(int i=0; i<n_localp_T; i++)
 	}
 }
 
+
    return;
 }
 
@@ -543,7 +540,6 @@ void doHBT::Update_sourcefunction(particle_info* particle, int FOarray_length, i
    //Emission function
    FO_length = FOarray_length;
    Emissionfunction_length = FO_length*eta_s_npts;
-//cerr << "Updated source function and got Emissionfunction_length = " << Emissionfunction_length << endl;
    Emissionfunction_ptr = new vector<Emissionfunction_data> (Emissionfunction_length);
    avgFOsurf_ptr = new vector<Emissionfunction_data> (FO_length*n_localp_T);
 
@@ -632,8 +628,6 @@ for(int i=0; i<n_localp_T; i++)
 
 doHBT::~doHBT()
 {
-//cerr << "Beginning destruction" << endl;
-
    delete Emissionfunction_ptr;
 
    delete[] SP_pT;
@@ -665,10 +659,6 @@ doHBT::~doHBT()
    delete[] eta_s;
    delete[] eta_s_weight;
 
-//cerr << "Divide and conquer!" << endl;
-
-//cerr << "Deleted Emissionfunction_ptr successfully" << endl;
-
    for(int i=0; i<n_localp_T; i++)
    {
       delete[] R2_side[i];
@@ -699,8 +689,6 @@ doHBT::~doHBT()
 
       delete[] lambda_Correl[i];
       delete[] lambda_Correl_err[i];
-      //delete[] lambda_Correl_C[i];
-      //delete[] lambda_Correl_S[i];
 
       delete[] xs_t_cos[i];
       delete[] xo_t_cos[i];
@@ -762,8 +750,6 @@ doHBT::~doHBT()
       delete[] CavgR2_outlong_S[i];
    }
 
-//cerr << "Divide and conquer!" << endl;
-
    delete[] R2_side;
    delete[] R2_side_C;
    delete[] R2_side_S;
@@ -792,8 +778,6 @@ doHBT::~doHBT()
 
    delete[] lambda_Correl;
    delete[] lambda_Correl_err;
-   //delete[] lambda_Correl_C;
-   //delete[] lambda_Correl_S;
 
    delete[] xs_t_cos;
    delete[] xo_t_cos;
@@ -853,8 +837,6 @@ doHBT::~doHBT()
    delete[] CavgR2_outlong;
    delete[] CavgR2_outlong_C;
    delete[] CavgR2_outlong_S;
-
-//cerr << "Almost finished!" << endl;
 
    for(int i=0; i<n_localp_T; i++)
    {
@@ -922,8 +904,6 @@ doHBT::~doHBT()
    delete[] avgxl2_S;
    delete[] avgt2_S;
 
-//cerr << "Just a little left!" << endl;
-
    delete[] q_out;
    delete[] q_side;
    delete[] q_long;
@@ -946,13 +926,6 @@ doHBT::~doHBT()
    }
    delete[] Correl_3D;
    delete[] Correl_3D_err;
-
-//cerr << "Last item!" << endl;
-   
-   //delete global_out_stream_ptr;
-   //free(global_out_stream_ptr);
-
-//cerr << "Finished destruction" << endl;
 
    return;
 }

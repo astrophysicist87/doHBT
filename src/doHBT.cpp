@@ -19,6 +19,10 @@
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
+#define USE_PLANE_PSI_ORDER 0		// specifies whether to do HBT relative to flow-plane angle,
+					// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle
+					// at given order
+
 using namespace std;
 
 void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
@@ -27,11 +31,20 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
    bool includezeroes = false;
    *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
    Determine_plane_angle(FOsurf_ptr);
-   int iorder = 3;
-   *global_out_stream_ptr << "Analyzing source function w.r.t " << iorder << " th-order participant plane angle..." << endl;
-   *global_out_stream_ptr << "psi = " << plane_angle[iorder] << endl;
-   plane_psi = plane_angle[iorder];
+   int iorder = USE_PLANE_PSI_ORDER;
+   if (USE_PLANE_PSI_ORDER)
+   {
+      *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
+      *global_out_stream_ptr << "psi = " << plane_psi << endl;
+      plane_psi = plane_angle[iorder];
+   }
+   else
+   {
+      *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
+   }
    global_plane_psi = plane_psi;
+
+   // begin HBT calculations here...
    for(int iKT = 0; iKT < n_localp_T; iKT++)
    {
       //cout << "Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;

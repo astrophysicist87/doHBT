@@ -1,34 +1,29 @@
 SHELL=/bin/sh
 
+SRCDIR= \
+../src
+
 SRCS= \
 process_event.cpp \
-readindata.cpp \
-doHBT.cpp \
-doHBT_GFroutines.cpp \
-doHBT_admin.cpp \
-doHBT_IO.cpp \
-Arsenal.cpp \
-gauss_quadrature.cpp
-	 
-#OBJS= \
-#process_event.o \
-#readindata.o \
-#doHBT.o \
-#Arsenal.o \
-#gauss_quadrature.o
-
+$(SRCDIR)/readindata.cpp \
+$(SRCDIR)/doHBT.cpp \
+$(SRCDIR)/doHBT_GFroutines.cpp \
+$(SRCDIR)/doHBT_admin.cpp \
+$(SRCDIR)/doHBT_IO.cpp \
+$(SRCDIR)/Arsenal.cpp \
+$(SRCDIR)/gauss_quadrature.cpp
 
 HDRS= \
 process_event.h \
-parameters.h \
-readindata.h \
-doHBT.h \
-Arsenal.h \
-Stopwatch.h \
-gauss_quadrature.h \
-structs.h \
-generate_processing_record.h \
-plumberglib.h
+$(SRCDIR)/parameters.h \
+$(SRCDIR)/readindata.h \
+$(SRCDIR)/doHBT.h \
+$(SRCDIR)/Arsenal.h \
+$(SRCDIR)/Stopwatch.h \
+$(SRCDIR)/gauss_quadrature.h \
+$(SRCDIR)/structs.h \
+$(SRCDIR)/generate_processing_record.h \
+$(SRCDIR)/plumberglib.h
 
 MAKEFILE=make_process_event
 
@@ -48,23 +43,24 @@ LIBS= -L/sw/lib -I/sw/include
 $(COMMAND): $(OBJS) $(HDRS) $(MAKEFILE) 
 	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS)
                  
-process_event.o : process_event.cpp process_event.h parameters.h readindata.h doHBT.h generate_processing_record.h plumberglib.h
+process_event.o : process_event.cpp process_event.h $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/doHBT.h $(SRCDIR)/generate_processing_record.h $(SRCDIR)/plumberglib.h
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c process_event.cpp -o process_event.o
  
-readindata.o : parameters.h readindata.h readindata.cpp
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c readindata.cpp -o readindata.o
+readindata.o : $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/readindata.cpp
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/readindata.cpp -o readindata.o
 
-doHBT.o : doHBT.h parameters.h doHBT.cpp doHBT_GFroutines.cpp doHBT_admin.cpp doHBT_IO.cpp Arsenal.h gauss_quadrature.h plumberglib.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c doHBT.cpp -o doHBT.o
+doHBT.o : $(SRCDIR)/doHBT.h parameters.h $(SRCDIR)/doHBT.cpp $(SRCDIR)/doHBT_GFroutines.cpp $(SRCDIR)/doHBT_admin.cpp $(SRCDIR)/doHBT_IO.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/doHBT.cpp -o doHBT.o
 
-Arsenal.o : Arsenal.cpp Arsenal.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c Arsenal.cpp -o Arsenal.o
+Arsenal.o : $(SRCDIR)/Arsenal.cpp $(SRCDIR)/Arsenal.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/Arsenal.cpp -o Arsenal.o
 
-gauss_quadrature.o : gauss_quadrature.cpp gauss_quadrature.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c gauss_quadrature.cpp -o gauss_quadrature.o
+gauss_quadrature.o : $(SRCDIR)/gauss_quadrature.cpp $(SRCDIR)/gauss_quadrature.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/gauss_quadrature.cpp -o gauss_quadrature.o
 
 clean:
 	rm -f $(OBJS)
  
 tarz:
 	tar zcf - $(MAKEFILE) $(SRCS) $(HDRS) > $(COMMAND).tar.gz
+ 
