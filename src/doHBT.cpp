@@ -19,7 +19,7 @@
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
-#define USE_PLANE_PSI_ORDER 0		// specifies whether to do HBT relative to flow-plane angle,
+#define USE_PLANE_PSI_ORDER 3		// specifies whether to do HBT relative to flow-plane angle,
 					// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle
 					// at given order
 
