@@ -268,7 +268,7 @@ class doHBT
 
 //miscellaneous
       void Set_ofstream(ofstream& myout);
-      void Set_folderindex(int folderindex);
+      //void Set_folderindex(int folderindex);
       //void Set_global_folderindex(int folderindex);
       void Set_path(string path);
       void Set_runfolder(string runfolder);

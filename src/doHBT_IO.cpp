@@ -672,12 +672,12 @@ void doHBT::Set_ofstream(ofstream& myout)
 	return;
 }
 
-void doHBT::Set_folderindex(int folderindex)
+/*void doHBT::Set_folderindex(int folderindex)
 {
 	global_folderindex = folderindex;
 
 	return;
-}
+}*/
 
 //print output to output filestream, one line at a time
 void doHBT::Set_path(string localpath)

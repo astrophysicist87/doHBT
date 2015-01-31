@@ -4,7 +4,7 @@ SRCDIR= \
 ../src
 
 SRCS= \
-process_event.cpp \
+average_S_on_FOsurface.cpp \
 $(SRCDIR)/readindata.cpp \
 $(SRCDIR)/doHBT.cpp \
 $(SRCDIR)/doHBT_GFroutines.cpp \
@@ -12,9 +12,16 @@ $(SRCDIR)/doHBT_admin.cpp \
 $(SRCDIR)/doHBT_IO.cpp \
 $(SRCDIR)/Arsenal.cpp \
 $(SRCDIR)/gauss_quadrature.cpp
+	 
+#OBJS= \
+#average_S_on_FOsurface.o \
+#readindata.o \
+#doHBT.o \
+#Arsenal.o \
+#gauss_quadrature.o
+
 
 HDRS= \
-process_event.h \
 $(SRCDIR)/parameters.h \
 $(SRCDIR)/readindata.h \
 $(SRCDIR)/doHBT.h \
@@ -25,9 +32,9 @@ $(SRCDIR)/structs.h \
 $(SRCDIR)/generate_processing_record.h \
 $(SRCDIR)/plumberglib.h
 
-MAKEFILE=make_process_event
+MAKEFILE=make_average_S_on_FOsurface
 
-COMMAND=process_event
+COMMAND=average_S_on_FOsurface
 
 OBJS= $(addsuffix .o, $(basename $(SRCS)))
 
@@ -43,8 +50,8 @@ LIBS= -L/sw/lib -I/sw/include
 $(COMMAND): $(OBJS) $(HDRS) $(MAKEFILE) 
 	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS)
                  
-process_event.o : process_event.cpp process_event.h $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/doHBT.h $(SRCDIR)/generate_processing_record.h $(SRCDIR)/plumberglib.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c process_event.cpp -o process_event.o
+average_S_on_FOsurface.o : average_S_on_FOsurface.cpp $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/doHBT.h $(SRCDIR)/generate_processing_record.h $(SRCDIR)/plumberglib.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c average_S_on_FOsurface.cpp -o average_S_on_FOsurface.o
  
 readindata.o : $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/readindata.cpp
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/readindata.cpp -o readindata.o

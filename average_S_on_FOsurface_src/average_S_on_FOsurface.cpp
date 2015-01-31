@@ -10,12 +10,9 @@
 #include<gsl/gsl_rng.h>
 #include<gsl/gsl_randist.h>
 
-#include "get_anisotropic_flows.h"
-//#include "../src/Stopwatch.h"
-//#include "../src/readindata.h"
-//#include "../src/doHBT.h"
-//#include "../src/generate_processing_record.h"
+#include "average_S_on_FOsurface.h"
 #include "../src/Stopwatch.h"
+#include "../src/parameters.h"
 #include "../src/readindata.h"
 #include "../src/doHBT.h"
 #include "../src/generate_processing_record.h"
@@ -30,29 +27,17 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-   //if (argc==0)
-   //{
-//	cout << "Usage: [path to parent results directories] [string stem for individual results directories] [individual result directory index]" << endl;
-//	exit(1);
-//   }
-
-   //string mypath = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
-   //string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
-
-   // Read in data from command-line
-   int folderindex = atoi(argv[1]);
-   //string myrunfolder = argv[1];
-   //int folderindex = atoi(argv[3]);
-   //string mypath = myrunfolder + '/' + argv[2] + '-';
-
-   //instantiate doHBT class
+   if (argc==0)
+   {
+	cout << "Error: need to specify folder for processing!" << endl;
+	exit(1);
+   }
    doHBT Source_function;
 
-   //string currentworkingdirectory = mypath + patch::to_string(folderindex);
+   int folderindex = atoi(argv[1]);
+   //string currentworkingdirectory = path + patch::to_string(folderindex);
    string currentworkingdirectory = "./";
    initialize_PRfile(currentworkingdirectory);
-   Source_function.Set_path(currentworkingdirectory);
-   //Source_function.Set_runfolder(myrunfolder);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";
@@ -144,13 +129,9 @@ int main(int argc, char *argv[])
 
    //Source_function.Set_folderindex(folderindex);
 
-   //Source_function.Set_n_order(n_order);
+   Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr);
 
-   Source_function.Determine_plane_angle(FOsurf_ptr);
-
-   Source_function.Output_ev_anisotropic_flows(folderindex);
-
-   Source_function.Output_ev_anisotropic_flows_pTdiff(folderindex);
+   Source_function.Output_avgEmission_Function_on_FOsurface(folderindex);
 
    sw.toc();
    //cout << "Finished in " << sw.takeTime() << " sec." << endl;
