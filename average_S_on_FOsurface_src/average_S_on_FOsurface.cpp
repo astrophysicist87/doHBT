@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
    int folderindex = atoi(argv[1]);
    //string currentworkingdirectory = path + patch::to_string(folderindex);
    string currentworkingdirectory = "./";
+   Source_function.Set_path(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
 
    ostringstream filename_stream;
