@@ -16,6 +16,7 @@
 #include "../src/readindata.h"
 #include "../src/doHBT.h"
 #include "../src/generate_processing_record.h"
+#include "../src/plumberglib.h"
 
 using namespace std;
 
@@ -27,16 +28,18 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-   if (argc==0)
-   {
-	cout << "Error: need to specify folder for processing!" << endl;
-	exit(1);
-   }
+   //if (argc==0)
+   //{
+//	cout << "Error: need to specify folder for processing!" << endl;
+//	exit(1);
+   //}
    doHBT Source_function;
 
-   int folderindex = atoi(argv[1]);
+   //int folderindex = atoi(argv[1]);
    //string currentworkingdirectory = path + patch::to_string(folderindex);
-   string currentworkingdirectory = "./";
+   //string currentworkingdirectory = ".";
+   string currentworkingdirectory = get_selfpath();
+   int folderindex = get_folder_index(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
 

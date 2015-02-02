@@ -15,6 +15,7 @@
 #include "../src/readindata.h"
 #include "../src/doHBT.h"
 #include "../src/generate_processing_record.h"
+#include "../src/plumberglib.h"
 #include "process_event.h"
 
 using namespace std;
@@ -27,18 +28,18 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-   if (argc==0)
-   {
+   //if (argc==0)
+   //{
 	//cout << "Usage: [path to parent results directories] [string stem for individual results directories] [individual result directory index]" << endl;
-	cout << "Usage: ./process_event [individual result directory index]" << endl;
-	exit(1);
-   }
+	//cout << "Usage: ./process_event [individual result directory index]" << endl;
+	//exit(1);
+   //}
 
    //string mypath = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
    //string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
    // Read in data from command-line
-   int folderindex = atoi(argv[1]);
+   //int folderindex = atoi(argv[1]);
    //string myrunfolder = argv[1];
    //int folderindex = atoi(argv[3]);
    //string mypath = myrunfolder + '/' + argv[2] + '-';
@@ -47,7 +48,9 @@ int main(int argc, char *argv[])
    doHBT Source_function;
 
    //string currentworkingdirectory = mypath + patch::to_string(folderindex);
-   string currentworkingdirectory = "./";
+   //string currentworkingdirectory = ".";
+   string currentworkingdirectory = get_selfpath();
+   int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
    //Source_function.Set_runfolder(myrunfolder);

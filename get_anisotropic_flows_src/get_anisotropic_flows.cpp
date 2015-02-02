@@ -11,14 +11,11 @@
 #include<gsl/gsl_randist.h>
 
 #include "get_anisotropic_flows.h"
-//#include "../src/Stopwatch.h"
-//#include "../src/readindata.h"
-//#include "../src/doHBT.h"
-//#include "../src/generate_processing_record.h"
 #include "../src/Stopwatch.h"
 #include "../src/readindata.h"
 #include "../src/doHBT.h"
 #include "../src/generate_processing_record.h"
+#include "../src/plumberglib.h"
 
 using namespace std;
 
@@ -40,7 +37,7 @@ int main(int argc, char *argv[])
    //string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
    // Read in data from command-line
-   int folderindex = atoi(argv[1]);
+   //int folderindex = atoi(argv[1]);
    //string myrunfolder = argv[1];
    //int folderindex = atoi(argv[3]);
    //string mypath = myrunfolder + '/' + argv[2] + '-';
@@ -49,7 +46,9 @@ int main(int argc, char *argv[])
    doHBT Source_function;
 
    //string currentworkingdirectory = mypath + patch::to_string(folderindex);
-   string currentworkingdirectory = "./";
+   //string currentworkingdirectory = ".";
+   string currentworkingdirectory = get_selfpath();
+   int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
    //Source_function.Set_runfolder(myrunfolder);
