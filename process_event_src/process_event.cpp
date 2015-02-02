@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
    bool generatedcorrfuncs = false;
    if (argc==0)
    {
-	cout << "Usage: [path to parent results directories] [string stem for individual results directories] [individual result directory index]" << endl;
+	//cout << "Usage: [path to parent results directories] [string stem for individual results directories] [individual result directory index]" << endl;
+	cout << "Usage: ./process_event [individual result directory index]" << endl;
 	exit(1);
    }
 
@@ -37,19 +38,19 @@ int main(int argc, char *argv[])
    //string myrunfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
    // Read in data from command-line
-   //int folderindex = atoi(argv[1]);
-   string myrunfolder = argv[1];
-   int folderindex = atoi(argv[3]);
-   string mypath = myrunfolder + '/' + argv[2] + '-';
+   int folderindex = atoi(argv[1]);
+   //string myrunfolder = argv[1];
+   //int folderindex = atoi(argv[3]);
+   //string mypath = myrunfolder + '/' + argv[2] + '-';
 
    //instantiate doHBT class
    doHBT Source_function;
 
-   string currentworkingdirectory = mypath + patch::to_string(folderindex);
-   //string currentworkingdirectory = "./";
+   //string currentworkingdirectory = mypath + patch::to_string(folderindex);
+   string currentworkingdirectory = "./";
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
-   Source_function.Set_runfolder(myrunfolder);
+   //Source_function.Set_runfolder(myrunfolder);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";
@@ -143,7 +144,7 @@ int main(int argc, char *argv[])
    Source_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
 
    Source_function.Set_ofstream(output);
-   Source_function.Set_folderindex(folderindex);
+   //Source_function.Set_folderindex(folderindex);
    //Source_function.Set_global_currentworkingdirectory(currentworkingdirectory);
 
 
