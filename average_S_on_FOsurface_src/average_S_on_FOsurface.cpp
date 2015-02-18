@@ -133,7 +133,8 @@ int main(int argc, char *argv[])
 
    //Source_function.Set_folderindex(folderindex);
 
-   Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr);
+   //Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr);
+   Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr, 0);
 
    Source_function.Output_avgEmission_Function_on_FOsurface(folderindex);
 

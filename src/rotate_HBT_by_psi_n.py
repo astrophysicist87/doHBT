@@ -7,14 +7,17 @@ import sys
 from os import path
 from glob import glob
 
+#df_stem = ''
+df_stem = '_no_df'
+
 def rotmat(theta):
 	return array([[cos(theta),sin(theta)],[-sin(theta),cos(theta)]])
 
 globList = [
-	'plane_psis*.dat',
-	'HBTradii_cfs_ev*.dat',
-	'Sourcefunction_variances_cfs_COS.dat',
-	'Sourcefunction_variances_cfs_SIN.dat'
+	'plane_psis*' + df_stem + '.dat',
+	'HBTradii_cfs_ev*' + df_stem + '.dat',
+	'Sourcefunction_variances_cfs_COS' + df_stem + '.dat',
+	'Sourcefunction_variances_cfs_SIN' + df_stem + '.dat'
 ]
 
 

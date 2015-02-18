@@ -103,7 +103,7 @@ int get_filelength(string filepath)
    return(length);
 }
 
-void read_decdat(int length, FO_surf* surf_ptr, string localpath)
+void read_decdat(int length, FO_surf* surf_ptr, string localpath, bool include_bulk_pi=false)
 { 
   //cout<<"read in information on freeze out surface...";
   ostringstream decdat_stream;
@@ -130,6 +130,7 @@ void read_decdat(int length, FO_surf* surf_ptr, string localpath)
      decdat >> surf_ptr[i].pi11;
      decdat >> surf_ptr[i].pi12;
      decdat >> surf_ptr[i].pi22;
+     if (include_bulk_pi) decdat >> surf_ptr[i].bulkPi;
   }
   decdat.close();
   //cout<<"done"<<endl;

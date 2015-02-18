@@ -22,6 +22,8 @@
 #define USE_PLANE_PSI_ORDER 0		// specifies whether to do HBT relative to flow-plane angle,
 					// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle
 					// at given order
+//#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
+					// 0 - false
 
 using namespace std;
 
@@ -328,6 +330,42 @@ double doHBT::Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FO
     return sum;
 }
 
+//average over just eta_s --> leave x, y, tau, Phi_K, K_T (K_Y == 0)
+double doHBT::Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT, int iKphi)
+{
+    double mass = particle_mass;
+    double K_T_local = K_T[iKT];
+    double mT = sqrt(mass*mass + K_T_local*K_T_local);
+
+    double sum = 0.;
+
+    //for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+    //{
+	double tempsum = 0.;
+	double K_phi_local = K_phi[iKphi];
+	double px = K_T_local*cos(K_phi_local);
+	double py = K_T_local*sin(K_phi_local);
+
+	for (int ieta = 0; ieta < eta_s_npts; ieta++)
+	{
+		double local_eta_s = eta_s[ieta];
+		//double ch_localetas = cosh(local_eta_s);
+		//double sh_localetas = sinh(local_eta_s);
+
+		double p0 = mT*cosh(K_y-local_eta_s);
+		double pz = mT*sinh(K_y-local_eta_s);
+		double S_p = Emissionfunction(p0, px, py, pz, &FOsurf_ptr[FOcell]);
+		if (S_p < tol) S_p = 0.0e0;
+		tempsum += S_p*FOsurf_ptr[FOcell].tau*eta_s_weight[ieta]*2.0; //2.0 count for the assumed reflection symmetry along eta
+	}
+
+	//sum += tempsum*K_phi_weight[iKphi];
+	sum = tempsum;
+    //}
+
+    return sum;
+}
+
 void doHBT::Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr)
 {
 	//avgFOsurf_ptr = new FOsurf[FO_length*n_localp_T];
@@ -336,11 +374,30 @@ void doHBT::Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr)
 	for (int iKT = 0; iKT < n_localp_T; iKT++)
 	for (int iFOcell = 0; iFOcell < FO_length; iFOcell++)
 	{
-		if (iFOcell == 0) *global_out_stream_ptr << "Averaging over Phi_K for K_T = " << K_T[iKT] << endl;
+		if (iFOcell == 0) *global_out_stream_ptr << "Averaging over Phi_K, eta_s for K_T = " << K_T[iKT] << endl;
 		(*avgFOsurf_ptr)[idx].tau = FOsurf_ptr[iFOcell].tau;
 		(*avgFOsurf_ptr)[idx].x = FOsurf_ptr[iFOcell].xpt;
 		(*avgFOsurf_ptr)[idx].y = FOsurf_ptr[iFOcell].ypt;
 		(*avgFOsurf_ptr)[idx].data = Average_Emission_Function_on_FOsurface(FOsurf_ptr, iFOcell, iKT);
+		idx++;
+	}
+
+	return;
+}
+
+void doHBT::Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr, int iKphi)
+{
+	//avgFOsurf_ptr = new FOsurf[FO_length*n_localp_T];
+	int idx = 0;
+
+	for (int iKT = 0; iKT < n_localp_T; iKT++)
+	for (int iFOcell = 0; iFOcell < FO_length; iFOcell++)
+	{
+		if (iFOcell == 0) *global_out_stream_ptr << "Averaging over eta_s for K_T = " << K_T[iKT] << " and K_phi = " << K_phi[iKphi] << endl;
+		(*avgFOsurf_ptr)[idx].tau = FOsurf_ptr[iFOcell].tau;
+		(*avgFOsurf_ptr)[idx].x = FOsurf_ptr[iFOcell].xpt;
+		(*avgFOsurf_ptr)[idx].y = FOsurf_ptr[iFOcell].ypt;
+		(*avgFOsurf_ptr)[idx].data = Average_Emission_Function_on_FOsurface(FOsurf_ptr, iFOcell, iKT, iKphi);
 		idx++;
 	}
 
@@ -359,6 +416,7 @@ void doHBT::Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, d
       FO_surf* surf = &FOsurf_ptr[isurf];
       double tau = surf->tau;
       double mu = surf->particle_mu[particle_id];
+//	cerr << mu << "   " << sign << "   " << degen << "   " << endl;
       double vx = surf->vx;
       double vy = surf->vy;
       double Tdec = surf->Tdec;
@@ -422,8 +480,11 @@ cout  << endl << endl << endl;
 
          //viscous corrections
          double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
-         double deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
-//deltaf=0.;	//doing this temporarily for understanding source variance fluctuations
+         double deltaf = 0.;
+	 if (use_delta_f)
+	 {
+		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
+	 }
 
          double S_p = prefactor*pdsigma*f0*(1.+deltaf);
 	 if (1. + deltaf < 0.0) S_p = 0.0;
@@ -472,8 +533,11 @@ double doHBT::Emissionfunction(double p0, double px, double py, double pz, FO_su
 
    //viscous corrections
    double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
-   double deltaf = (1. - sign*f0)*Wfactor/(2.0*Tdec*Tdec*(Edec+Pdec));
-//deltaf=0.;	//doing this temporarily for understanding source variance fluctuations
+   double deltaf = 0.;
+   if (use_delta_f)
+   {
+      deltaf = (1. - sign*f0)*Wfactor/(2.0*Tdec*Tdec*(Edec+Pdec));
+   }
 
    double dN_dyd2pTdphi = 1.0*degen/(8.0*(M_PI*M_PI*M_PI))*pdsigma*f0*(1.+deltaf)/hbarC/hbarC/hbarC;
    if (1. + deltaf < 0.0) dN_dyd2pTdphi = 0.0;

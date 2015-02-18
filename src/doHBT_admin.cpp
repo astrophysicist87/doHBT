@@ -24,6 +24,11 @@ using namespace std;
 doHBT::doHBT()
 {
    //plumberg_test_variable = 3.14159;
+   //default: use delta_f in calculations
+   use_delta_f = true;
+   no_df_stem = "";
+   //default: append to existing files rather than overwrite them
+   append_output = true;
 
    Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
 

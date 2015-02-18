@@ -151,6 +151,8 @@ int main(int argc, char *argv[])
 
    Source_function.Output_ev_anisotropic_flows_pTdiff(folderindex);
 
+   Source_function.Output_ev_plane_psis(folderindex);
+
    sw.toc();
    //cout << "Finished in " << sw.takeTime() << " sec." << endl;
    output << "Finished in " << sw.takeTime() << " sec." << endl;

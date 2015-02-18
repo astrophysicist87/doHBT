@@ -183,6 +183,7 @@ class doHBT
       int global_folderindex;
       string global_path;
       string global_runfolder;
+      string no_df_stem;
       //string global_currentworkingdirectory;
 
    public:
@@ -200,6 +201,8 @@ class doHBT
       void Output_Emission_Function(int iKT, int iKphi, int folderindex);
       double Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT);
       void Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr);
+      double Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT, int iKphi);
+      void Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr, int iKphi);
       void Output_avgEmission_Function_on_FOsurface(int folderindex);
       void Update_avgSource_function(int iKT, int iKphi);
       void Update_avgSource_function();
@@ -272,9 +275,13 @@ class doHBT
       //void Set_global_folderindex(int folderindex);
       void Set_path(string path);
       void Set_runfolder(string runfolder);
+      void Set_use_delta_f(bool usrdef_usedeltaf);
+      //void Open_filestream(fstream & fs, ostream & os);
 
       //parameters that the user is free to define
       double plumberg_test_variable;
+      bool use_delta_f;
+      bool append_output;
 };
 
 #endif
