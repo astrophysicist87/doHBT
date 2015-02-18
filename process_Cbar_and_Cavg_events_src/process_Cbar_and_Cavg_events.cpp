@@ -28,7 +28,13 @@ int main(int argc, char *argv[])
 	exit(1);
    }
 
+   //general pattern of typical results folder, without "-#" on end
+   //usually something like "results"
    string folderstem = patch::to_string(argv[1]);
+   //first event to include in ensemble
+   int my_initial_event = atoi(argv[2]);
+   //total number of event to include in ensemble
+   int my_n_events = atoi(argv[3]);
 
    Stopwatch sw;
    Stopwatch sw_total;
@@ -43,6 +49,10 @@ int main(int argc, char *argv[])
 
    output << "/**********Processing output**********/" << endl;
    output << "Running in folder: " << currentworkingdirectory << endl;
+   output << "Executable: " << argv[0] << endl;
+   output << "Folderstem: " << argv[1] << endl;
+   output << "Initial event: " << argv[2] << endl;
+   output << "Number of events: " << argv[3] << endl;
 
    doHBT Source_function;
 
@@ -53,8 +63,8 @@ int main(int argc, char *argv[])
    Source_function.Set_resultsfolder_stem(folderstem);
    Source_function.Set_use_delta_f(true);
    Source_function.Set_ofstream(output);
-   Source_function.initial_event = 1;
-   Source_function.n_events = 10;
+   Source_function.initial_event = my_initial_event;
+   Source_function.n_events = my_n_events;
 
    //do the actual average HBT calculations...
    Source_function.Get_HBTradii_from_C_ev();
