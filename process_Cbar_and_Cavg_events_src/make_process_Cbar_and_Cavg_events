@@ -1,0 +1,66 @@
+SHELL=/bin/sh
+
+SRCDIR= \
+../src
+
+SRCS= \
+process_Cbar_and_Cavg_events.cpp \
+$(SRCDIR)/readindata.cpp \
+$(SRCDIR)/doHBT.cpp \
+$(SRCDIR)/doHBT_GFroutines.cpp \
+$(SRCDIR)/doHBT_admin.cpp \
+$(SRCDIR)/doHBT_IO.cpp \
+$(SRCDIR)/Arsenal.cpp \
+$(SRCDIR)/gauss_quadrature.cpp
+
+HDRS= \
+process_Cbar_and_Cavg_events.h \
+$(SRCDIR)/parameters.h \
+$(SRCDIR)/readindata.h \
+$(SRCDIR)/doHBT.h \
+$(SRCDIR)/Arsenal.h \
+$(SRCDIR)/Stopwatch.h \
+$(SRCDIR)/gauss_quadrature.h \
+$(SRCDIR)/structs.h \
+$(SRCDIR)/generate_processing_record.h \
+$(SRCDIR)/plumberglib.h
+
+MAKEFILE=make_process_Cbar_and_Cavg_events
+
+COMMAND=process_Cbar_and_Cavg_events
+
+OBJS= $(addsuffix .o, $(basename $(SRCS)))
+
+CC= g++
+CFLAGS=  -g
+WARNFLAGS= -ansi -pedantic -Wall -W \
+   -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align \
+   -Wwrite-strings -fshort-enums -fno-common 
+LDFLAGS= -lgsl -lgslcblas 
+LIBS= -L/sw/lib -I/sw/include
+
+ 
+$(COMMAND): $(OBJS) $(HDRS) $(MAKEFILE) 
+	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS)
+                 
+process_Cbar_and_Cavg_events.o : process_Cbar_and_Cavg_events.cpp process_Cbar_and_Cavg_events.h $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/doHBT.h $(SRCDIR)/generate_processing_record.h $(SRCDIR)/plumberglib.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c process_Cbar_and_Cavg_events.cpp -o process_Cbar_and_Cavg_events.o
+ 
+readindata.o : $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/readindata.cpp
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/readindata.cpp -o readindata.o
+
+doHBT.o : $(SRCDIR)/doHBT.h $(SRCDIR)/parameters.h $(SRCDIR)/doHBT.cpp $(SRCDIR)/doHBT_GFroutines.cpp $(SRCDIR)/doHBT_admin.cpp $(SRCDIR)/doHBT_IO.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/doHBT.cpp -o doHBT.o
+
+Arsenal.o : $(SRCDIR)/Arsenal.cpp $(SRCDIR)/Arsenal.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/Arsenal.cpp -o Arsenal.o
+
+gauss_quadrature.o : $(SRCDIR)/gauss_quadrature.cpp $(SRCDIR)/gauss_quadrature.h
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/gauss_quadrature.cpp -o gauss_quadrature.o
+
+clean:
+	rm -f $(OBJS)
+ 
+tarz:
+	tar zcf - $(MAKEFILE) $(SRCS) $(HDRS) > $(COMMAND).tar.gz
+ 
