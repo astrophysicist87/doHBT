@@ -107,15 +107,15 @@ void doHBT::Output_AVG_results()
 {
 	ostringstream filename_stream_HBT;
 	//filename_stream_HBT << runfolder << "/avgHBTradii.dat";
-	filename_stream_HBT << global_runfolder << "/avgHBTradii" << no_df_stem << ".dat";
+	filename_stream_HBT << global_runfolder << "/avgHBTradii_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTcfs;
 	//filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
-	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs" << no_df_stem << ".dat";
+	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 	ostringstream filename_stream_S;
 	//filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
-	filename_stream_S << global_runfolder << "/avgSourcefunction_variances" << no_df_stem << ".dat";
+	filename_stream_S << global_runfolder << "/avgSourcefunction_variances_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ofstream output_Svars(filename_stream_S.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -153,11 +153,11 @@ void doHBT::Output_CAVG_results()
 {
 	ostringstream filename_stream_HBT;
 	//filename_stream_HBT << runfolder << "/CavgHBTradii.dat";
-	filename_stream_HBT << global_runfolder << "/CavgHBTradii" << no_df_stem << ".dat";
+	filename_stream_HBT << global_runfolder << "/CavgHBTradii_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTcfs;
 	//filename_stream_HBTcfs << runfolder << "/CavgHBTradii_cfs.dat";
-	filename_stream_HBTcfs << global_runfolder << "/CavgHBTradii_cfs" << no_df_stem << ".dat";
+	filename_stream_HBTcfs << global_runfolder << "/CavgHBTradii_cfs_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -406,15 +406,15 @@ void doHBT::Readin_AVG_results()
 {
 	ostringstream filename_stream_HBT;
 	//filename_stream_HBT << runfolder << "/avgHBTradii.dat";
-	filename_stream_HBT << global_runfolder << "/avgHBTradii" << no_df_stem << ".dat";
+	filename_stream_HBT << global_runfolder << "/avgHBTradii_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ifstream inputHBT(filename_stream_HBT.str().c_str());
 	ostringstream filename_stream_HBTcfs;
 	//filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
-	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs" << no_df_stem << ".dat";
+	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ifstream inputHBTcoeffs(filename_stream_HBTcfs.str().c_str());
 	ostringstream filename_stream_S;
 	//filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
-	filename_stream_S << global_runfolder << "/avgSourcefunction_variances" << no_df_stem << ".dat";
+	filename_stream_S << global_runfolder << "/avgSourcefunction_variances_evs" << patch::to_string(initial_event) << "to" << patch::to_string(n_events) << no_df_stem << ".dat";
 	ifstream input_Svars(filename_stream_S.str().c_str());
 //cout << "Reading in from files " << filename_stream_HBT.str() << " and " << filename_stream_HBTcfs.str() << endl;
 double dummy;
