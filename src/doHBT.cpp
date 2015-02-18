@@ -586,15 +586,19 @@ void doHBT::Get_HBTradii_from_C_ev()
   {
     for (int j = 0; j < n_localp_phi; j++)
     {
-	cout << "Getting HBT radii from <C>_{ev} at K_T = " << K_T[i] << ", K_phi = " << K_phi[j] << endl;
+	*global_out_stream_ptr << "Getting HBT radii from <C>_{ev} at K_T = " << K_T[i] << ", K_phi = " << K_phi[j] << endl;
 	Calculate_HBTradii_from_C_ev(i, j);
     }
     CavgR2_Fourier_transform(i, 0.);
   }
 
+  *global_out_stream_ptr << "Finished all HBT calculations for <C>_{ev}" << endl;
   Output_CAVG_results();
+  *global_out_stream_ptr << "Output all HBT calculations for <C>_{ev}" << endl;
   Analyze_AVG_sourcefunction();
+  *global_out_stream_ptr << "Finished all HBT calculations for \bar{C}" << endl;
   Output_AVG_results();
+  *global_out_stream_ptr << "Output all HBT calculations for \bar{C}" << endl;
 
   return;
 }
@@ -613,18 +617,24 @@ double fluctuations_term_alt = 0.;
 
 //Readin_AVG_results();
 
+*global_out_stream_ptr << "Reading in event-by-event results..." << endl;
+
 //for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
 for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
 {
+   Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(local_folderindex));
    Readin_results(local_folderindex);
    Update_avgSource_function(iKT, iKphi);
 }
 
 Calculate_avgSource_function(iKT, iKphi);
+*global_out_stream_ptr << "Got average S..." << endl;
 
 //for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
 for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
 {
+   //*global_out_stream_ptr << "Working on <C>_{ev} for event-by-event results folder " << local_folderindex << endl;
+   Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(local_folderindex));
    Readin_results(local_folderindex);
 
 //compute correction factor to cancel out multiplicity fluctuations, to get "true" radii
@@ -646,8 +656,8 @@ fluctuations_term_alt /= double(n_events);
 
 //divide by this correcting normalization factor to get normalized curvature of correlator at q --> 0
 double correction_factor = 1 + fluctuations_term;
-cout << "correction_factor = " << correction_factor << endl;
-cout << "other correction factor (as a check) = " << 1./fluctuations_term_alt << endl;
+*global_out_stream_ptr << "     Correction_factor (version 1) = " << correction_factor << endl;
+*global_out_stream_ptr << "     Correction_factor (version 2) = " << fluctuations_term_alt << endl;
 
 CavgR2_side[iKT][iKphi] = sumside / double(n_events) / correction_factor;
 CavgR2_out[iKT][iKphi] = sumout / double(n_events) / correction_factor;
@@ -1077,8 +1087,8 @@ void doHBT::avgR2_Fourier_transform(int iKT, double plane_psi)
       avgR2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2*M_PI);
       avgR2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2*M_PI);
       avgR2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2*M_PI);
-      cout << K_T[iKT] << "  " << Morder << "  " << avgR2_side_C[iKT][Morder] << "   " << avgR2_side_S[iKT][Morder] << "  " << avgR2_out_C[iKT][Morder] << "  " << avgR2_out_S[iKT][Morder]
-		<< "  " << avgR2_outside_C[iKT][Morder] << "   " << avgR2_outside_S[iKT][Morder] << "  " << avgR2_long_C[iKT][Morder] << "  " << avgR2_long_S[iKT][Morder]
+      *global_out_stream_ptr << K_T[iKT] << "  " << Morder << "  " << avgR2_side_C[iKT][Morder] << "   " << avgR2_side_S[iKT][Morder] << "  " << avgR2_out_C[iKT][Morder] << "  " << avgR2_out_S[iKT][Morder]
+	<< "  " << avgR2_outside_C[iKT][Morder] << "   " << avgR2_outside_S[iKT][Morder] << "  " << avgR2_long_C[iKT][Morder] << "  " << avgR2_long_S[iKT][Morder]
 		<< "  " << avgR2_sidelong_C[iKT][Morder] << "   " << avgR2_sidelong_S[iKT][Morder] << "  " << avgR2_outlong_C[iKT][Morder] << "  " << avgR2_outlong_S[iKT][Morder] << endl;
    }
    return;
@@ -1133,7 +1143,7 @@ void doHBT::CavgR2_Fourier_transform(int iKT, double plane_psi)
       CavgR2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2*M_PI);
       CavgR2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2*M_PI);
       CavgR2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2*M_PI);
-      cout << K_T[iKT] << "  " << Morder << "  " << CavgR2_side_C[iKT][Morder] << "   " << CavgR2_side_S[iKT][Morder] << "  " << CavgR2_out_C[iKT][Morder] << "  " << CavgR2_out_S[iKT][Morder]
+      *global_out_stream_ptr << K_T[iKT] << "  " << Morder << "  " << CavgR2_side_C[iKT][Morder] << "   " << CavgR2_side_S[iKT][Morder] << "  " << CavgR2_out_C[iKT][Morder] << "  " << CavgR2_out_S[iKT][Morder]
 		<< "  " << CavgR2_outside_C[iKT][Morder] << "   " << CavgR2_outside_S[iKT][Morder] << "  " << CavgR2_long_C[iKT][Morder] << "  " << CavgR2_long_S[iKT][Morder]
 		<< "  " << CavgR2_sidelong_C[iKT][Morder] << "   " << CavgR2_sidelong_S[iKT][Morder] << "  " << CavgR2_outlong_C[iKT][Morder] << "  " << CavgR2_outlong_S[iKT][Morder] << endl;
    }

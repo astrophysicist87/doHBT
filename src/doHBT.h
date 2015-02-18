@@ -183,8 +183,8 @@ class doHBT
       int global_folderindex;
       string global_path;
       string global_runfolder;
+      string global_resultsfolder_stem;
       string no_df_stem;
-      //string global_currentworkingdirectory;
 
    public:
       doHBT();
@@ -274,6 +274,7 @@ class doHBT
       //void Set_folderindex(int folderindex);
       //void Set_global_folderindex(int folderindex);
       void Set_path(string path);
+      void Set_resultsfolder_stem(string usrdef_stem);
       void Set_runfolder(string runfolder);
       void Set_use_delta_f(bool usrdef_usedeltaf);
       //void Open_filestream(fstream & fs, ostream & os);

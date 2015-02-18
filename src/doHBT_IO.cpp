@@ -687,6 +687,13 @@ void doHBT::Set_runfolder(string localrunfolder)
 	return;
 }
 
+void doHBT::Set_resultsfolder_stem(string usrdef_resultsfolder_stem)
+{
+	global_resultsfolder_stem = usrdef_resultsfolder_stem;
+
+	return;
+}
+
 void doHBT::Set_use_delta_f(bool usrdef_usedeltaf)
 {
 	use_delta_f = usrdef_usedeltaf;

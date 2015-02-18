@@ -61,7 +61,7 @@ const int MCint_calls = 5000;  //# of calls for monte carlo integration
 const size_t fit_max_iterations = 1000;  // stop at this point if not converged 
 const double fit_tolarence = 1e-6;
 
-const int n_events = 1000;
+const int n_events = 10;
 const int initial_event = 1;
 
 namespace patch
