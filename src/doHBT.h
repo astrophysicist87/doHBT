@@ -283,6 +283,8 @@ class doHBT
       double plumberg_test_variable;
       bool use_delta_f;
       bool append_output;
+      int n_events;
+      int initial_event;
 };
 
 #endif

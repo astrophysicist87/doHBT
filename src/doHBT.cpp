@@ -24,6 +24,7 @@
 					// at given order
 //#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
 					// 0 - false
+#define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
 
 using namespace std;
 
@@ -31,18 +32,18 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
    double plane_psi = 0.0;
    bool includezeroes = false;
-   *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
+   if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
    Determine_plane_angle(FOsurf_ptr);
    int iorder = USE_PLANE_PSI_ORDER;
    if (USE_PLANE_PSI_ORDER)
    {
-      *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
-      *global_out_stream_ptr << "psi = " << plane_psi << endl;
+      if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
+      if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
       plane_psi = plane_angle[iorder];
    }
    else
    {
-      *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
+      if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
    }
    global_plane_psi = plane_psi;
 
@@ -50,12 +51,12 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
    for(int iKT = 0; iKT < n_localp_T; iKT++)
    {
       //cout << "Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
-      *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+      if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
       double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
       beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
       for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
       {
-         *global_out_stream_ptr << "\t --> Calculating K_phi = " << K_phi[iKphi] << " ..." << endl;
+         if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Calculating K_phi = " << K_phi[iKphi] << " ..." << endl;
          Reset_EmissionData();
          SetEmissionData(FOsurf_ptr, K_T[iKT], K_phi[iKphi], includezeroes);
          Get_source_variances(iKT, iKphi);
@@ -97,7 +98,7 @@ void doHBT::Analyze_AVG_sourcefunction()
    //Calculate_avgSource_function();  //redundant
    for(int iKT = 0; iKT < n_localp_T; iKT++)
    {
-      cout << "Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+      if (VERBOSE > 1) *global_out_stream_ptr << "     --> Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
       double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
       //double m_perp = sqrt(K_T[iKT]*K_T[iKT] + 0.13957*0.13957);
       beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
@@ -374,7 +375,7 @@ void doHBT::Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr)
 	for (int iKT = 0; iKT < n_localp_T; iKT++)
 	for (int iFOcell = 0; iFOcell < FO_length; iFOcell++)
 	{
-		if (iFOcell == 0) *global_out_stream_ptr << "Averaging over Phi_K, eta_s for K_T = " << K_T[iKT] << endl;
+		if (iFOcell == 0 && VERBOSE > 0) *global_out_stream_ptr << "Averaging over Phi_K, eta_s for K_T = " << K_T[iKT] << endl;
 		(*avgFOsurf_ptr)[idx].tau = FOsurf_ptr[iFOcell].tau;
 		(*avgFOsurf_ptr)[idx].x = FOsurf_ptr[iFOcell].xpt;
 		(*avgFOsurf_ptr)[idx].y = FOsurf_ptr[iFOcell].ypt;
@@ -393,7 +394,7 @@ void doHBT::Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr, int iKphi)
 	for (int iKT = 0; iKT < n_localp_T; iKT++)
 	for (int iFOcell = 0; iFOcell < FO_length; iFOcell++)
 	{
-		if (iFOcell == 0) *global_out_stream_ptr << "Averaging over eta_s for K_T = " << K_T[iKT] << " and K_phi = " << K_phi[iKphi] << endl;
+		if (iFOcell == 0 && VERBOSE > 0) *global_out_stream_ptr << "Averaging over eta_s for K_T = " << K_T[iKT] << " and K_phi = " << K_phi[iKphi] << endl;
 		(*avgFOsurf_ptr)[idx].tau = FOsurf_ptr[iFOcell].tau;
 		(*avgFOsurf_ptr)[idx].x = FOsurf_ptr[iFOcell].xpt;
 		(*avgFOsurf_ptr)[idx].y = FOsurf_ptr[iFOcell].ypt;
@@ -586,19 +587,19 @@ void doHBT::Get_HBTradii_from_C_ev()
   {
     for (int j = 0; j < n_localp_phi; j++)
     {
-	*global_out_stream_ptr << "Getting HBT radii from <C>_{ev} at K_T = " << K_T[i] << ", K_phi = " << K_phi[j] << endl;
+	if (VERBOSE > 0) *global_out_stream_ptr << "Getting HBT radii from <C>_{ev} at K_T = " << K_T[i] << ", K_phi = " << K_phi[j] << endl;
 	Calculate_HBTradii_from_C_ev(i, j);
     }
     CavgR2_Fourier_transform(i, 0.);
   }
 
-  *global_out_stream_ptr << "Finished all HBT calculations for <C>_{ev}" << endl;
+  if (VERBOSE > 0) *global_out_stream_ptr << "Finished all HBT calculations for <C>_{ev}" << endl;
   Output_CAVG_results();
-  *global_out_stream_ptr << "Output all HBT calculations for <C>_{ev}" << endl;
+  if (VERBOSE > 0) *global_out_stream_ptr << "Output all HBT calculations for <C>_{ev}" << endl;
   Analyze_AVG_sourcefunction();
-  *global_out_stream_ptr << "Finished all HBT calculations for \bar{C}" << endl;
+  if (VERBOSE > 0) *global_out_stream_ptr << "Finished all HBT calculations for Cbar" << endl;
   Output_AVG_results();
-  *global_out_stream_ptr << "Output all HBT calculations for \bar{C}" << endl;
+  if (VERBOSE > 0) *global_out_stream_ptr << "Output all HBT calculations for Cbar" << endl;
 
   return;
 }
@@ -617,7 +618,7 @@ double fluctuations_term_alt = 0.;
 
 //Readin_AVG_results();
 
-*global_out_stream_ptr << "Reading in event-by-event results..." << endl;
+if (VERBOSE > 2) *global_out_stream_ptr << "     Reading in event-by-event results..." << endl;
 
 //for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
 for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
@@ -628,7 +629,7 @@ for (int local_folderindex = initial_event; local_folderindex < initial_event + 
 }
 
 Calculate_avgSource_function(iKT, iKphi);
-*global_out_stream_ptr << "Got average S..." << endl;
+if (VERBOSE > 2) *global_out_stream_ptr << "     Got average S..." << endl;
 
 //for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
 for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
@@ -656,8 +657,8 @@ fluctuations_term_alt /= double(n_events);
 
 //divide by this correcting normalization factor to get normalized curvature of correlator at q --> 0
 double correction_factor = 1 + fluctuations_term;
-*global_out_stream_ptr << "     Correction_factor (version 1) = " << correction_factor << endl;
-*global_out_stream_ptr << "     Correction_factor (version 2) = " << fluctuations_term_alt << endl;
+if (VERBOSE > 2) *global_out_stream_ptr << "     --> Correction_factor (version 1) = " << correction_factor << endl;
+if (VERBOSE > 2) *global_out_stream_ptr << "     --> Correction_factor (version 2) = " << fluctuations_term_alt << endl;
 
 CavgR2_side[iKT][iKphi] = sumside / double(n_events) / correction_factor;
 CavgR2_out[iKT][iKphi] = sumout / double(n_events) / correction_factor;
@@ -1087,7 +1088,7 @@ void doHBT::avgR2_Fourier_transform(int iKT, double plane_psi)
       avgR2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2*M_PI);
       avgR2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2*M_PI);
       avgR2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2*M_PI);
-      *global_out_stream_ptr << K_T[iKT] << "  " << Morder << "  " << avgR2_side_C[iKT][Morder] << "   " << avgR2_side_S[iKT][Morder] << "  " << avgR2_out_C[iKT][Morder] << "  " << avgR2_out_S[iKT][Morder]
+      if (VERBOSE > 3) *global_out_stream_ptr << K_T[iKT] << "  " << Morder << "  " << avgR2_side_C[iKT][Morder] << "   " << avgR2_side_S[iKT][Morder] << "  " << avgR2_out_C[iKT][Morder] << "  " << avgR2_out_S[iKT][Morder]
 	<< "  " << avgR2_outside_C[iKT][Morder] << "   " << avgR2_outside_S[iKT][Morder] << "  " << avgR2_long_C[iKT][Morder] << "  " << avgR2_long_S[iKT][Morder]
 		<< "  " << avgR2_sidelong_C[iKT][Morder] << "   " << avgR2_sidelong_S[iKT][Morder] << "  " << avgR2_outlong_C[iKT][Morder] << "  " << avgR2_outlong_S[iKT][Morder] << endl;
    }
@@ -1143,7 +1144,7 @@ void doHBT::CavgR2_Fourier_transform(int iKT, double plane_psi)
       CavgR2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2*M_PI);
       CavgR2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2*M_PI);
       CavgR2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2*M_PI);
-      *global_out_stream_ptr << K_T[iKT] << "  " << Morder << "  " << CavgR2_side_C[iKT][Morder] << "   " << CavgR2_side_S[iKT][Morder] << "  " << CavgR2_out_C[iKT][Morder] << "  " << CavgR2_out_S[iKT][Morder]
+      if (VERBOSE > 3) *global_out_stream_ptr << K_T[iKT] << "  " << Morder << "  " << CavgR2_side_C[iKT][Morder] << "   " << CavgR2_side_S[iKT][Morder] << "  " << CavgR2_out_C[iKT][Morder] << "  " << CavgR2_out_S[iKT][Morder]
 		<< "  " << CavgR2_outside_C[iKT][Morder] << "   " << CavgR2_outside_S[iKT][Morder] << "  " << CavgR2_long_C[iKT][Morder] << "  " << CavgR2_long_S[iKT][Morder]
 		<< "  " << CavgR2_sidelong_C[iKT][Morder] << "   " << CavgR2_sidelong_S[iKT][Morder] << "  " << CavgR2_outlong_C[iKT][Morder] << "  " << CavgR2_outlong_S[iKT][Morder] << endl;
    }

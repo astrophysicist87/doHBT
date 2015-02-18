@@ -24,6 +24,9 @@ using namespace std;
 doHBT::doHBT()
 {
    //plumberg_test_variable = 3.14159;
+   //default initial event and # of events for avg'ing routines
+   initial_event = 1;
+   n_events = 1000;
    //default: use delta_f in calculations
    use_delta_f = true;
    no_df_stem = "";
