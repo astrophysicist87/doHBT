@@ -193,6 +193,28 @@ doHBT::doHBT()
    avgxl2_S = new double* [n_localp_T];
    avgt2_S = new double* [n_localp_T];
 
+   CavgS_func = new double* [n_localp_T];
+   CavgR2_side_num = new double* [n_localp_T];
+   CavgR2_out_num = new double* [n_localp_T];
+   CavgR2_long_num = new double* [n_localp_T];
+   CavgR2_outside_num = new double* [n_localp_T];
+   CavgR2_sidelong_num = new double* [n_localp_T];
+   CavgR2_outlong_num = new double* [n_localp_T];
+   //Cavgxs_S = new double* [n_localp_T];
+   //Cavgxo_S = new double* [n_localp_T];
+   //Cavgxl_S = new double* [n_localp_T];
+   //Cavgt_S = new double* [n_localp_T];
+   //Cavgxs_t_S = new double* [n_localp_T];
+   //Cavgxo_t_S = new double* [n_localp_T];
+   //Cavgxl_t_S = new double* [n_localp_T];
+   //Cavgxo_xs_S = new double* [n_localp_T];
+   //Cavgxl_xs_S = new double* [n_localp_T];
+   //Cavgxo_xl_S = new double* [n_localp_T];
+   //Cavgxs2_S = new double* [n_localp_T];
+   //Cavgxo2_S = new double* [n_localp_T];
+   //Cavgxl2_S = new double* [n_localp_T];
+   //Cavgt2_S = new double* [n_localp_T];
+
    R2_side = new double* [n_localp_T];
    R2_side_C = new double* [n_localp_T];
    R2_side_S = new double* [n_localp_T];
@@ -315,6 +337,28 @@ doHBT::doHBT()
       avgxl2_S[i] = new double [n_localp_phi];
       avgt2_S[i] = new double [n_localp_phi];
 
+      CavgS_func[i] = new double [n_localp_phi];
+      CavgR2_side_num[i] = new double [n_localp_phi];
+      CavgR2_out_num[i] = new double [n_localp_phi];
+      CavgR2_long_num[i] = new double [n_localp_phi];
+      CavgR2_outside_num[i] = new double [n_localp_phi];
+      CavgR2_sidelong_num[i] = new double [n_localp_phi];
+      CavgR2_outlong_num[i] = new double [n_localp_phi];
+      //Cavgxs_S[i] = new double [n_localp_phi];
+      //Cavgxo_S[i] = new double [n_localp_phi];
+      //Cavgxl_S[i] = new double [n_localp_phi];
+      //Cavgt_S[i] = new double [n_localp_phi];
+      //Cavgxs_t_S[i] = new double [n_localp_phi];
+      //Cavgxo_t_S[i] = new double [n_localp_phi];
+      //Cavgxl_t_S[i] = new double [n_localp_phi];
+      //Cavgxo_xs_S[i] = new double [n_localp_phi];
+      //Cavgxl_xs_S[i] = new double [n_localp_phi];
+      //Cavgxo_xl_S[i] = new double [n_localp_phi];
+      //Cavgxs2_S[i] = new double [n_localp_phi];
+      //Cavgxo2_S[i] = new double [n_localp_phi];
+      //Cavgxl2_S[i] = new double [n_localp_phi];
+      //Cavgt2_S[i] = new double [n_localp_phi];
+
       R2_side[i] = new double [n_localp_phi];
       R2_side_C[i] = new double [n_order];
       R2_side_S[i] = new double [n_order];
@@ -419,6 +463,28 @@ for(int i=0; i<n_localp_T; i++)
 		avgxo2_S[i][j] = 0.;
 		avgxl2_S[i][j] = 0.;
 		avgt2_S[i][j] = 0.;
+
+		CavgS_func[i][j] = 0.;
+		CavgR2_side_num[i][j] = 0.;
+		CavgR2_out_num[i][j] = 0.;
+		CavgR2_outside_num[i][j] = 0.;
+		CavgR2_long_num[i][j] = 0.;
+		CavgR2_sidelong_num[i][j] = 0.;
+		CavgR2_outlong_num[i][j] = 0.;
+		//Cavgxs_S[i][j] = 0.;
+		//Cavgxo_S[i][j] = 0.;
+		//Cavgxl_S[i][j] = 0.;
+		//Cavgt_S[i][j] = 0.;
+		//Cavgxs_t_S[i][j] = 0.;
+		//Cavgxo_t_S[i][j] = 0.;
+		//Cavgxl_t_S[i][j] = 0.;
+		//Cavgxo_xs_S[i][j] = 0.;
+		//Cavgxl_xs_S[i][j] = 0.;
+		//Cavgxo_xl_S[i][j] = 0.;
+		//Cavgxs2_S[i][j] = 0.;
+		//Cavgxo2_S[i][j] = 0.;
+		//Cavgxl2_S[i][j] = 0.;
+		//Cavgt2_S[i][j] = 0.;
 
 		R2_side[i][j] = 0.;
 		R2_out[i][j] = 0.;
@@ -879,6 +945,28 @@ doHBT::~doHBT()
       delete[] avgxo2_S[i];
       delete[] avgxl2_S[i];
       delete[] avgt2_S[i];
+
+      delete[] CavgS_func[i];
+      delete[] CavgR2_side_num[i];
+      delete[] CavgR2_out_num[i];
+      delete[] CavgR2_outside_num[i];
+      delete[] CavgR2_long_num[i];
+      delete[] CavgR2_sidelong_num[i];
+      delete[] CavgR2_outlong_num[i];
+      //delete[] Cavgxs_S[i];
+      //delete[] Cavgxo_S[i];
+      //delete[] Cavgxl_S[i];
+      //delete[] Cavgt_S[i];
+      //delete[] Cavgxs_t_S[i];
+      //delete[] Cavgxo_t_S[i];
+      //delete[] Cavgxl_t_S[i];
+      //delete[] Cavgxo_xs_S[i];
+      //delete[] Cavgxl_xs_S[i];
+      //delete[] Cavgxo_xl_S[i];
+      //delete[] Cavgxs2_S[i];
+      //delete[] Cavgxo2_S[i];
+      //delete[] Cavgxl2_S[i];
+      //delete[] Cavgt2_S[i];
    }
    delete[] S_func;
    delete[] xs_S;
@@ -911,6 +999,28 @@ doHBT::~doHBT()
    delete[] avgxo2_S;
    delete[] avgxl2_S;
    delete[] avgt2_S;
+
+   delete[] CavgS_func;
+   delete[] CavgR2_side_num;
+   delete[] CavgR2_out_num;
+   delete[] CavgR2_outside_num;
+   delete[] CavgR2_long_num;
+   delete[] CavgR2_sidelong_num;
+   delete[] CavgR2_outlong_num;
+   //delete[] Cavgxs_S;
+   //delete[] Cavgxo_S;
+   //delete[] Cavgxl_S;
+   //delete[] Cavgt_S;
+   //delete[] Cavgxs_t_S;
+   //delete[] Cavgxo_t_S;
+   //delete[] Cavgxl_t_S;
+   //delete[] Cavgxo_xs_S;
+   //delete[] Cavgxl_xs_S;
+   //delete[] Cavgxo_xl_S;
+   //delete[] Cavgxs2_S;
+   //delete[] Cavgxo2_S;
+   //delete[] Cavgxl2_S;
+   //delete[] Cavgt2_S;
 
    delete[] q_out;
    delete[] q_side;

@@ -71,7 +71,12 @@ int main(int argc, char *argv[])
    Source_function.Set_particle_mass(0.13957);
 
    //do the actual average HBT calculations...
-   Source_function.Get_HBTradii_from_C_ev();
+   //Source_function.Get_HBTradii_from_C_ev();
+   Source_function.Get_HBTradii_from_Cbar_and_Cavg();
+
+   //Output results
+   Source_function.Output_AVG_results();
+   Source_function.Output_CAVG_results();
    output << "Finished." << endl;
 
    sw.toc();

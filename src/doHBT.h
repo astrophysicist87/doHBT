@@ -146,6 +146,14 @@ class doHBT
       double **avgxo_xs_S, **avgxl_xs_S, **avgxo_xl_S;
       double **avgxs2_S, **avgxo2_S, **avgxl2_S, **avgt2_S;
 
+      double **CavgS_func;
+      double **CavgR2_side_num, **CavgR2_out_num, **CavgR2_long_num;
+      double **CavgR2_outside_num, **CavgR2_sidelong_num, **CavgR2_outlong_num;
+      //double **Cavgxs_S, **Cavgxo_S, **Cavgxl_S, **Cavgt_S;
+      //double **Cavgxs_t_S, **Cavgxo_t_S, **Cavgxl_t_S;
+      //double **Cavgxo_xs_S, **Cavgxl_xs_S, **Cavgxo_xl_S;
+      //double **Cavgxs2_S, **Cavgxo2_S, **Cavgxl2_S, **Cavgt2_S;
+
       //HBT radii coefficients
       double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
       double **R2_side_err, **R2_out_err, **R2_long_err, **R2_outside_err, **R2_sidelong_err, **R2_outlong_err;
@@ -195,6 +203,7 @@ class doHBT
       void quick_Analyze_sourcefunction();
       void quick_Analyze_sourcefunction_vars();
       void Analyze_AVG_sourcefunction();
+      void Analyze_CAVG_sourcefunction();
       void Reset_EmissionData();
       void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
       void SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, bool includezeroes);
@@ -205,9 +214,11 @@ class doHBT
       void Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr, int iKphi);
       void Output_avgEmission_Function_on_FOsurface(int folderindex);
       void Update_avgSource_function(int iKT, int iKphi);
-      void Update_avgSource_function();
+      //void Update_avgSource_function();
+      void Update_CavgSource_function(int iKT, int iKphi);
       void Calculate_avgSource_function(int, int);
-      void Calculate_avgSource_function();
+      void Calculate_CavgSource_function(int, int);
+      //void Calculate_avgSource_function();
       bool fexists(const char *filename);
 
       void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
@@ -219,7 +230,8 @@ class doHBT
       void Svars_Fourier_transform(int iKT, double plane_psi);
       void Get_source_variances(int, int);
       void Calculate_HBTradii_from_C_ev(int, int);
-      void Get_HBTradii_from_C_ev();
+      //void Get_HBTradii_from_C_ev();
+      void Get_HBTradii_from_Cbar_and_Cavg();
       void Readin_results(int);
       void Readin_HBTev_results_only(int);
       void Readin_ev_plane_psi(int);
@@ -251,6 +263,13 @@ class doHBT
       void Calculate_avgR2_long(int, int);
       void Calculate_avgR2_sidelong(int, int);
       void Calculate_avgR2_outlong(int, int);
+
+      void Calculate_CavgR2_side(int, int);
+      void Calculate_CavgR2_out(int, int);
+      void Calculate_CavgR2_outside(int, int);
+      void Calculate_CavgR2_long(int, int);
+      void Calculate_CavgR2_sidelong(int, int);
+      void Calculate_CavgR2_outlong(int, int);
 
 //correlation function stuff
       void Cal_correlationfunction_1D(int, int);
