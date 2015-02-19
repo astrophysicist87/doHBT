@@ -10,16 +10,16 @@ using namespace std;
 #include "plumberglib.h"
 #include "parameters.h"
 
-void initialize_PRfile(string currentworkingdirectory)
+void initialize_PRfile(string currentworkingdirectory, string PRfilename = "Processing_record.txt")
 {
 	ostringstream filename_stream;
-	filename_stream << currentworkingdirectory << "/Processing_record.txt";
+	filename_stream << currentworkingdirectory << "/" << PRfilename;
 	ofstream output(filename_stream.str().c_str(), ios::app);
 
 	string lambdaflagstring = lambdaflag ? truestring : falsestring;
 
 	output << "/***************************************************/" << endl;
-	output << "/****************Processing_record.txt**************/" << endl;
+	output << "/****************" << PRfilename << "**************/" << endl;
 	output << "/***************************************************/" << endl;
 
 
@@ -59,10 +59,10 @@ void initialize_PRfile(string currentworkingdirectory)
 	return;
 }
 
-void checkforfiles_PRfile(string currentworkingdirectory, int folderindex, bool corrfuncsgenerated)
+void checkforfiles_PRfile(string currentworkingdirectory, int folderindex, bool corrfuncsgenerated, string PRfilename = "Processing_record.txt")
 {
 	ostringstream filename_stream;
-	filename_stream << currentworkingdirectory << "/Processing_record.txt";
+	filename_stream << currentworkingdirectory << "/" << PRfilename;
 	ofstream output(filename_stream.str().c_str(), ios::app);
 
 	stringstream HBTSVfilename, HBTcfsSVfilename, planepsifilename;
@@ -98,10 +98,10 @@ void checkforfiles_PRfile(string currentworkingdirectory, int folderindex, bool 
 	return;
 }
 
-void finalize_PRfile(string currentworkingdirectory)
+void finalize_PRfile(string currentworkingdirectory, string PRfilename = "Processing_record.txt")
 {
 	ostringstream filename_stream;
-	filename_stream << currentworkingdirectory << "/Processing_record.txt";
+	filename_stream << currentworkingdirectory << "/" << PRfilename;
 	ofstream output(filename_stream.str().c_str(), ios::app);
 
 	stringstream out;

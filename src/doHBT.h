@@ -277,7 +277,7 @@ class doHBT
       void Set_resultsfolder_stem(string usrdef_stem);
       void Set_runfolder(string runfolder);
       void Set_use_delta_f(bool usrdef_usedeltaf);
-      //void Open_filestream(fstream & fs, ostream & os);
+      void Set_particle_mass(double usrdef_particle_mass);
 
       //parameters that the user is free to define
       double plumberg_test_variable;

@@ -705,12 +705,10 @@ void doHBT::Set_use_delta_f(bool usrdef_usedeltaf)
 	return;
 }
 
-/*void doHBT::Open_filestream(fstream & fs, ostream & os)
+void doHBT::Set_particle_mass(double usrdef_particle_mass)
 {
-	if (append_output)
-		fs.open(os.str().c_str(), ios::app);
-	else
-		fs.open(os.str().c_str());
-}*/
+	particle_mass = usrdef_particle_mass;
+	return;
+}
 
 //End of file

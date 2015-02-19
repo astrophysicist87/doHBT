@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
    int my_initial_event = atoi(argv[2]);
    //total number of event to include in ensemble
    int my_n_events = atoi(argv[3]);
+   int my_final_event = my_initial_event + my_n_events - 1;
 
    Stopwatch sw;
    Stopwatch sw_total;
@@ -42,9 +43,10 @@ int main(int argc, char *argv[])
    sw.tic();
 
    string currentworkingdirectory = get_selfpath();
-   initialize_PRfile(currentworkingdirectory);
+   string my_filename = "Processing_record_evs" + patch::to_string(my_initial_event) + "to" + patch::to_string(my_final_event) + ".txt";
+   initialize_PRfile(currentworkingdirectory, my_filename);
    ostringstream filename_stream;
-   filename_stream << currentworkingdirectory << "/Processing_record.txt";
+   filename_stream << currentworkingdirectory << "/" << my_filename;
    ofstream output(filename_stream.str().c_str(), ios::app);
 
    output << "/**********Processing output**********/" << endl;
@@ -65,6 +67,8 @@ int main(int argc, char *argv[])
    Source_function.Set_ofstream(output);
    Source_function.initial_event = my_initial_event;
    Source_function.n_events = my_n_events;
+   //mass for pi^+ needs to be set explicitly here
+   Source_function.Set_particle_mass(0.13957);
 
    //do the actual average HBT calculations...
    Source_function.Get_HBTradii_from_C_ev();
@@ -76,7 +80,7 @@ int main(int argc, char *argv[])
    output << "Program totally finished in " << sw_total.takeTime() << " sec." << endl;
    output << "/**********End of processing output**********/" << endl;
 
-   finalize_PRfile(currentworkingdirectory);
+   finalize_PRfile(currentworkingdirectory, my_filename);
 
    output.close();
 
