@@ -601,30 +601,6 @@ void doHBT::Get_source_variances(int iKT, int iKphi)
 return;
 }
 
-/*void doHBT::Get_HBTradii_from_C_ev()
-{
-
-  for (int i = 0; i < n_localp_T; i++)
-  {
-    for (int j = 0; j < n_localp_phi; j++)
-    {
-	if (VERBOSE > 0) *global_out_stream_ptr << "Getting HBT radii from <C>_{ev} at K_T = " << K_T[i] << ", K_phi = " << K_phi[j] << endl;
-	Calculate_HBTradii_from_C_ev(i, j);
-    }
-    CavgR2_Fourier_transform(i, 0.);
-  }
-
-  if (VERBOSE > 0) *global_out_stream_ptr << "Finished all HBT calculations for <C>_{ev}" << endl;
-  Output_CAVG_results();
-  if (VERBOSE > 0) *global_out_stream_ptr << "Output all HBT calculations for <C>_{ev}" << endl;
-  Analyze_AVG_sourcefunction();
-  if (VERBOSE > 0) *global_out_stream_ptr << "Finished all HBT calculations for Cbar" << endl;
-  Output_AVG_results();
-  if (VERBOSE > 0) *global_out_stream_ptr << "Output all HBT calculations for Cbar" << endl;
-
-  return;
-}*/
-
 void doHBT::Get_HBTradii_from_Cbar_and_Cavg()
 {
 //N.B. - f(-1,-1) means do it for all iKT and iKphi
@@ -646,72 +622,6 @@ void doHBT::Get_HBTradii_from_Cbar_and_Cavg()
 
   return;
 }
-
-/*void doHBT::Calculate_HBTradii_from_C_ev(int iKT, int iKphi)
-{
-double sumside = 0.;
-double sumout = 0.;
-double sumlong = 0.;
-double sumoutside = 0.;
-double sumsidelong = 0.;
-double sumoutlong = 0.;
-
-double fluctuations_term = 0.;
-double fluctuations_term_alt = 0.;
-
-//Readin_AVG_results();
-
-if (VERBOSE > 2) *global_out_stream_ptr << "     Reading in event-by-event results..." << endl;
-
-//for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
-for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
-{
-   Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(local_folderindex));
-   Readin_results(local_folderindex);
-   Update_avgSource_function(iKT, iKphi);
-}
-
-Calculate_avgSource_function(iKT, iKphi);
-if (VERBOSE > 2) *global_out_stream_ptr << "     Got average S..." << endl;
-
-//for (int local_folderindex = 1; local_folderindex <= n_events; local_folderindex++)
-for (int local_folderindex = initial_event; local_folderindex < initial_event + n_events; local_folderindex++)
-{
-   //*global_out_stream_ptr << "Working on <C>_{ev} for event-by-event results folder " << local_folderindex << endl;
-   Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(local_folderindex));
-   Readin_results(local_folderindex);
-
-//compute correction factor to cancel out multiplicity fluctuations, to get "true" radii
-fluctuations_term += (S_func[iKT][iKphi] - avgS_func[iKT][iKphi]) * (S_func[iKT][iKphi] - avgS_func[iKT][iKphi]) / (avgS_func[iKT][iKphi] * avgS_func[iKT][iKphi]);
-fluctuations_term_alt += (S_func[iKT][iKphi] * S_func[iKT][iKphi]) / (avgS_func[iKT][iKphi] * avgS_func[iKT][iKphi]);
-
-//cout << "debug: S_func[" << iKT << "][" << iKphi << "] = " << S_func[iKT][iKphi] << " and avgS_func[" << iKT << "][" << iKphi << "] = " << avgS_func[iKT][iKphi] << endl;
-   double prefactor = (S_func[iKT][iKphi] * S_func[iKT][iKphi]) / (avgS_func[iKT][iKphi] * avgS_func[iKT][iKphi]);
-   sumside += prefactor * R2_side[iKT][iKphi];
-   sumout += prefactor * R2_out[iKT][iKphi];
-   sumlong += prefactor * R2_long[iKT][iKphi];
-   sumoutside += prefactor * R2_outside[iKT][iKphi];
-   sumsidelong += prefactor * R2_sidelong[iKT][iKphi];
-   sumoutlong += prefactor * R2_outlong[iKT][iKphi];
-}
-
-fluctuations_term /= double(n_events);
-fluctuations_term_alt /= double(n_events);
-
-//divide by this correcting normalization factor to get normalized curvature of correlator at q --> 0
-double correction_factor = 1 + fluctuations_term;
-if (VERBOSE > 2) *global_out_stream_ptr << "     --> Correction_factor (version 1) = " << correction_factor << endl;
-if (VERBOSE > 2) *global_out_stream_ptr << "     --> Correction_factor (version 2) = " << fluctuations_term_alt << endl;
-
-CavgR2_side[iKT][iKphi] = sumside / double(n_events) / correction_factor;
-CavgR2_out[iKT][iKphi] = sumout / double(n_events) / correction_factor;
-CavgR2_long[iKT][iKphi] = sumlong / double(n_events) / correction_factor;
-CavgR2_outside[iKT][iKphi] = sumoutside / double(n_events) / correction_factor;
-CavgR2_outlong[iKT][iKphi] = sumoutlong / double(n_events) / correction_factor;
-CavgR2_sidelong[iKT][iKphi] = sumsidelong / double(n_events) / correction_factor;
-
-return;
-}*/
 
 void doHBT::Update_avgSource_function(int i = -1, int j = -1)
 {
@@ -774,20 +684,6 @@ void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
 		CavgR2_long_num[iKT][iKphi] += R2_long[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
 		CavgR2_sidelong_num[iKT][iKphi] += R2_sidelong[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
 		CavgR2_outlong_num[iKT][iKphi] += R2_outlong[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxs_S[iKT][iKphi] += xs_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxo_S[iKT][iKphi] += xo_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxl_S[iKT][iKphi] += xl_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgt_S[iKT][iKphi] += t_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxs_t_S[iKT][iKphi] += xs_t_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxo_t_S[iKT][iKphi] += xo_t_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxl_t_S[iKT][iKphi] += xl_t_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxo_xs_S[iKT][iKphi] += xo_xs_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxl_xs_S[iKT][iKphi] += xl_xs_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxo_xl_S[iKT][iKphi] += xo_xl_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxs2_S[iKT][iKphi] += xs2_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxo2_S[iKT][iKphi] += xo2_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgxl2_S[iKT][iKphi] += xl2_S[iKT][iKphi]*S_func[iKT][iKphi];
-		//Cavgt2_S[iKT][iKphi] += t2_S[iKT][iKphi]*S_func[iKT][iKphi];
 	}
    }
    else
@@ -799,20 +695,6 @@ void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
 		CavgR2_long_num[i][j] += R2_long[i][j]*S_func[i][j]*S_func[i][j];
 		CavgR2_sidelong_num[i][j] += R2_sidelong[i][j]*S_func[i][j]*S_func[i][j];
 		CavgR2_outlong_num[i][j] += R2_outlong[i][j]*S_func[i][j]*S_func[i][j];
-		//Cavgxs_S[i][j] += xs_S[i][j]*S_func[i][j];
-		//Cavgxo_S[i][j] += xo_S[i][j]*S_func[i][j];
-		//Cavgxl_S[i][j] += xl_S[i][j]*S_func[i][j];
-		//Cavgt_S[i][j] += t_S[i][j]*S_func[i][j];
-		//Cavgxs_t_S[i][j] += xs_t_S[i][j]*S_func[i][j];
-		//Cavgxo_t_S[i][j] += xo_t_S[i][j]*S_func[i][j];
-		//Cavgxl_t_S[i][j] += xl_t_S[i][j]*S_func[i][j];
-		//Cavgxo_xs_S[i][j] += xo_xs_S[i][j]*S_func[i][j];
-		//Cavgxl_xs_S[i][j] += xl_xs_S[i][j]*S_func[i][j];
-		//Cavgxo_xl_S[i][j] += xo_xl_S[i][j]*S_func[i][j];
-		//Cavgxs2_S[i][j] += xs2_S[i][j]*S_func[i][j];
-		//Cavgxo2_S[i][j] += xo2_S[i][j]*S_func[i][j];
-		//Cavgxl2_S[i][j] += xl2_S[i][j]*S_func[i][j];
-		//Cavgt2_S[i][j] += t2_S[i][j]*S_func[i][j];
    }
    return;
 }
@@ -878,20 +760,6 @@ void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
 		CavgR2_long_num[iKT][iKphi] /= double(n_events);
 		CavgR2_sidelong_num[iKT][iKphi] /= double(n_events);
 		CavgR2_outlong_num[iKT][iKphi] /= double(n_events);
-		//Cavgxs_S[iKT][iKphi] /= double(n_events);
-		//Cavgxo_S[iKT][iKphi] /= double(n_events);
-		//Cavgxl_S[iKT][iKphi] /= double(n_events);
-		//Cavgt_S[iKT][iKphi] /= double(n_events);
-		//Cavgxs_t_S[iKT][iKphi] /= double(n_events);
-		//Cavgxo_t_S[iKT][iKphi] /= double(n_events);
-		//Cavgxl_t_S[iKT][iKphi] /= double(n_events);
-		//Cavgxo_xs_S[iKT][iKphi] /= double(n_events);
-		//Cavgxl_xs_S[iKT][iKphi] /= double(n_events);
-		//Cavgxo_xl_S[iKT][iKphi] /= double(n_events);
-		//Cavgxs2_S[iKT][iKphi] /= double(n_events);
-		//Cavgxo2_S[iKT][iKphi] /= double(n_events);
-		//Cavgxl2_S[iKT][iKphi] /= double(n_events);
-		//Cavgt2_S[iKT][iKphi] /= double(n_events);
 	}
    }
    else
@@ -903,20 +771,6 @@ void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
 		CavgR2_long_num[i][j] /= double(n_events);
 		CavgR2_sidelong_num[i][j] /= double(n_events);
 		CavgR2_outlong_num[i][j] /= double(n_events);
-		//Cavgxs_S[i][j] /= double(n_events);
-		//Cavgxo_S[i][j] /= double(n_events);
-		//Cavgxl_S[i][j] /= double(n_events);
-		//Cavgt_S[i][j] /= double(n_events);
-		//Cavgxs_t_S[i][j] /= double(n_events);
-		//Cavgxo_t_S[i][j] /= double(n_events);
-		//Cavgxl_t_S[i][j] /= double(n_events);
-		//Cavgxo_xs_S[i][j] /= double(n_events);
-		//Cavgxl_xs_S[i][j] /= double(n_events);
-		//Cavgxo_xl_S[i][j] /= double(n_events);
-		//Cavgxs2_S[i][j] /= double(n_events);
-		//Cavgxo2_S[i][j] /= double(n_events);
-		//Cavgxl2_S[i][j] /= double(n_events);
-		//Cavgt2_S[i][j] /= double(n_events);
    }
    return;
 }

@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
    //need to set a different variable than in process_event.cpp...
    Source_function.Set_runfolder(currentworkingdirectory);
    Source_function.Set_resultsfolder_stem(folderstem);
-   Source_function.Set_use_delta_f(true);
+   Source_function.Set_use_delta_f(false);
    Source_function.Set_ofstream(output);
    Source_function.initial_event = my_initial_event;
    Source_function.n_events = my_n_events;

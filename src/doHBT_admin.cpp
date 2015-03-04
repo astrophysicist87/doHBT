@@ -590,7 +590,7 @@ void doHBT::Update_sourcefunction(particle_info* particle, int FOarray_length, i
    //particle information
    particle_name = particle->name;
    particle_mass = particle->mass;
-   particle_sign = particle->sing;
+   particle_sign = particle->sign;
    particle_gspin = particle->gspin;
    particle_id = particle_idx;
 

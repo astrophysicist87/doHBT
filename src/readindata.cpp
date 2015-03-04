@@ -261,9 +261,9 @@ int read_resonance(particle_info* particle)
    for(int i=0; i < Nparticle; i++)
    {
       if(particle[i].baryon==0)
-         particle[i].sing=-1;
+         particle[i].sign=-1;
       else
-         particle[i].sing=1;
+         particle[i].sign=1;
    }
    //cout << "done! Antiparticles are added!" << endl;
    return(Nparticle);

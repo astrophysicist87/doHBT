@@ -123,13 +123,15 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 {
 	for(int Morder=0; Morder<n_order; Morder++)
 	{
-		outputHBTcoeffs << "avg  " << K_T[iKT] << "  " << Morder
+		//outputHBTcoeffs << "avg  " << K_T[iKT] << "  " << Morder
+		outputHBTcoeffs << "-1  " << K_T[iKT] << "  " << Morder
 			<< "  " << avgR2_side_C[iKT][Morder] << "   " << avgR2_side_S[iKT][Morder] << "  " << avgR2_out_C[iKT][Morder] << "  " << avgR2_out_S[iKT][Morder]
 			<< "  " << avgR2_outside_C[iKT][Morder] << "   " << avgR2_outside_S[iKT][Morder] << "  " << avgR2_long_C[iKT][Morder] << "  " << avgR2_long_S[iKT][Morder]
 			<< "  " << avgR2_sidelong_C[iKT][Morder] << "   " << avgR2_sidelong_S[iKT][Morder] << "  " << avgR2_outlong_C[iKT][Morder] << "  " << avgR2_outlong_S[iKT][Morder] << endl;
 	}
 	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 	{
+		//outputHBT << "-1  " << K_T[iKT] << "  " << K_phi[iKphi]
 		outputHBT << "avg  " << K_T[iKT] << "  " << K_phi[iKphi]
 			<< "  " << avgR2_side[iKT][iKphi] << "  " << avgR2_out[iKT][iKphi]
 			<< "  " << avgR2_outside[iKT][iKphi] << "  " << avgR2_long[iKT][iKphi]
@@ -166,14 +168,16 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 {
 	for(int Morder=0; Morder<n_order; Morder++)
 	{
-		outputHBTcoeffs << "Cavg  " << K_T[iKT] << "  " << Morder
+		//outputHBTcoeffs << "Cavg  " << K_T[iKT] << "  " << Morder
+		outputHBTcoeffs << "-2  " << K_T[iKT] << "  " << Morder
 			<< "  " << CavgR2_side_C[iKT][Morder] << "   " << CavgR2_side_S[iKT][Morder] << "  " << CavgR2_out_C[iKT][Morder] << "  " << CavgR2_out_S[iKT][Morder]
 			<< "  " << CavgR2_outside_C[iKT][Morder] << "   " << CavgR2_outside_S[iKT][Morder] << "  " << CavgR2_long_C[iKT][Morder] << "  " << CavgR2_long_S[iKT][Morder]
 			<< "  " << CavgR2_sidelong_C[iKT][Morder] << "   " << CavgR2_sidelong_S[iKT][Morder] << "  " << CavgR2_outlong_C[iKT][Morder] << "  " << CavgR2_outlong_S[iKT][Morder] << endl;
 	}
 	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 	{
-		outputHBT << "Cavg  " << K_T[iKT] << "  " << K_phi[iKphi]
+		//outputHBT << "Cavg  " << K_T[iKT] << "  " << K_phi[iKphi]
+		outputHBT << "-2  " << K_T[iKT] << "  " << K_phi[iKphi]
 			<< "  " << CavgR2_side[iKT][iKphi] << "  " << CavgR2_out[iKT][iKphi]
 			<< "  " << CavgR2_outside[iKT][iKphi] << "  " << CavgR2_long[iKT][iKphi]
 			<< "  " << CavgR2_sidelong[iKT][iKphi] << "  " << CavgR2_outlong[iKT][iKphi] << endl;
@@ -427,7 +431,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 {
 	for(int Morder=0; Morder<n_order; Morder++)
 	{
-		inputHBTcoeffs >> dummystring;
+		//inputHBTcoeffs >> dummystring;
+		inputHBTcoeffs >> dummy;
 		inputHBTcoeffs >> dummy;
 		inputHBTcoeffs >> dummy;
 		inputHBTcoeffs >> avgR2_side_C[iKT][Morder];
@@ -445,7 +450,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 	}
 	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 	{
-		inputHBT >> dummystring;
+		//inputHBT >> dummystring;
+		inputHBT >> dummy;
 		inputHBT >> dummy;
 		inputHBT >> dummy;
 		inputHBT >> avgR2_side[iKT][iKphi];

@@ -54,7 +54,7 @@ typedef struct
   double decays_branchratio[Maxdecaychannel];
   int decays_part[Maxdecaychannel][Maxdecaypart];
   double mu;
-  int sing;       //Bose-Einstein or Dirac-Fermi statistics
+  int sign;       //Bose-Einstein or Dirac-Fermi statistics
 }particle_info;
 
 void read_hydropar(hydropara* hp, string localpath);

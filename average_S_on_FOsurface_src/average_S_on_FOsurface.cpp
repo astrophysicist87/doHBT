@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
    string currentworkingdirectory = get_selfpath();
    int folderindex = get_folder_index(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
+   Source_function.Set_use_delta_f(true);
    initialize_PRfile(currentworkingdirectory);
 
    ostringstream filename_stream;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
 
    //read the data arrays for the decoupling information
    FO_surf* FOsurf_ptr = new FO_surf[FO_length];
-   read_decdat(FO_length, FOsurf_ptr, currentworkingdirectory);
+   read_decdat(FO_length, FOsurf_ptr, currentworkingdirectory, false);
    
    //read the positions of the freeze out surface
    read_surfdat(FO_length, FOsurf_ptr, currentworkingdirectory);
@@ -133,8 +134,8 @@ int main(int argc, char *argv[])
 
    //Source_function.Set_folderindex(folderindex);
 
-   //Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr);
-   Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr, 0);
+   Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr);
+   //Source_function.Average_sourcefunction_on_FOsurface(FOsurf_ptr, 0);
 
    Source_function.Output_avgEmission_Function_on_FOsurface(folderindex);
 
