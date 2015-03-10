@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
    int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
-   Source_function.Set_use_delta_f(true);
+   Source_function.Set_use_delta_f(false);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";

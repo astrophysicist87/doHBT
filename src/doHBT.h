@@ -101,6 +101,8 @@ class doHBT
     
       //spatial rapidity grid
       double* eta_s;
+      double* ch_eta_s;
+      double* sh_eta_s;
       double* eta_s_weight;
 
       //Emission function
@@ -214,11 +216,9 @@ class doHBT
       void Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr, int iKphi);
       void Output_avgEmission_Function_on_FOsurface(int folderindex);
       void Update_avgSource_function(int iKT, int iKphi);
-      //void Update_avgSource_function();
       void Update_CavgSource_function(int iKT, int iKphi);
       void Calculate_avgSource_function(int, int);
       void Calculate_CavgSource_function(int, int);
-      //void Calculate_avgSource_function();
       bool fexists(const char *filename);
 
       void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
@@ -230,7 +230,6 @@ class doHBT
       void Svars_Fourier_transform(int iKT, double plane_psi);
       void Get_source_variances(int, int);
       void Calculate_HBTradii_from_C_ev(int, int);
-      //void Get_HBTradii_from_C_ev();
       void Get_HBTradii_from_Cbar_and_Cavg();
       void Readin_results(int);
       void Readin_HBTev_results_only(int);
@@ -290,8 +289,6 @@ class doHBT
 
 //miscellaneous
       void Set_ofstream(ofstream& myout);
-      //void Set_folderindex(int folderindex);
-      //void Set_global_folderindex(int folderindex);
       void Set_path(string path);
       void Set_resultsfolder_stem(string usrdef_stem);
       void Set_runfolder(string runfolder);

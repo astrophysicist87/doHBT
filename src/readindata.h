@@ -27,7 +27,7 @@ typedef struct
 {
    double tau, xpt, ypt, r, phi;
    double da0, da1, da2;
-   double vx, vy;
+   double vx, vy, gammaT;
    double Edec, Tdec, Pdec;
    double Bn, muB, muS;
    double pi00, pi01, pi02, pi11, pi12, pi22, pi33, bulkPi;

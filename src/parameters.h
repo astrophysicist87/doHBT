@@ -13,8 +13,10 @@ const int Maxdecaychannel=13;
 const int Maxdecaypart=5;
 
 //spatial rapidity information
+//const int eta_s_npts = 40;
+//const double eta_s_i = 0.0;
 const int eta_s_npts = 40;
-const double eta_s_i = 0.0;
+const double eta_s_i = -4.0;
 const double eta_s_f = 4.0;
 
 //relative momentum information

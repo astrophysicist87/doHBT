@@ -131,6 +131,7 @@ void read_decdat(int length, FO_surf* surf_ptr, string localpath, bool include_b
      decdat >> surf_ptr[i].pi12;
      decdat >> surf_ptr[i].pi22;
      if (include_bulk_pi) decdat >> surf_ptr[i].bulkPi;
+     surf_ptr[i].gammaT = 1./sqrt(1.- surf_ptr[i].vx*surf_ptr[i].vx - surf_ptr[i].vy*surf_ptr[i].vy);
   }
   decdat.close();
   //cout<<"done"<<endl;

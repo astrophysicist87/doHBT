@@ -137,8 +137,15 @@ doHBT::doHBT()
 
    //spatial rapidity grid
    eta_s = new double [eta_s_npts];
+   ch_eta_s = new double [eta_s_npts];
+   sh_eta_s = new double [eta_s_npts];
    eta_s_weight = new double [eta_s_npts];
    gauss_quadrature(eta_s_npts, 1, 0.0, 0.0, eta_s_i, eta_s_f, eta_s, eta_s_weight);
+   for (int ieta = 0; ieta < eta_s_npts; ieta++)
+   {
+	ch_eta_s[ieta] = cosh(eta_s[ieta]);
+	sh_eta_s[ieta] = sinh(eta_s[ieta]);
+   }
 
    S_func = new double* [n_localp_T];
    xs_S = new double* [n_localp_T];
@@ -731,6 +738,8 @@ doHBT::~doHBT()
    delete[] K_phi;
    delete[] K_phi_weight;
    delete[] eta_s;
+   delete[] ch_eta_s;
+   delete[] sh_eta_s;
    delete[] eta_s_weight;
 
    for(int i=0; i<n_localp_T; i++)

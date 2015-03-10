@@ -25,6 +25,7 @@
 //#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
 					// 0 - false
 #define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
+#define ASSUME_ETA_SYMMETRIC 0		// obvious
 
 using namespace std;
 
@@ -60,7 +61,7 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
          Reset_EmissionData();
          SetEmissionData(FOsurf_ptr, K_T[iKT], K_phi[iKphi], includezeroes);
          Get_source_variances(iKT, iKphi);
-	 Update_avgSource_function(iKT, iKphi);
+	 //Update_avgSource_function(iKT, iKphi);
          Calculate_R2_side(iKT, iKphi);
          Calculate_R2_out(iKT, iKphi);
          Calculate_R2_outside(iKT, iKphi);
@@ -267,8 +268,10 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
   for(int i=0; i<eta_s_npts; i++)
   {
       double local_eta_s = eta_s[i];
-      double ch_localetas = cosh(local_eta_s);
-      double sh_localetas = sinh(local_eta_s);
+      //double ch_localetas = cosh(local_eta_s);
+      //double sh_localetas = sinh(local_eta_s);
+      double ch_localetas = ch_eta_s[i];
+      double sh_localetas = sh_eta_s[i];
 
       double p0 = mT*cosh(K_y-local_eta_s);
       double pz = mT*sinh(K_y-local_eta_s);
@@ -343,7 +346,9 @@ double doHBT::Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FO
 		double pz = mT*sinh(K_y-local_eta_s);
 		double S_p = Emissionfunction(p0, px, py, pz, &FOsurf_ptr[FOcell]);
 		if (S_p < tol) S_p = 0.0e0;
-		tempsum += S_p*FOsurf_ptr[FOcell].tau*eta_s_weight[ieta]*2.0; //2.0 count for the assumed reflection symmetry along eta
+		double symmetry_factor = 1.0;
+		if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+		tempsum += S_p*FOsurf_ptr[FOcell].tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta
 	}
 
 	sum += tempsum*K_phi_weight[iKphi];
@@ -378,7 +383,9 @@ double doHBT::Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FO
 		double pz = mT*sinh(K_y-local_eta_s);
 		double S_p = Emissionfunction(p0, px, py, pz, &FOsurf_ptr[FOcell]);
 		if (S_p < tol) S_p = 0.0e0;
-		tempsum += S_p*FOsurf_ptr[FOcell].tau*eta_s_weight[ieta]*2.0; //2.0 count for the assumed reflection symmetry along eta
+		double symmetry_factor = 1.0;
+		if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+		tempsum += S_p*FOsurf_ptr[FOcell].tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta
 	}
 
 	//sum += tempsum*K_phi_weight[iKphi];
@@ -511,7 +518,9 @@ cout  << endl << endl << endl;
          double S_p = prefactor*pdsigma*f0*(1.+deltaf);
 	 if (1. + deltaf < 0.0) S_p = 0.0;
 //cout << "S_p = " << S_p << endl;
-         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*2.0; //2.0 count for the assumed reflection symmetry along eta direction
+	double symmetry_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta direction
 //cout << "(ipt, iphi, ieta) = (" << ipt << ", " << iphi << ", " << ieta << "): " << "dN_dypTdpTdphi[ipt][iphi] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
          dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
       }
