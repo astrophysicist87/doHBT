@@ -238,6 +238,7 @@ class SourceVariances
 		void set_Ppm();
 		double get_Q();
 		double g(double s);
+		double do_all_integrals(int, int);
 		double s_integ(int);
 		double v_integ(int);
 		double zeta_integ(int);

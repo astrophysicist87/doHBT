@@ -6,6 +6,7 @@
 #include<iomanip>
 #include<vector>
 #include<stdio.h>
+#include<time.h>
 
 #include<gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
@@ -283,6 +284,116 @@ double SourceVariances::tau_integ(int wfi)
 	return tau_sum;
 }
 
+/*double SourceVariances::tau_integ(int wfi)
+{
+	double Csum = 0.0;
+	double PK0, PK1, PK2, PK3, S_PK;
+	PK0 = Pp[0];
+	PK1 = Pp[1];
+	PK2 = Pp[2];
+	PK3 = Pp[3];
+	double one_by_Gamma_M = 1./(Gamma*Mres);
+	for (int tempidx = 1; tempidx <= 2; tempidx++)
+	{
+		if (tempidx != 1)
+			PK2 *= -1.;
+		for (int isurf = 0; isurf < FO_length; isurf++)
+		{
+
+			FO_surf* surf = &current_FOsurf_ptr[isurf];
+			double S_PK = Emissionfunction(PK0, PK1, PK2, PK3, surf);
+			double surftau = surf->tau;
+			double surfxpt = surf->xpt;
+			double surfypt = surf->ypt;
+	
+			//compute arguments of weight_function
+			//use boost-invariance: p_y == local_eta_s
+			zvec[0] = surftau*ch_p_y + PK0*one_by_Gamma_M;
+			zvec[1] = surfxpt*cos_cKphi + surfypt*sin_cKphi + PK1*one_by_Gamma_M;
+			zvec[2] = surfypt*cos_cKphi - surfxpt*sin_cKphi + PK2*one_by_Gamma_M;
+			zvec[3] = surftau*sh_p_y + PK3*one_by_Gamma_M;
+			//currently wrong!!!  just interested in approximate timing and optimization right now...
+			Csum += S_PK*weight_function(zvec, wfi);
+		}
+	}
+
+	return Csum;
+}*/
+
+
+double SourceVariances::do_all_integrals(int wfi, int ieta)
+{
+	*global_out_stream_ptr << "\t\t\t + Made it to do_all_integrals(): n_body = " << n_body << endl;
+	time_t rawtime;
+  	struct tm * timeinfo;
+	double ssum = 0.;
+	Qfunc = get_Q();
+	double one_by_Gamma_M = 1./(Gamma*Mres);
+
+	if (n_body == 2)
+	{
+		//then g(s) is delta-function, skip s-integration entirely
+		//double s_loc = m2*m2;
+		set_pstar(m2*m2);
+		set_Estar();
+		set_DeltaY();
+		set_Ypm();
+		ssum = br*v_integ(wfi)/(4.*M_PI*pstar);
+	}
+	else if (n_body == 3)
+	{
+		ssum = 0.0;
+		for (int is = 0; is < n_s_pts; is++)
+		{
+			time (&rawtime);
+			timeinfo = localtime (&rawtime);
+			cerr << "Starting s-loop #" << is << " at " << asctime(timeinfo);
+			double vsum = 0.0;
+			for (int iv = 0; iv < n_v_pts; iv++)
+			{
+				double zetasum = 0.0;
+				for (int izeta = 0; izeta < n_s_pts; izeta++)
+				{
+					double PK0, PK1, PK2, PK3, S_PK;
+					double Csum = 0.0;
+					PK0 = VEC_Pp[is][ieta][iv][izeta][0];
+					PK1 = VEC_Pp[is][ieta][iv][izeta][1];
+					PK2 = VEC_Pp[is][ieta][iv][izeta][2];
+					PK3 = VEC_Pp[is][ieta][iv][izeta][3];
+					//cerr << PK0 << "\t" << PK1 << "\t" << PK2 << "\t" << PK3 << endl;
+					for (int tempidx = 1; tempidx <= 2; tempidx++)
+					{
+						if (tempidx != 1)
+						PK2 *= -1.;		//takes Pp --> Pm
+						for (int isurf = 0; isurf < FO_length; isurf++)
+						{
+							FO_surf* surf = &current_FOsurf_ptr[isurf];
+							double S_PK = Emissionfunction(PK0, PK1, PK2, PK3, surf);
+							double surftau = surf->tau;
+							double surfxpt = surf->xpt;
+							double surfypt = surf->ypt;
+							
+						//compute arguments of weight_function
+							//use boost-invariance: p_y == local_eta_s
+							zvec[0] = surftau*ch_p_y + PK0*one_by_Gamma_M;
+							zvec[1] = surfxpt*cos_cKphi + surfypt*sin_cKphi + PK1*one_by_Gamma_M;
+							zvec[2] = surfypt*cos_cKphi - surfxpt*sin_cKphi + PK2*one_by_Gamma_M;
+							zvec[3] = surftau*sh_p_y + PK3*one_by_Gamma_M;
+							//currently wrong!!!  just interested in approximate timing and optimization right now...
+							Csum += S_PK*weight_function(zvec, wfi);
+						}
+					}
+					zetasum += VEC_zeta_factor[is][iv][izeta]*Csum;
+				}
+				vsum += VEC_v_factor[is][iv]*zetasum;
+			}
+			ssum += VEC_s_factor[is]*vsum;
+		}
+	}
+
+	return ssum;
+}
+
 double SourceVariances::C(double PK[], double tau, int wfi)
 {
 	double Csum = 0.;
@@ -310,11 +421,6 @@ double SourceVariances::C(double PK[], double tau, int wfi)
 		zvec[1] = (surfxpt*cos_cKphi + surfypt*sin_cKphi) + PK1;
 		zvec[2] = (surfypt*cos_cKphi - surfxpt*sin_cKphi) + PK2;
 		zvec[3] = surftau*sh_p_y + PK3;
-
-		//for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		//{
-			//SVarray[iweight] += S_PK*weight_function(zvec, iweight);
-		//}
 		Csum += S_PK*weight_function(zvec, wfi);
 	}
 	return Csum;

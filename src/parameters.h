@@ -5,6 +5,8 @@
 #include<sstream>
 using namespace std;
 
+#define SYMMETRIC_PT_PTS 0		// chooses whether or not to use gaussian spacing or symmetric spacing for pt points
+
 const double hbarC=0.197327053;  //GeV*fm
 
 //particle information
@@ -13,10 +15,10 @@ const int Maxdecaychannel=13;
 const int Maxdecaypart=5;
 
 //spatial rapidity information
+const int eta_s_npts = 20;
+const double eta_s_i = 0.0;
 //const int eta_s_npts = 40;
-//const double eta_s_i = 0.0;
-const int eta_s_npts = 40;
-const double eta_s_i = -4.0;
+//const double eta_s_i = -4.0;
 const double eta_s_f = 4.0;
 
 //relative momentum information
@@ -26,10 +28,12 @@ const double delta_q = 0.02;
 const double init_q = 0.;
 
 //single particle spectra info
-const int n_SP_pT = 15;
+//const int n_SP_pT = 15;
+const int n_SP_pT = 101;
 const int n_SP_pphi = 48;
 const double SP_pT_min = 0.0;
-const double SP_pT_max = 3.0;
+//const double SP_pT_max = 3.0;
+const double SP_pT_max = 5.0;
 
 //correlation function info
 const int corrfuncdim = 1;

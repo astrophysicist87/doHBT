@@ -125,6 +125,9 @@ SourceVariances::SourceVariances(particle_info* particle)
 		//			but doesn't cause any problems for 2-body and is easier/simpler to code...
 		gauss_quadrature(n_tau_pts, 5, 0.0, 0.0, 0.0, Gamma_temp, tau_pts[ir], tau_wts[ir]);
 		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts[ir], s_wts[ir]);
+		/*DEBUG*///cout << ir << "     " << m2_temp << "     " << m3_temp << "     " << M_temp
+		/*DEBUG*///	<< "     " << particle_mass << "     " << s_min_temp << "     " << s_max_temp << endl;
+		/*DEBUG*///for (int is = 0; is < n_s_pts; is++) cout << "    --> " << ir << "     " << is << "     " << s_pts[ir][is] << endl;
 	}
 //cerr << "finished all that stuff..." << endl;
 	

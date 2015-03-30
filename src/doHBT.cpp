@@ -25,7 +25,7 @@
 //#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
 					// 0 - false
 #define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
-#define ASSUME_ETA_SYMMETRIC 0		// obvious
+#define ASSUME_ETA_SYMMETRIC 1		// obvious
 
 using namespace std;
 
@@ -115,6 +115,7 @@ void doHBT::Analyze_AVG_sourcefunction()
       }
       avgR2_Fourier_transform(iKT, 0.);
    }
+
    return;
 }
 
@@ -136,6 +137,7 @@ void doHBT::Analyze_CAVG_sourcefunction()
       }
       CavgR2_Fourier_transform(iKT, 0.);
    }
+
    return;
 }
 
@@ -156,9 +158,7 @@ void doHBT::Determine_plane_angle(FO_surf* FOsurf_ptr)
    }
    
    for(int ipt=0; ipt<n_SP_pT; ipt++)
-//{
       mT[ipt] = sqrt(mass*mass + SP_pT[ipt]*SP_pT[ipt]);
-//}
    for(int iphi = 0; iphi<n_SP_pphi; iphi++)
    {
       double cos_phi = cos(SP_pphi[iphi]);
@@ -254,6 +254,30 @@ void doHBT::Determine_plane_angle(FO_surf* FOsurf_ptr)
 
    return;
 }
+
+void doHBT::Get_EdNd3p_cfs(FO_surf* FOsurf_ptr)
+{
+	if (VERBOSE > 0) *global_out_stream_ptr << "Fourier-expanding single-particle spectra..." << endl;
+	Determine_plane_angle(FOsurf_ptr);
+
+	if (VERBOSE > 0) *global_out_stream_ptr << "Obtaining Fourier coefficients..." << endl;
+	for(int ipt=0; ipt<n_SP_pT; ipt++)
+	{
+		double n = dN_dypTdpT[ipt]/(2.*M_PI);
+		EdNd3p_cfs[ipt][0] = n;
+		EdNd3p_phases[ipt][0] = 0.0;
+		for(int iorder=1; iorder<n_order; iorder++)
+		{
+			double c = cosine_iorder[ipt][iorder];
+			double s = sine_iorder[ipt][iorder];
+			EdNd3p_cfs[ipt][iorder] = n*sqrt(c*c + s*s);
+			EdNd3p_phases[ipt][iorder] = atan2(s, c)/double(iorder);
+		}
+	}
+
+   return;
+}
+
 
 void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, bool includezeroes)
 {
@@ -524,12 +548,86 @@ cout  << endl << endl << endl;
 //cout << "(ipt, iphi, ieta) = (" << ipt << ", " << iphi << ", " << ieta << "): " << "dN_dypTdpTdphi[ipt][iphi] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
          dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
       }
-//cout << "dN_dydphi[" << ipt << "][" << iphi << "] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
+//cout << "dN_dypTdpTdphi[" << ipt << "][" << iphi << "] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
       }
       }
    }
    return;
 }
+
+/*void doHBT::Cal_local_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, double** local_dN_dypTdpTdphi, FO_surf* FOsurf_ptr)
+{
+   double sign = particle_sign;
+   double degen = particle_gspin;
+   double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+
+   for(int isurf=0; isurf<FO_length ; isurf++)
+   {
+//cout << "isurf = " << isurf << endl;
+      FO_surf* surf = &FOsurf_ptr[isurf];
+      double tau = surf->tau;
+      double mu = surf->particle_mu[particle_id];
+//	cerr << mu << "   " << sign << "   " << degen << "   " << endl;
+      double vx = surf->vx;
+      double vy = surf->vy;
+      double Tdec = surf->Tdec;
+      double Pdec = surf->Pdec;
+      double Edec = surf->Edec;
+      double da0 = surf->da0;
+      double da1 = surf->da1;
+      double da2 = surf->da2;
+      double pi00 = surf->pi00;
+      double pi01 = surf->pi01;
+      double pi02 = surf->pi02;
+      double pi11 = surf->pi11;
+      double pi12 = surf->pi12;
+      double pi22 = surf->pi22;
+      double pi33 = surf->pi33;
+
+      double vT = sqrt(vx*vx + vy*vy);
+      double gammaT = 1./sqrt(1. - vT*vT);
+
+      double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+      
+      for(int ipt = 0; ipt < n_PT_pts; ipt++)
+      {
+      for(int iphi = 0; iphi < n_SP_pphi; iphi++)
+      {
+         double px = SP_px[ipt][iphi];
+         double py = SP_py[ipt][iphi];
+      for(int ieta=0; ieta < eta_s_npts; ieta++)
+      {
+         double p0 = SP_p0[ipt][ieta];
+         double pz = SP_pz[ipt][ieta];
+         double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
+         double f0;
+         if(expon > 20) f0 = 0.0e0;
+         else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+
+         //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+         double pdsigma = p0*da0 + px*da1 + py*da2;
+
+         //viscous corrections
+         double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
+         double deltaf = 0.;
+	 if (use_delta_f)
+	 {
+		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
+	 }
+
+         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
+	 if (1. + deltaf < 0.0) S_p = 0.0;
+//cout << "S_p = " << S_p << endl;
+	double symmetry_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta direction
+         local_dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
+      }
+      }
+      }
+   }
+   return;
+}*/
 
 double doHBT::Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf)
 {
@@ -580,6 +678,12 @@ double doHBT::Emissionfunction(double p0, double px, double py, double pz, FO_su
 void doHBT::Get_source_variances(int iKT, int iKphi)
 {
    double phi_K = K_phi[iKphi];
+   double eta_odd_factor = 1.0, eta_even_factor = 1.0;
+   if (ASSUME_ETA_SYMMETRIC)
+   {
+	eta_odd_factor = 0.0;
+	eta_even_factor = 2.0;
+   }
    for(int i=0; i<Emissionfunction_length; i++)
    {
      double r = (*Emissionfunction_ptr)[i].r;
@@ -590,21 +694,21 @@ void doHBT::Get_source_variances(int iKT, int iKphi)
      double sin_phi = sin(phi - phi_K);
      double cos_phi = cos(phi - phi_K);
 
-	S_func[iKT][iKphi] += S_x_K;
-	xs_S[iKT][iKphi] += S_x_K*r*sin_phi;
-	xo_S[iKT][iKphi] += S_x_K*r*cos_phi;
-	xl_S[iKT][iKphi] += S_x_K*z;
-	t_S[iKT][iKphi] += S_x_K*t;
-	xs_t_S[iKT][iKphi] += S_x_K*r*t*sin_phi;
-	xo_t_S[iKT][iKphi] += S_x_K*r*t*cos_phi;
-	xl_t_S[iKT][iKphi] += S_x_K*z*t;
-	xo_xs_S[iKT][iKphi] += S_x_K*r*r*sin_phi*cos_phi;
-	xl_xs_S[iKT][iKphi] += S_x_K*z*r*sin_phi;
-	xo_xl_S[iKT][iKphi] += S_x_K*z*r*cos_phi;
-	xs2_S[iKT][iKphi] += S_x_K*r*r*sin_phi*sin_phi;
-	xo2_S[iKT][iKphi] += S_x_K*r*r*cos_phi*cos_phi;
-	xl2_S[iKT][iKphi] += S_x_K*z*z;
-	t2_S[iKT][iKphi] += S_x_K*t*t;
+	S_func[iKT][iKphi] += eta_even_factor*S_x_K;
+	xs_S[iKT][iKphi] += eta_even_factor*S_x_K*r*sin_phi;
+	xo_S[iKT][iKphi] += eta_even_factor*S_x_K*r*cos_phi;
+	xl_S[iKT][iKphi] += eta_odd_factor*S_x_K*z;
+	t_S[iKT][iKphi] += eta_even_factor*S_x_K*t;
+	xs_t_S[iKT][iKphi] += eta_even_factor*S_x_K*r*t*sin_phi;
+	xo_t_S[iKT][iKphi] += eta_even_factor*S_x_K*r*t*cos_phi;
+	xl_t_S[iKT][iKphi] += eta_odd_factor*S_x_K*z*t;
+	xo_xs_S[iKT][iKphi] += eta_even_factor*S_x_K*r*r*sin_phi*cos_phi;
+	xl_xs_S[iKT][iKphi] += eta_odd_factor*S_x_K*z*r*sin_phi;
+	xo_xl_S[iKT][iKphi] += eta_odd_factor*S_x_K*z*r*cos_phi;
+	xs2_S[iKT][iKphi] += eta_even_factor*S_x_K*r*r*sin_phi*sin_phi;
+	xo2_S[iKT][iKphi] += eta_even_factor*S_x_K*r*r*cos_phi*cos_phi;
+	xl2_S[iKT][iKphi] += eta_even_factor*S_x_K*z*z;
+	t2_S[iKT][iKphi] += eta_even_factor*S_x_K*t*t;
    }
 
 return;
@@ -625,6 +729,9 @@ void doHBT::Get_HBTradii_from_Cbar_and_Cavg()
 
   Calculate_avgSource_function(-1,-1);
   Calculate_CavgSource_function(-1,-1);
+
+	Determine_avgplane_angle();
+	//Determine_Cavgplane_angle();
 
   Analyze_AVG_sourcefunction();
   Analyze_CAVG_sourcefunction();
@@ -782,6 +889,78 @@ void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
 		CavgR2_outlong_num[i][j] /= double(n_events);
    }
    return;
+}
+
+void doHBT::Determine_avgplane_angle()
+{
+	for (int Morder=0; Morder < n_order; Morder++)
+	{
+		double cos_mK_phi[n_localp_phi], sin_mK_phi[n_localp_phi];
+		double vnCOS, vnSIN;
+		double denominator = 0.0;
+		double numeratorCOS = 0.0;
+		double numeratorSIN = 0.0;
+		for (int i = 0; i < n_localp_phi; i++)
+		{
+			cos_mK_phi[i] = cos(Morder*K_phi[i]);
+			sin_mK_phi[i] = sin(Morder*K_phi[i]);
+		}
+
+		for (int iKT = 0; iKT < n_localp_T; iKT++)
+		for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+		{
+			denominator += K_T[iKT]*K_phi_weight[iKphi]*avgS_func[iKT][iKphi];
+			numeratorCOS += K_T[iKT]*cos_mK_phi[iKphi]*K_phi_weight[iKphi]*avgS_func[iKT][iKphi];
+			numeratorSIN += K_T[iKT]*sin_mK_phi[iKphi]*K_phi_weight[iKphi]*avgS_func[iKT][iKphi];
+		}
+
+		if (Morder == 0)
+			avgplane_angle[Morder] = denominator;
+		else
+		{
+			vnCOS = numeratorCOS / denominator;
+			vnSIN = numeratorSIN / denominator;
+			avgplane_angle[Morder] = atan2(vnSIN, vnCOS) / (double)Morder;
+		}
+	}
+
+	return;
+}
+
+void doHBT::Determine_Cavgplane_angle()
+{
+	for (int Morder=0; Morder < n_order; Morder++)
+	{
+		double cos_mK_phi[n_localp_phi], sin_mK_phi[n_localp_phi];
+		double vnCOS, vnSIN;
+		double denominator = 0.0;
+		double numeratorCOS = 0.0;
+		double numeratorSIN = 0.0;
+		for (int i = 0; i < n_localp_phi; i++)
+		{
+			cos_mK_phi[i] = cos(Morder*K_phi[i]);
+			sin_mK_phi[i] = sin(Morder*K_phi[i]);
+		}
+
+		for (int iKT = 0; iKT < n_localp_T; iKT++)
+		for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+		{
+			denominator += K_T[iKT]*K_phi_weight[iKphi]*CavgS_func[iKT][iKphi];
+			numeratorCOS += K_T[iKT]*cos_mK_phi[iKphi]*K_phi_weight[iKphi]*CavgS_func[iKT][iKphi];
+			numeratorSIN += K_T[iKT]*sin_mK_phi[iKphi]*K_phi_weight[iKphi]*CavgS_func[iKT][iKphi];
+		}
+
+		if (Morder == 0)
+			Cavgplane_angle[Morder] = denominator;
+		else
+		{
+			vnCOS = numeratorCOS / denominator;
+			vnSIN = numeratorSIN / denominator;
+			Cavgplane_angle[Morder] = atan2(vnSIN, vnCOS) / (double)Morder;
+		}
+	}
+
+	return;
 }
 
 void doHBT::Calculate_R2_side(int iKT, int iKphi)

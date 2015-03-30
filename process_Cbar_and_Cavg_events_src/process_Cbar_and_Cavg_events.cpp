@@ -77,6 +77,8 @@ int main(int argc, char *argv[])
    //Output results
    Source_function.Output_AVG_results();
    Source_function.Output_CAVG_results();
+   Source_function.Output_avgplane_psis();
+   //Source_function.Output_Cavgplane_psis();
    output << "Finished." << endl;
 
    sw.toc();

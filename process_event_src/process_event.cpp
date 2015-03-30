@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
+bool get_plane_angle_only = false;
    //instantiate doHBT class
    doHBT Source_function;
 
@@ -134,6 +135,18 @@ int main(int argc, char *argv[])
    //Source_function.Set_folderindex(folderindex);
    //Source_function.Set_global_currentworkingdirectory(currentworkingdirectory);
 
+if (get_plane_angle_only)
+{
+	output << "Getting plane angle only to save time..." << endl;
+	Source_function.Determine_plane_angle(FOsurf_ptr);
+	Source_function.Output_ev_plane_psi(folderindex);
+	Source_function.Output_ev_plane_psis(folderindex);
+	output << "Finished all." << endl;
+	finalize_PRfile(currentworkingdirectory);
+	output.close();
+	
+	exit(1);
+}
 
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);

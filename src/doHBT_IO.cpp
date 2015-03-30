@@ -362,6 +362,36 @@ void doHBT::Output_ev_plane_psis(int folderindex)
 	return;
 }
 
+void doHBT::Output_avgplane_psis()
+{
+	ostringstream filename_stream_planepsis;
+	int final_event = initial_event + n_events - 1;
+	filename_stream_planepsis << global_runfolder << "/avgplane_psis" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
+	ofstream outputplanepsis(filename_stream_planepsis.str().c_str(), ios::app);
+
+	for (int i = 0; i < n_order; i++)
+		outputplanepsis << i << "   " << avgplane_angle[i] << endl;
+
+	outputplanepsis.close();
+
+	return;
+}
+
+void doHBT::Output_Cavgplane_psis()
+{
+	ostringstream filename_stream_planepsis;
+	int final_event = initial_event + n_events - 1;
+	filename_stream_planepsis << global_runfolder << "/Cavgplane_psis" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
+	ofstream outputplanepsis(filename_stream_planepsis.str().c_str(), ios::app);
+
+	for (int i = 0; i < n_order; i++)
+		outputplanepsis << i << "   " << Cavgplane_angle[i] << endl;
+
+	outputplanepsis.close();
+
+	return;
+}
+
 void doHBT::Output_ev_anisotropic_flows(int folderindex)
 {
 	ostringstream filename_stream_anisotropicflows;
@@ -389,6 +419,21 @@ void doHBT::Output_ev_anisotropic_flows_pTdiff(int folderindex)
 		outputanisotropicflowspTdiff << j << "   " << SP_pT[i] << "   " << anisotropic_flows_pTdiff[i][j] << "   " << anisotropic_flows_pTdiff_psin[i][j] << endl;
 
 	outputanisotropicflowspTdiff.close();
+
+	return;
+}
+
+void doHBT::Output_ev_EdNd3p_cfs(int folderindex)
+{
+	ostringstream filename_stream_EdNd3pcfs;
+	filename_stream_EdNd3pcfs << global_path << "/EdNd3p_cfs_ev" << folderindex << no_df_stem << ".dat";
+	ofstream outputEdNd3pcfs(filename_stream_EdNd3pcfs.str().c_str());
+
+	for (int i = 0; i < n_SP_pT; i++)
+	for (int j = 0; j < n_order; j++)
+		outputEdNd3pcfs << j << "   " << SP_pT[i] << "   " << EdNd3p_cfs[i][j] << "   " << EdNd3p_phases[i][j] << "   " << EdNd3p_cfs[i][j]*cos(EdNd3p_phases[i][j]) << "   " << EdNd3p_cfs[i][j]*sin(EdNd3p_phases[i][j]) << endl;
+
+	outputEdNd3pcfs.close();
 
 	return;
 }

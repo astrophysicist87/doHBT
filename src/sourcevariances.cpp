@@ -54,29 +54,30 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
    for(int iKT = 0; iKT < n_localp_T; iKT++)
    {
       //cout << "Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+		if (iKT == 0) continue;
       if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
       double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
       beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
       for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
       {
 		if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Calculating K_phi = " << K_phi[iKphi] << " ..." << endl;
-		for (int ir = 0; ir <= 1; ir++)	//loop over resonances
+		for (int ir = 7; ir <= 7; ir++)	//loop over resonances
 		{
       		if (VERBOSE > 0) *global_out_stream_ptr << "\t\t ~ Calculating resonance = " << ir << endl;
 			Reset_EmissionData();
 			if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Loading info for this resonance..." << endl;
-			time (&rawtime);
-			timeinfo = localtime (&rawtime);
-			cerr << "Starting at " << asctime(timeinfo);
+			//time (&rawtime);
+			//timeinfo = localtime (&rawtime);
+			//cerr << "Starting at " << asctime(timeinfo);
 			Load_resonance_info(ir, K_T[iKT], K_phi[iKphi]);
+			if (1) exit(1);
 			if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Loaded all info." << endl;
-			time (&rawtime);
-			timeinfo = localtime (&rawtime);
-			cerr << "Finished at " << asctime(timeinfo);
+			//time (&rawtime);
+			//timeinfo = localtime (&rawtime);
+			//cerr << "Finished at " << asctime(timeinfo);
 			//SetEmissionData only computes direct emission function of given particles
 			if (ir == 0)
-			//	SetEmissionData(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi]);
-				;
+				SetEmissionData(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi]);
 			else
 			{
 				//exit(1);
@@ -238,7 +239,9 @@ void SourceVariances::Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_loc
 		for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 		{
 			//source_variances_array[iweight] += local_eta_s_wt*Mres*s_integ(iweight);
-			source_variances_array[iweight] += local_eta_s_wt*Mres*s_integ(iweight);
+			//source_variances_array[iweight] += local_eta_s_wt*Mres*s_integ(iweight);
+			source_variances_array[iweight] += local_eta_s_wt*Mres*do_all_integrals(iweight, i);
+			//do_all_integrals(i);
 		}
 	}
 exit(1);
@@ -312,11 +315,11 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 	}
 	else
 	{
-		current_resonance_mass = resonances.resonance_mass[reso_idx];
-		current_resonance_Gamma = resonances.resonance_Gamma[reso_idx];
-		current_resonance_total_br = resonances.resonance_total_br[reso_idx];
-		current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx][0];
-		current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx][1];
+		current_resonance_mass = resonances.resonance_mass[reso_idx-1];
+		current_resonance_Gamma = resonances.resonance_Gamma[reso_idx-1];
+		current_resonance_total_br = resonances.resonance_total_br[reso_idx-1];
+		current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx-1][0];
+		current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
 
 		muRES = 0.0;
 		signRES = particle_sign;
@@ -329,13 +332,14 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		m2 = current_resonance_decay_masses[0];
 		m3 = current_resonance_decay_masses[1];
 		mT = sqrt(mass*mass + K_T_local*K_T_local);
+		pT = K_T_local;
 		current_K_phi = K_phi_local;
 		cos_cKphi = cos(K_phi_local);
 		sin_cKphi = sin(K_phi_local);
 
-		/*VEC_tau_factor = new double [n_tau_pts];
-		for (int itau = 0; itau < n_tau_pts; itau++)
-			VEC_tau_factor[itau] = tau_wts[reso_idx-1][itau]*Gamma*exp(-Gamma*tau_pts[reso_idx-1][itau]);
+		//VEC_tau_factor = new double [n_tau_pts];
+		//for (int itau = 0; itau < n_tau_pts; itau++)
+		//	VEC_tau_factor[itau] = tau_wts[reso_idx-1][itau]*Gamma*exp(-Gamma*tau_pts[reso_idx-1][itau]);
 
 		//set up vectors of points to speed-up integrals...
 		VEC_pstar = new double [n_s_pts];
@@ -380,6 +384,9 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 			VEC_MT[is] = new double ** [eta_s_npts];
 			VEC_PPhi_tilde[is] = new double ** [eta_s_npts];
 			VEC_Pp[is] = new double *** [eta_s_npts];
+			/*DEBUG*///cout << Mres << "     " << mass << "     "
+			/*DEBUG*///	<< ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc)/(2.0*Mres)
+			/*DEBUG*///	<< "     " << s_loc << "     " << pstar_loc << endl;
 			for(int ieta = 0; ieta < eta_s_npts; ieta++)
 			{
 				//cerr << "In eta_s loop# = " << ieta << endl;
@@ -423,17 +430,25 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 						VEC_MT[is][ieta][iv][izeta] = MT_loc;
 						VEC_zeta_factor[is][iv][izeta] = zeta_wts[izeta]*MT_loc;
 						double PT_loc = sqrt(MT_loc*MT_loc - Mres*Mres);
-						double PPhi_tilde_loc = acos( (mT*MT_loc*cosh(P_Y-p_y) - Estar_loc*Mres)/(pT*PT_loc) );
+						double PPhi_tilde_loc = acos( (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) );
 						VEC_PPhi_tilde[is][ieta][iv][izeta] = PPhi_tilde_loc;
+						/*DEBUG*///cout << mT << "     " << pT << "     " << cosh(P_Y_loc-p_y) << "     "
+						/*DEBUG*///		<< MT_loc << "     " << PT_loc << "     " << mT*MT_loc*cosh(P_Y_loc-p_y) << "     "
+						/*DEBUG*///		<< Estar_loc*Mres << "     " << (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres) << "     "
+						/*DEBUG*///		<< (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) << endl;
 						VEC_Pp[is][ieta][iv][izeta] = new double [4];
 						VEC_Pp[is][ieta][iv][izeta][0] = MT_loc * cosh(P_Y_loc);
 						VEC_Pp[is][ieta][iv][izeta][1] = PT_loc * cos(PPhi_tilde_loc);
 						VEC_Pp[is][ieta][iv][izeta][2] = PT_loc * sin(PPhi_tilde_loc);	//flip sign of this component to get VEC_Pm
 						VEC_Pp[is][ieta][iv][izeta][3] = MT_loc * sinh(P_Y_loc);
+						/*DEBUG*/cout << VEC_Pp[is][ieta][iv][izeta][0] << "     "
+						/*DEBUG*/		<< VEC_Pp[is][ieta][iv][izeta][1] << "     "
+						/*DEBUG*/		<< VEC_Pp[is][ieta][iv][izeta][2] << "     "
+						/*DEBUG*/		<< VEC_Pp[is][ieta][iv][izeta][3] << endl;
 					}
 				}
 			}
-		}*/
+		}
 	}
 
 	return;

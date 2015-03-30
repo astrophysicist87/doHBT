@@ -38,16 +38,33 @@ doHBT::doHBT()
    //single particle spectra for plane angle determination
    SP_pT = new double [n_SP_pT];
    SP_pT_weight = new double [n_SP_pT];
-   gauss_quadrature(n_SP_pT, 1, 0.0, 0.0, SP_pT_min, SP_pT_max, SP_pT, SP_pT_weight);
    SP_pphi = new double [n_SP_pphi];
    SP_pphi_weight = new double [n_SP_pphi];
    gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2*M_PI, SP_pphi, SP_pphi_weight);
+   if (SYMMETRIC_PT_PTS)	//use equally spaced points
+   {
+	double h = (SP_pT_max - SP_pT_min) / (double) (n_SP_pT - 1);
+	for (int ipt=0; ipt<n_SP_pT; ipt++)
+	{
+		SP_pT[ipt] = SP_pT_min + double(ipt)*h;
+		SP_pT_weight[ipt] = h;
+	}
+	SP_pT_weight[0] *= 0.5;
+	SP_pT_weight[n_SP_pT-1] *= 0.5;
+	//for (int ipt=0; ipt<n_SP_pT; ipt++) cout << SP_pT[ipt] << "   " << SP_pT_weight[ipt] << endl;
+   }
+   else				//use gaussian spaced points
+   {
+	gauss_quadrature(n_SP_pT, 1, 0.0, 0.0, SP_pT_min, SP_pT_max, SP_pT, SP_pT_weight);
+   }
    SP_p_y = 0.0e0;
    dN_dypTdpTdphi = new double* [n_SP_pT];
    cosine_iorder = new double* [n_SP_pT];
    sine_iorder = new double* [n_SP_pT];
    anisotropic_flows_pTdiff = new double* [n_SP_pT];
    anisotropic_flows_pTdiff_psin = new double* [n_SP_pT];
+   EdNd3p_cfs = new double* [n_SP_pT];
+   EdNd3p_phases = new double* [n_SP_pT];
    for(int i=0; i<n_SP_pT; i++)
    {
       dN_dypTdpTdphi[i] = new double [n_SP_pphi];
@@ -55,6 +72,8 @@ doHBT::doHBT()
       sine_iorder[i] = new double [n_order];
       anisotropic_flows_pTdiff[i] = new double [n_order];
       anisotropic_flows_pTdiff_psin[i] = new double [n_order];
+      EdNd3p_cfs[i] = new double [n_order];
+      EdNd3p_phases[i] = new double [n_order];
    }
    dN_dydphi = new double [n_SP_pphi];
    dN_dypTdpT = new double [n_SP_pT];
@@ -76,6 +95,8 @@ doHBT::doHBT()
    for (int i=0; i<n_SP_pT; i++)
 	dN_dypTdpT[i] = 0.0e0;
    plane_angle = new double [n_order];
+   avgplane_angle = new double [n_order];
+   Cavgplane_angle = new double [n_order];
    anisotropic_flows = new double [n_order];
 
    //relative momentum
@@ -732,6 +753,8 @@ doHBT::~doHBT()
    delete[] anisotropic_flows_pTdiff;
    delete[] anisotropic_flows_pTdiff_psin;
    delete[] plane_angle;
+   delete[] avgplane_angle;
+   delete[] Cavgplane_angle;
    delete[] anisotropic_flows;
 
    delete[] K_T;

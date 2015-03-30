@@ -20,6 +20,14 @@ globList = [
 	'Sourcefunction_variances_cfs_SIN' + df_stem + '.dat'
 ]
 
+# use this to force to look for specific files
+#globList = [
+#	'avgplane_psis1to1000_no_df.dat',
+#	'CavgHBTradii_cfs_evs1to1000_no_df.dat',
+#	'PLUMBERGdummyfile1.dat',
+#	'PLUMBERGdummyfile2.dat'
+#]
+
 
 
 
@@ -90,8 +98,11 @@ if __name__ == "__main__":
 	
 	planepsisPATH = glob(path.join(directory, globList[0]))[0]
 	HBTcfsPATH = glob(path.join(directory, globList[1]))[0]
-	SVcfsCOSPATH = glob(path.join(directory, globList[2]))[0]
-	SVcfsSINPATH = glob(path.join(directory, globList[3]))[0]
+	SVcfsCOSPATH = ''
+	SVcfsSINPATH = ''
+	if (path.exists(path.join(directory, globList[2])) and path.exists(path.join(directory, globList[3]))):
+		SVcfsCOSPATH = glob(path.join(directory, globList[2]))[0]
+		SVcfsSINPATH = glob(path.join(directory, globList[3]))[0]
 	
 	# check that files exist before rotating them
 	if path.exists(planepsisPATH):

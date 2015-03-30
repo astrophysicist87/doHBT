@@ -83,9 +83,13 @@ class doHBT
       double* dN_dypTdpT;
       double** cosine_iorder;
       double** sine_iorder;
+      double** EdNd3p_cfs;
+      double** EdNd3p_phases;
       double* dN_dydphi;
       double* pTdN_dydphi;
       double* plane_angle;
+      double* avgplane_angle;
+      double* Cavgplane_angle;
       double* anisotropic_flows;
       double** anisotropic_flows_pTdiff;
       double** anisotropic_flows_pTdiff_psin;
@@ -201,6 +205,9 @@ class doHBT
       ~doHBT();
 
       void Determine_plane_angle(FO_surf* FOsurf_ptr);
+      void Get_EdNd3p_cfs(FO_surf* FOsurf_ptr);
+      void Determine_avgplane_angle();
+      void Determine_Cavgplane_angle();
       void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
       void quick_Analyze_sourcefunction();
       void quick_Analyze_sourcefunction_vars();
@@ -245,8 +252,11 @@ class doHBT
       void Output_dN_dypTdpTdphi(int folderindex);
       void Output_dN_dypTdpT(int folderindex);
       void Output_ev_plane_psis(int folderindex);
+      void Output_avgplane_psis();
+      void Output_Cavgplane_psis();
       void Output_ev_anisotropic_flows(int folderindex);
       void Output_ev_anisotropic_flows_pTdiff(int folderindex);
+      void Output_ev_EdNd3p_cfs(int folderindex);
       void Output_ev_mean_pT(int folderindex);
 
       void Calculate_R2_side(int, int);
