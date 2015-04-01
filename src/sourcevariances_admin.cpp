@@ -86,6 +86,9 @@ SourceVariances::SourceVariances(particle_info* particle)
 	}
 	tempresonancefile.close();
 //cerr << "finished reading and processing resonances file..." << endl;
+	resonance_source_variances_array = new double * [n_resonance];
+	for (int ir=0; ir<n_resonance; ir++)
+		resonance_source_variances_array[ir] = new double [n_weighting_functions];
 	const double MeVToGeV = 0.001;
 	tau_pts = new double * [n_resonance];
 	s_pts = new double * [n_resonance];
@@ -359,10 +362,10 @@ SourceVariances::~SourceVariances()
 
 void SourceVariances::Reset_EmissionData()
 {
-   Emissionfunction_length = FO_length*eta_s_npts;
+	Emissionfunction_length = FO_length*eta_s_npts;
 
-   for(int i=0; i<Emissionfunction_length; i++)
-   {
+	for(int i=0; i<Emissionfunction_length; i++)
+	{
 		(*Emissionfunction_ptr)[i].data = 0.0;
 		(*Emissionfunction_ptr)[i].t = 0.0;
 		(*Emissionfunction_ptr)[i].x = 0.0;
@@ -372,7 +375,7 @@ void SourceVariances::Reset_EmissionData()
 		(*Emissionfunction_ptr)[i].phi = 0.0;
 		(*Emissionfunction_ptr)[i].tau = 0.0;
 		(*Emissionfunction_ptr)[i].eta = 0.0;
-   }
+	}
 }
 
 bool SourceVariances::fexists(const char *filename)

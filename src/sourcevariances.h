@@ -81,6 +81,7 @@ class SourceVariances
 		//array to temporarily hold results of resonance SV integrations
 		int n_weighting_functions;  //number of source variances to consider
 		double * source_variances_array;
+		double ** resonance_source_variances_array;
 	
 		//needed for resonance calculations
 		//kinematic info
@@ -101,6 +102,9 @@ class SourceVariances
 		//FO surface info that is constant - to save time
 		double Tdec, Edec, Pdec, muRES, signRES, gRES;
 		double S_prefactor;
+		double * surf_tau_pts;
+		double * surf_x_pts;
+		double * surf_y_pts;
 	
 		//single particle spectra for plane angle determination
 		//int n_order;
@@ -239,11 +243,14 @@ class SourceVariances
 		double get_Q();
 		double g(double s);
 		double do_all_integrals(int, int);
+		void do_all_integrals(int);
 		double s_integ(int);
 		double v_integ(int);
 		double zeta_integ(int);
 		double tau_integ(int);
 		double C(double PK[], double tau, int);
+		void set_to_zero(double * array, int arraylength);
+		void set_surfpts();
 
 		//parameters that the user is free to define
 		double plumberg_test_variable;

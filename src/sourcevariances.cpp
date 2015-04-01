@@ -70,7 +70,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 			//timeinfo = localtime (&rawtime);
 			//cerr << "Starting at " << asctime(timeinfo);
 			Load_resonance_info(ir, K_T[iKT], K_phi[iKphi]);
-			if (1) exit(1);
+			//if (1) exit(1);
 			if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Loaded all info." << endl;
 			//time (&rawtime);
 			//timeinfo = localtime (&rawtime);
@@ -80,7 +80,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 				SetEmissionData(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi]);
 			else
 			{
-				//exit(1);
+				exit(1);
 				Do_resonance_integrals(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi]);
 			}
 			//Get_source_variances(iKT, iKphi);
@@ -88,6 +88,34 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 																		//otherwise, gives irth resonance contribution
 		}
 		Calculate_R2_side(iKT, iKphi);
+      }
+   }
+   return;
+}
+
+void SourceVariances::Analyze_resonance_sourcefunction(FO_surf* FOsurf_ptr, int ir)
+{
+   double plane_psi = 0.0;
+   global_plane_psi = plane_psi;
+	current_resonance_mass = resonances.resonance_mass[reso_idx-1];
+	current_resonance_Gamma = resonances.resonance_Gamma[reso_idx-1];
+	current_resonance_total_br = resonances.resonance_total_br[reso_idx-1];
+	current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx-1][0];
+	current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
+
+   for(int iKT = 0; iKT < n_localp_T; iKT++)
+   {
+	//if (iKT == 0) continue;
+      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + current_resonance_mass*current_resonance_mass);
+      beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+      for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+      {
+		for (int ir = 7; ir <= 7; ir++)	//loop over resonances
+		{
+			Reset_EmissionData();
+			SetEmissionData(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi], ir);
+			Set_resonance_sourcevariances(ir, iKT, iKphi);
+		}
       }
    }
    return;
@@ -215,6 +243,7 @@ void SourceVariances::Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_loc
 	//current_K_phi = K_phi_local;
 	double Kx = K_T_local*cos(K_phi_local);
 	double Ky = K_T_local*sin(K_phi_local);
+	set_surfpts();
 	int idx = 0;
 	if (abs(m3) <= 1.e-6)
 		n_body = 2;
@@ -236,13 +265,9 @@ void SourceVariances::Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_loc
 		double K0 = mT*(ch_K_y*ch_localetas - sh_K_y*sh_localetas);
 		double Kz = mT*(sh_K_y*ch_localetas - ch_K_y*sh_localetas);
 
-		for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		{
-			//source_variances_array[iweight] += local_eta_s_wt*Mres*s_integ(iweight);
-			//source_variances_array[iweight] += local_eta_s_wt*Mres*s_integ(iweight);
-			source_variances_array[iweight] += local_eta_s_wt*Mres*do_all_integrals(iweight, i);
-			//do_all_integrals(i);
-		}
+		//for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+		//	source_variances_array[iweight] += local_eta_s_wt*Mres*do_all_integrals(iweight, i);
+		do_all_integrals(i);
 	}
 exit(1);
 
@@ -562,7 +587,7 @@ double SourceVariances::weight_function(double zvec[], int weight_function_index
 			result = zvec[2];				//<x_s>
 			break;
 		case 2:
-			result = zvec[2]*zvec[2];		//<x^2_s>
+			result = zvec[2]*zvec[2];			//<x^2_s>
 			break;
 	}
 
