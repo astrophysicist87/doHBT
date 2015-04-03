@@ -26,6 +26,8 @@
 //#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
 					// 0 - false
 #define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
+#define ASSUME_ETA_SYMMETRIC 1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
+					// 0 means just integrate over given range of eta_s without worrying about symmetry
 
 using namespace std;
 
@@ -93,32 +95,190 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
    return;
 }
 
-void SourceVariances::Analyze_resonance_sourcefunction(FO_surf* FOsurf_ptr, int ir)
+void SourceVariances::Analyze_sourcefunction_alternate(FO_surf* FOsurf_ptr)
 {
    double plane_psi = 0.0;
    global_plane_psi = plane_psi;
-	current_resonance_mass = resonances.resonance_mass[reso_idx-1];
-	current_resonance_Gamma = resonances.resonance_Gamma[reso_idx-1];
-	current_resonance_total_br = resonances.resonance_total_br[reso_idx-1];
-	current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx-1][0];
-	current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
 
+   // begin HBT calculations here...
    for(int iKT = 0; iKT < n_localp_T; iKT++)
    {
-	//if (iKT == 0) continue;
-      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + current_resonance_mass*current_resonance_mass);
+      if (iKT == 0) continue;	//temporary
+      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
       beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
       for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
       {
-		for (int ir = 7; ir <= 7; ir++)	//loop over resonances
+		for (int ir = 7; ir <= 7; ir++)	//loop over direct pions and resonances
 		{
 			Reset_EmissionData();
-			SetEmissionData(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi], ir);
-			Set_resonance_sourcevariances(ir, iKT, iKphi);
+			Load_resonance_info(ir, K_T[iKT], K_phi[iKphi]);
+			//SetEmissionData only computes direct emission function of given particles
+			//0 in 2nd argument corresponds to just thermal pions
+			//otherwise, gives irth resonance contribution
+			if (ir == 0)
+				SetEmissionData(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi]);
+			else
+			{
+				Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, ir);
+				Do_resonance_integrals(current_FOsurf_ptr, K_T[iKT], K_phi[iKphi]);
+			}
+			Update_source_variances(iKT, iKphi, ir);					
 		}
+		Calculate_R2_side(iKT, iKphi);
       }
    }
    return;
+}
+
+void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx)
+{
+int n_SP_px_pts = 101;
+int n_SP_py_pts = 101;
+double SP_px_min = -3.0;
+double SP_py_min = -3.0;
+double SP_px_max = 3.0;
+double SP_py_max = 3.0;
+double Del_x = (SP_px_max - SP_px_min) / (double)(n_SP_px_pts-1);
+double Del_y = (SP_py_max - SP_py_min) / (double)(n_SP_py_pts-1);
+
+   //double mass = particle_mass;
+//initialize and set evenly spaced grid of px-py points in transverse plane,
+//and corresponding p0 and pz points
+double mass = current_resonance_mass;
+   double* px = new double [n_SP_px_pts];
+   double* py = new double [n_SP_py_pts];
+   double*** p0 = new double** [n_SP_px_pts];
+   double*** pz = new double** [n_SP_px_pts];
+   for(int ipx=0; ipx<n_SP_px_pts; ipx++)
+   {
+	p0[ipx] = new double* [n_SP_py_pts];
+	pz[ipx] = new double* [n_SP_py_pts];
+	for(int ipy=0; ipy<n_SP_py_pts; ipy++)
+	{
+		p0[ipx][ipy] = new double [eta_s_npts];
+		pz[ipx][ipy] = new double [eta_s_npts];
+	}
+   }
+   for(int ipx=0; ipx<n_SP_px_pts; ipx++)
+	px[ipx] = SP_px_min + (double)ipx*Del_x;
+   for(int ipy=0; ipy<n_SP_py_pts; ipy++)
+	py[ipy] = SP_py_min + (double)ipy*Del_y;
+
+   for(int i=0; i<eta_s_npts; i++)
+   {
+       double local_eta_s = eta_s[i];
+       double local_cosh = cosh(SP_p_y - local_eta_s);
+       double local_sinh = sinh(SP_p_y - local_eta_s);
+	for(int ipx=0; ipx<n_SP_px_pts; ipx++)
+	for(int ipy=0; ipy<n_SP_py_pts; ipy++)
+       {
+	double mT = sqrt(mass*mass + px[ipx]*px[ipx] + py[ipy]*py[ipy]);
+          p0[ipx][ipy][i] = mT*local_cosh;
+          pz[ipx][ipy][i] = mT*local_sinh;
+       }
+   }
+
+   Cal_dN_dypTdpTdphi_with_weights(p0, px, py, pz, FOsurf_ptr, reso_idx);
+
+   return;
+}
+
+void SourceVariances::Cal_dN_dypTdpTdphi_with_weights(double*** SP_p0, double* SP_px, double* SP_py, double*** SP_pz, FO_surf* FOsurf_ptr, int reso_idx)
+{
+//CURRENTLY USING WRONG DEFINITIONS OF SIGN AND DEGEN
+//NEED TO FIX BEFORE VERSION IS STABLE
+   double sign = particle_sign;
+   double degen = particle_gspin;
+   double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+//assume reso_idx >= 1
+double mu = 0.0;
+
+   for(int isurf=0; isurf<FO_length ; isurf++)
+   {
+      FO_surf* surf = &FOsurf_ptr[isurf];
+      double tau = surf->tau;
+      double vx = surf->vx;
+      double vy = surf->vy;
+      double Tdec = surf->Tdec;
+      double Pdec = surf->Pdec;
+      double Edec = surf->Edec;
+      double da0 = surf->da0;
+      double da1 = surf->da1;
+      double da2 = surf->da2;
+      double pi00 = surf->pi00;
+      double pi01 = surf->pi01;
+      double pi02 = surf->pi02;
+      double pi11 = surf->pi11;
+      double pi12 = surf->pi12;
+      double pi22 = surf->pi22;
+      double pi33 = surf->pi33;
+	
+	double x = surf->xpt;
+	double y = surf->ypt;
+	double temp_r = sqrt(x*x+y*y);
+	double temp_phi = atan2(y,x);
+
+      double vT = sqrt(vx*vx + vy*vy);
+      double gammaT = 1./sqrt(1. - vT*vT);
+
+      double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+      
+      //for(int ipt = 0; ipt < n_SP_pT; ipt++)
+      for(int ipx = 0; ipx < n_SP_px; ipx++)
+      {
+      //for(int iphi = 0; iphi < n_SP_pphi; iphi++)
+      for(int ipy = 0; ipy < n_SP_py; ipy++)
+      {
+         double px = SP_px[ipx];
+         double py = SP_py[ipy];
+	double pphi = atan2(py, px);
+      for(int ieta=0; ieta < eta_s_npts; ieta++)
+      {
+         //double p0 = SP_p0[ipt][ieta];
+         //double pz = SP_pz[ipt][ieta];
+	double p0 = SP_p0[ipx][ipy][ieta];
+	double pz = SP_pz[ipx][ipy][ieta];
+         double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
+         double f0;
+         if(expon > 20) f0 = 0.0e0;
+         else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+
+         //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+         double pdsigma = p0*da0 + px*da1 + py*da2;
+
+         //viscous corrections
+         double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
+         double deltaf = 0.;
+	 if (use_delta_f)
+	 {
+		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
+	 }
+
+         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
+	double symmetry_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+	 if (1. + deltaf < 0.0) S_p = 0.0;
+         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
+	//double pphi = SP_pphi[iphi];
+	//double pT = SP_pT[ipt];
+	double sin_phi = sin(temp_phi - pphi);
+	double cos_phi = cos(temp_phi - pphi);
+	zvec[0] = tau*ch_eta_s[ieta];
+	zvec[1] = temp_r * cos_phi;
+	zvec[2] = temp_r * sin_phi;
+	zvec[3] = tau*sh_eta_s[ieta];
+	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+		dN_dypTdpTdphi_moments[reso_idx-1][wfi][ipt][iphi] += S_p_withweight*weightfunction(zvec, wfi);
+      }
+      }
+      }
+   }
+   return;
+}
+
+double SourceVariances::Get_resonance_sourcevariances(FO_surf* FOsurf_ptr, int reso_idx)
+{
+	
 }
 
 void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr)
@@ -347,6 +507,7 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
 
 		muRES = 0.0;
+		//signRES and gRES need to be set for each resonance!
 		signRES = particle_sign;
 		gRES = particle_gspin;
 
@@ -645,27 +806,6 @@ double SourceVariances::Emissionfunction(double p0, double px, double py, double
 
    return (dN_dyd2pTdphi);
 }
-
-/*void SourceVariances::Get_source_variances(int iKT, int iKphi)
-{
-   double phi_K = K_phi[iKphi];
-   for(int i=0; i<Emissionfunction_length; i++)
-   {
-     double r = (*Emissionfunction_ptr)[i].r;
-     double phi = (*Emissionfunction_ptr)[i].phi;
-     double t = (*Emissionfunction_ptr)[i].t;
-     double z = (*Emissionfunction_ptr)[i].z;
-     double S_x_K = (*Emissionfunction_ptr)[i].data;
-     double sin_phi = sin(phi - phi_K);
-     double cos_phi = cos(phi - phi_K);
-
-	S_func[iKT][iKphi] += S_x_K;
-	xs_S[iKT][iKphi] += S_x_K*r*sin_phi;
-	xs2_S[iKT][iKphi] += S_x_K*r*r*sin_phi*sin_phi;
-   }
-
-return;
-}*/
 
 void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 {

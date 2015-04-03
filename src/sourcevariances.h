@@ -81,7 +81,8 @@ class SourceVariances
 		//array to temporarily hold results of resonance SV integrations
 		int n_weighting_functions;  //number of source variances to consider
 		double * source_variances_array;
-		double ** resonance_source_variances_array;
+		double **** resonance_source_variances_array;
+		double **** dN_dypTdpTdphi_moments;
 	
 		//needed for resonance calculations
 		//kinematic info
@@ -212,6 +213,7 @@ class SourceVariances
 		bool fexists(const char *filename);
 
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
+		void Cal_dN_dypTdpTdphi_with_weight(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr, int wfi, int reso_idx)
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local);

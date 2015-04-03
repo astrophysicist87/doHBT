@@ -4,12 +4,16 @@
 #include<fstream>
 #include<cmath>
 #include<iomanip>
+#include <vector>
+#include <stdlib.h>
+#include <cstdarg>
 
 #include<gsl/gsl_sf_bessel.h>
 #include<gsl/gsl_rng.h>
 #include<gsl/gsl_randist.h>
 
 #include "Arsenal.h"
+
 using namespace std;
 
 unsigned long int random_seed()
@@ -25,3 +29,4 @@ unsigned long int random_seed()
   return(*seed_ptr);
 }
 
+// End of file

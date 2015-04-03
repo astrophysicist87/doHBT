@@ -1,14 +1,16 @@
 # first command-line argument is directory containing files to be rotated (directory)
 # second command-line argument is the order of the angle to rotate by (rotation_angle_order)
 # 	--> if rotation_angle_order == 0, each harmonic is rotated by the corresponding psi_n
+# third command-line argument is either empty string '' or '_no_df'
 
 from numpy import *
 import sys
 from os import path
 from glob import glob
 
-df_stem = ''
+#df_stem = ''
 #df_stem = '_no_df'
+df_stem = sys.argv[3]
 
 def rotmat(theta):
 	return array([[cos(theta),sin(theta)],[-sin(theta),cos(theta)]])

@@ -28,12 +28,14 @@ const double delta_q = 0.02;
 const double init_q = 0.;
 
 //single particle spectra info
-//const int n_SP_pT = 15;
-const int n_SP_pT = 101;
+const int n_SP_pT = 15;
+//const int n_SP_pT = 101;
 const int n_SP_pphi = 48;
 const double SP_pT_min = 0.0;
-//const double SP_pT_max = 3.0;
-const double SP_pT_max = 5.0;
+const double SP_pT_max = 3.0;
+//const double SP_pT_max = 5.0;
+const int n_SP_px_pts = 101;
+const int n_SP_py_pts = 101;
 
 //correlation function info
 const int corrfuncdim = 1;

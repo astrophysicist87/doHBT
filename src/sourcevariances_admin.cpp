@@ -86,9 +86,30 @@ SourceVariances::SourceVariances(particle_info* particle)
 	}
 	tempresonancefile.close();
 //cerr << "finished reading and processing resonances file..." << endl;
-	resonance_source_variances_array = new double * [n_resonance];
+	resonance_source_variances_array = new double *** [n_resonance];
+	dN_dypTdpTdphi_moments = new double *** [n_resonance];
 	for (int ir=0; ir<n_resonance; ir++)
-		resonance_source_variances_array[ir] = new double [n_weighting_functions];
+	{
+		resonance_source_variances_array[ir] = new double ** [n_weighting_functions];
+		dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		for (int wfi=0; wfi<n_weighting_functions; wfi++)
+		{
+			resonance_source_variances_array[ir][wfi] = new double * [n_SP_pT];
+			dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_SP_px];
+			for (int ipt=0; ipt<n_SP_pT; ipt++)
+			{
+				resonance_source_variances_array[ir][wfi][ipt] = new double [n_SP_pphi];
+				for (int ipt=0; ipt<n_SP_pT; ipt++)
+					resonance_source_variances_array[ir][wfi][ipt][iphi] = 0.0;
+			}
+			for (int ipx=0; ipx<n_SP_px_pts; ipx++)
+			{
+				dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_SP_py_pts];
+				for (int ipy=0; ipy<n_SP_py_pts; ipy++)
+					dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+			}
+		}
+	}
 	const double MeVToGeV = 0.001;
 	tau_pts = new double * [n_resonance];
 	s_pts = new double * [n_resonance];
