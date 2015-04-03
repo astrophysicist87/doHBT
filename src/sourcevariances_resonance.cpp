@@ -430,7 +430,7 @@ double SourceVariances::C(double PK[], double tau, int wfi)
 	return Csum;
 }
 
-void SourceVariances::do_all_integrals(int ieta)
+void SourceVariances::do_all_integrals(int ieta, int reso_idx)
 {
 	*global_out_stream_ptr << "\t\t\t + Made it to do_all_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
@@ -486,7 +486,7 @@ void SourceVariances::do_all_integrals(int ieta)
 					{
 						if (tempidx != 1)
 						PK2 *= -1.;		//takes Pp --> Pm
-						for (int isurf = 0; isurf < FO_length; isurf++)
+						/*for (int isurf = 0; isurf < FO_length; isurf++)
 						{
 							FO_surf* surf = &current_FOsurf_ptr[isurf];
 							double S_PK = Emissionfunction(PK0, PK1, PK2, PK3, surf);
@@ -509,7 +509,11 @@ void SourceVariances::do_all_integrals(int ieta)
 							zvec[3] = surftau*sh_p_y + PK3*one_by_Gamma_M;
 							for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 								Csum_vec[iweight] += S_PK*weight_function(zvec, iweight);
-						}
+						}*/
+						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
+						//just interpolate table of single particle spectra...
+						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+							Csum_vec[iweight] += interpBiPolyDirect(SP_px, SP_py, dN_dypTdpTdphi_moments[reso_idx-1][iweight], PK1, PK2, n_SP_px_pts, n_SP_py_pts);
 					}
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 						zetasum_vec[iweight] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[iweight];

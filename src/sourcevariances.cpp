@@ -132,8 +132,8 @@ void SourceVariances::Analyze_sourcefunction_alternate(FO_surf* FOsurf_ptr)
 
 void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx)
 {
-int n_SP_px_pts = 101;
-int n_SP_py_pts = 101;
+//n_SP_px_pts = 101;
+//n_SP_py_pts = 101;
 double SP_px_min = -3.0;
 double SP_py_min = -3.0;
 double SP_px_max = 3.0;
@@ -159,6 +159,8 @@ double mass = current_resonance_mass;
 		pz[ipx][ipy] = new double [eta_s_npts];
 	}
    }
+//use uniformly spaced points in transverse momentum to make
+//interpolation simpler/faster
    for(int ipx=0; ipx<n_SP_px_pts; ipx++)
 	px[ipx] = SP_px_min + (double)ipx*Del_x;
    for(int ipy=0; ipy<n_SP_py_pts; ipy++)
@@ -259,8 +261,6 @@ double mu = 0.0;
 	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
 	 if (1. + deltaf < 0.0) S_p = 0.0;
          double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
-	//double pphi = SP_pphi[iphi];
-	//double pT = SP_pT[ipt];
 	double sin_phi = sin(temp_phi - pphi);
 	double cos_phi = cos(temp_phi - pphi);
 	zvec[0] = tau*ch_eta_s[ieta];
@@ -268,7 +268,7 @@ double mu = 0.0;
 	zvec[2] = temp_r * sin_phi;
 	zvec[3] = tau*sh_eta_s[ieta];
 	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-		dN_dypTdpTdphi_moments[reso_idx-1][wfi][ipt][iphi] += S_p_withweight*weightfunction(zvec, wfi);
+		dN_dypTdpTdphi_moments[reso_idx-1][wfi][ipx][ipy] += S_p_withweight*weightfunction(zvec, wfi);
       }
       }
       }

@@ -207,13 +207,15 @@ class SourceVariances
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr);
 		void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
+		void Analyze_sourcefunction_alternate(FO_surf* FOsurf_ptr);
 		void Reset_EmissionData();
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
 		void SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local);
 		bool fexists(const char *filename);
 
+		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_with_weight(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr, int wfi, int reso_idx)
+		void Cal_dN_dypTdpTdphi_with_weights(double*** SP_p0, double* SP_px, double* SP_py, double*** SP_pz, FO_surf* FOsurf_ptr, int reso_idx);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local);

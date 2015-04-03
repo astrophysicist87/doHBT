@@ -29,4 +29,446 @@ unsigned long int random_seed()
   return(*seed_ptr);
 }
 
+static int wt[16][16] = {
+{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+{-3, 0, 0, 3, 0, 0, 0, 0,-2, 0, 0,-1, 0, 0, 0, 0},
+{2, 0, 0,-2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0},
+{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+{0, 0, 0, 0,-3, 0, 0, 3, 0, 0, 0, 0,-2, 0, 0,-1},
+{0, 0, 0, 0, 2, 0, 0,-2, 0, 0, 0, 0, 1, 0, 0, 1},
+{-3, 3, 0, 0,-2,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, 0, 0, 0, 0, 0,-3, 3, 0, 0,-2,-1, 0, 0},
+{9,-9, 9,-9, 6, 3,-3,-6, 6,-6,-3, 3, 4, 2, 1, 2},
+{-6, 6,-6, 6,-4,-2, 2, 4,-3, 3, 3,-3,-2,-1,-1,-2},
+{2,-2, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{0, 0, 0, 0, 0, 0, 0, 0, 2,-2, 0, 0, 1, 1, 0, 0},
+{-6, 6,-6, 6,-3,-3, 3, 3,-4, 4, 2,-2,-2,-2,-1,-1},
+{4,-4, 4,-4, 2, 2,-2,-2, 2,-2,-2, 2, 1, 1, 1, 1}
+};
+
+
+//**********************************************************************
+long binarySearch(double * A, int length, double value, bool skip_out_of_range)
+// Return the index of the largest number less than value in the list A
+// using binary search. Index starts with 0.
+// If skip_out_of_range is set to true, then it will return -1 for those
+// samples that are out of the table range.
+{
+   //int length = A->size();
+   int idx_i, idx_f, idx;
+   idx_i = 0;
+   idx_f = length-1;
+
+   if(value > A[idx_f])
+   {
+      if (skip_out_of_range) return -1;
+      cout << "CPbinarySearch: desired value is too large, exceeding the end of the table." << endl;
+      exit(1);
+   }
+   if(value < A[idx_i])
+   {
+      if (skip_out_of_range) return -1;
+      cout << "CPbinarySearch: desired value is too small, exceeding the beginning of table." << endl;
+      exit(1);
+   }
+   idx = (int) floor((idx_f+idx_i)/2.);
+   while((idx_f-idx_i) > 1)
+   {
+     if(A[idx] < value)
+        idx_i = idx;
+     else
+        idx_f = idx;
+     idx = (int) floor((idx_f+idx_i)/2.);
+   }
+   return(idx_i);
+}
+
+
+void get_1D_derivatives(double * x, double * f, double * derivatives, int length, double default_edge_fill = 0.0)
+{
+	for (int i = 1; i <= length-2; i++)
+		derivatives[i] = (f[i+1] - f[i-1]) / (x[i+1] - x[i-1]);	//use centered differencing
+	derivatives[0] = default_edge_fill;
+	derivatives[length-1] = default_edge_fill;
+
+	return;
+}
+
+void get_2D_derivatives(double * x, double * y, double ** f, double ** f1, double ** f2, double ** f12, int x_length, int y_length, double default_edge_fill = 0.0)
+{
+	//for the points not on the edge, get derivatives from surrounding points
+	for (int ix = 1; ix <= x_length-2; ix++)
+	for (int iy = 1; iy <= y_length-2; iy++)
+	{//use centered differencing
+		f1[ix][iy] = (f[ix+1][iy] - f[ix-1][iy]) / (x[ix+1] - x[ix-1]);
+		f2[ix][iy] = (f[ix][iy+1] - f[ix][iy-1]) / (y[iy+1] - y[iy-1]);
+		f12[ix][iy] = (f[ix+1][iy+1] - f[ix+1][iy-1] - f[ix-1][iy+1] + f[ix-1][iy-1]) / ((x[ix+1] - x[ix-1]) * (y[iy+1] - y[iy-1]));
+	}
+	for (int ix = 0; ix <= x_length-1; ix++)
+	{
+		f1[ix][0] = default_edge_fill;
+		f2[ix][0] = default_edge_fill;
+		f12[ix][0] = default_edge_fill;
+		f1[ix][y_length-1] = default_edge_fill;
+		f2[ix][y_length-1] = default_edge_fill;
+		f12[ix][y_length-1] = default_edge_fill;
+	}
+	for (int iy = 0; iy <= y_length-1; iy++)
+	{
+		f1[0][iy] = default_edge_fill;
+		f2[0][iy] = default_edge_fill;
+		f12[0][iy] = default_edge_fill;
+		f1[x_length-1][iy] = default_edge_fill;
+		f2[x_length-1][iy] = default_edge_fill;
+		f12[x_length-1][iy] = default_edge_fill;
+	}
+
+	return;
+}
+
+void bcucof(double * y, double * y1, double * y2, double * y12, double d1, double d2, double ** c)
+{
+//Given arrays y[0..3], y1[0..3], y2[0..3], and y12[0..3], containing the function, gradients,
+//and cross-derivative at the four grid points of a rectangular grid cell (numbered counterclockwise
+//from the lower left), and given d1 and d2, the length of the grid cell in the 1 and 2 directions, this
+//routine returns the table c[0..3][0..3] that is used by routine bcuint for bicubic interpolation.
+	int l,k,j,i;
+	double xx, d1d2=d1*d2;
+	double * cl = new double [16];
+	double * x = new double [16];
+	for (i=0;i<4;i++)
+	{
+		x[i]=y[i];
+		x[i+4]=y1[i]*d1;
+		x[i+8]=y2[i]*d2;
+		x[i+12]=y12[i]*d1d2;
+	}
+	for (i=0;i<16;i++)
+	{
+		xx=0.0;
+		for (k=0;k<16;k++) xx += wt[i][k]*x[k];
+		cl[i]=xx;
+	}
+	l=0;
+	for (i=0;i<4;i++)
+	for (j=0;j<4;j++)
+		c[i][j]=cl[l++];
+
+	return;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+void bcuint(double * y, double * y1, double * y2, double * y12,
+double x1l, double x1u, double x2l, double x2u,
+double x1, double x2, double &ansy, double &ansy1, double &ansy2)
+{
+//Bicubic interpolation within a grid square. Input quantities are y,y1,y2,y12 (as described in
+//bcucof); x1l and x1u, the lower and upper coordinates of the grid square in the 1 direction;
+//x2l and x2u likewise for the 2 direction; and x1,x2, the coordinates of the desired point for
+//the interpolation. The interpolated function value is returned as ansy, and the interpolated
+//gradient values as ansy1 and ansy2. This routine calls bcucof.
+	int i;
+	double t,u, d1=x1u-x1l, d2=x2u-x2l;
+	//MatDoub c(4,4);
+	double ** c = new double * [4];
+	for (int ic = 0; ic<4; ic++)
+		c[ic] = new double [4];
+	bcucof(y,y1,y2,y12,d1,d2,c);
+	//Get the c’s.
+	if (x1u == x1l || x2u == x2l)
+		throw("Bad input in routine bcuint");
+	t=(x1-x1l)/d1;
+	//Equation (3.6.4).
+	u=(x2-x2l)/d2;
+	ansy=0.0;
+	ansy2=0.0;
+	ansy1=0.0;
+	for (i=3;i>=0;i--)
+	{
+		//Equation (3.6.6).
+		ansy=t*ansy+((c[i][3]*u+c[i][2])*u+c[i][1])*u+c[i][0];
+		ansy2=t*ansy2+(3.0*c[i][3]*u+2.0*c[i][2])*u+c[i][1];
+		ansy1=u*ansy1+(3.0*c[3][i]*t+2.0*c[2][i])*t+c[1][i];
+	}
+	//for (int ic = 0; ic<4; ic++)
+	//for (int icp = 0; icp<4; icp++)
+	//	cout << "DEBUG: " << ic << "   " << icp << "   " << c[ic][icp] << endl;
+	ansy1 /= d1;
+	ansy2 /= d2;
+
+	return;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
+void polint(double xa[], double ya[], long n, double x, double *y, double *dy)
+//Given arrays xa[1..n] and ya[1..n], and given a value x, this routine returns a value y, and
+//an error estimate dy. If P(x) is the polynomial of degree n − 1 such that P(xai) = yai
+//, i = 1,...,n, then the returned value y = P(x).
+{
+	int i,m,ns=1;
+	double den,dif,dift,ho,hp,w;
+	double * c = new double [n];
+	double * d = new double [n];
+	dif=fabs(x-xa[0]);
+	//c=vector(1,n);
+	//d=vector(1,n);
+	for (i=1;i<=n;i++)
+	{ //Here we ﬁnd the index ns of the closest table entry,
+		if ( (dift=fabs(x-xa[i-1])) < dif)
+		{
+			ns=i;
+			dif=dift;
+		}
+		c[i-1]=ya[i-1]; //and initialize the tableau of c’s and d’s.
+		d[i-1]=ya[i-1];
+	}
+	*y=ya[(ns--)-1]; //This is the initial approximation to y.
+	for (m=1;m<n;m++)
+	{ //For each column of the tableau,
+		for (i=1;i<=n-m;i++)
+		{ //we loop over the current c’s and d’s and update them.
+			ho=xa[i-1]-x;
+			hp=xa[i+m-1]-x;
+			w=c[i]-d[i-1];
+			if ( (den=ho-hp) == 0.0) cerr << "Error in routine polint" << endl;
+			//This error can occur only if two input xa’s are (to within roundoff) identical.
+			den=w/den;
+			d[i-1]=hp*den; //Here the c’s and d’s are updated.
+			c[i-1]=ho*den;
+		}
+		*y += (*dy=(2*ns < (n-m) ? c[ns+1-1] : d[(ns--)-1]));
+		//After each column in the tableau is completed, we decide which correction, c or d,
+		//we want to add to our accumulating value of y, i.e., which path to take through the
+		//tableau—forking up or down. We do this in such a way as to take the most “straight
+		//line” route through the tableau to its apex, updating ns accordingly to keep track of
+		//where we are. This route keeps the partial approximations centered (insofar as possible)
+		//on the target x. The last dy added is thus the error indication.
+	}
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1, double x2, double *y, double *dy)
+//Given arrays x1a[1..m] and x2a[1..n] of independent variables, and a submatrix of function
+//values ya[1..m][1..n], tabulated at the grid points deﬁned by x1a and x2a; and given values
+//x1 and x2 of the independent variables; this routine returns an interpolated function value y,
+//and an accuracy indication dy (based only on the interpolation in the x1 direction, however).
+{
+	int j;
+	double * ymtmp = new double [m];
+	//ymtmp=vector(1,m);
+	for (j=0;j<m;j++)	//Loop over rows.
+	{
+		//cout << "Made it to loop #" << j << endl;
+		polint(x2a, ya[j], n, x2, &ymtmp[j], dy); //Interpolate answer into temporary storage.
+	}
+	//cout << "Made it through!" << endl;
+	polint(x1a, ymtmp, m, x1, y, dy); //Do the ﬁnal interpolation.
+	//cout << "Finished everything!" << endl;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
+//**********************************************************************
+double interpLinearDirect(double * x, double * y, double x0, long size)
+// Returns the interpreted value of y=y(x) at x=x0 using linear interpolation method.
+// -- x,y: the independent and dependent tables; x is assumed to be equal spaced and increasing
+// -- x0: where the interpolation should be performed
+{
+  //long size = x->size();
+  if (size==1) {cout<<"CPinterpLinearDirect warning: table size = 1"<<endl; return y[0];}
+  double dx = x[1]-x[0]; // increment in x
+
+  // if close to left end:
+  if (abs(x0-x[0])<dx*1e-30) return y[0];
+
+  // find x's integer index
+  long idx = floor((x0-x[0])/dx);
+
+  if (idx<0 || idx>=size-1)
+  {
+    cout    << "CPinterpLinearDirect: x0 out of bounds." << endl
+            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
+            << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+    exit(1);
+  }
+
+  return y[idx] + (y[idx+1]-y[idx])/dx*(x0-x[idx]);
+
+}
+
+//**********************************************************************
+double interpBiLinearDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+{
+  //long size = x->size();
+  if (x_size==1 && y_size==1) {cout<<"CPinterpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
+  double dx = x[1]-x[0]; // increment in x
+  //double dy = y[1]-y[0]; // increment in y
+
+  // assume not close to edges for now...
+  // find x's integer index
+  long xidx = floor((x0-x[0])/dx);
+
+  double xidxINT = CPinterpLinearDirect(y, z[xidx], y0, y_size);
+  double xidxp1INT = CPinterpLinearDirect(y, z[xidx+1], y0, y_size);
+
+  return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
+}
+
+
+
+//**********************************************************************
+double interpCubicDirect(double * x, double * y, double x0, long size)
+// Returns the interpreted value of y=y(x) at x=x0 using cubic polynomial interpolation method.
+// -- x,y: the independent and dependent tables; x is assumed to be equal spaced and increasing
+// -- x0: where the interpolation should be performed
+{
+  //long size = x->size();
+  if (size==1) {cout<<"CPinterpCubicDirect warning: table size = 1"; return y[0];}
+  double dx = x[1]-x[0]; // increment in x
+
+  // if close to left end:
+  if (abs(x0-x[0])<dx*1e-30) return y[0];
+
+  // find x's integer index
+  long idx = floor((x0-x[0])/dx);
+
+  if (idx<0 || idx>=size-1)
+  {
+    cout    << "CPinterpCubicDirect: x0 out of bounds." << endl
+            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
+            << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+    exit(1);
+  }
+
+  if (idx==0)
+  {
+    // use quadratic interpolation at left end
+    double A0 = y[0], A1 = y[1], A2 = y[2], deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else if (idx==size-2)
+  {
+    // use quadratic interpolation at right end
+    double A0 = y[size-3], A1 = y[size-2], A2 = y[size-1], deltaX = x0 - (x[0] + (idx-1)*dx);
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else
+  {
+    // use cubic interpolation
+    double A0 = y[idx-1], A1 = y[idx], A2 = y[idx+1], A3 = y[idx+2], deltaX = x0 - (x[0] + idx*dx);
+    //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
+    return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
+            + (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX
+            - (2.0*A0+3.0*A1-6.0*A2+A3)/(6.0*dx)*deltaX
+            + A1;
+  }
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//**********************************************************************
+double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+{
+	//long size = x->size();
+	if (x_size==1 && y_size) {cout<<"CPinterpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
+	double dx = x[1]-x[0]; // increment in x
+	double dy = y[1]-y[0]; // increment in y
+	// find x's integer index
+	long xidx = floor((x0-x[0])/dx);
+	long yidx = floor((y0-y[0])/dy);
+
+	// check for out-of-bounds points
+	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1)
+	{
+		cout << "CPinterpBiCubicDirect: point out of bounds." << endl
+			<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
+			<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
+			<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
+			<< "y0=" << y0 << ", " << "dy=" << dy << ", " << "yidx=" << yidx << endl;
+    	exit(1);
+	}
+
+	// compute all derivatives
+	double ** grad1 = new double * [x_size];
+	double ** grad2 = new double * [x_size];
+	double ** grad12 = new double * [x_size];
+	for (int ix = 0; ix < x_size; ix++)
+	{
+		grad1[ix] = new double [y_size];
+		grad2[ix] = new double [y_size];
+		grad12[ix] = new double [y_size];
+	}
+	get_2D_derivatives(x, y, z, grad1, grad2, grad12, x_size, y_size, 0.0);
+
+	// set vectors of function values, gradients, and cross-derivative for input into bcuint
+	double * SLICEvals = new double [4];
+	double * SLICEgrad1 = new double [4];
+	double * SLICEgrad2 = new double [4];
+	double * SLICEgrad12 = new double [4];
+
+	// loops counter-clockwise through 4 points surrounding point at which interpolation
+	// is to be performed, and sets function values, gradients, and cross-derivative
+	for (int ypt = 0; ypt <=1; ypt++)
+	for (int xpt = 0; xpt <=1; xpt++)
+	{
+		double tmp_x = x[xidx+xpt];
+		double tmp_y = y[yidx+ypt];
+		SLICEvals[xpt+2*ypt] = z[xidx+xpt][yidx+ypt];
+		SLICEgrad1[xpt+2*ypt] = grad1[xidx+xpt][yidx+ypt];
+		SLICEgrad2[xpt+2*ypt] = grad2[xidx+xpt][yidx+ypt];
+		SLICEgrad12[xpt+2*ypt] = grad12[xidx+xpt][yidx+ypt];
+		//exact derivatives to debug...
+		//SLICEgrad1[xpt+2*ypt] = exp(-tmp_x*(-2. + tmp_y))*(1. - tmp_x*(-2. + tmp_y))*tmp_y;
+		//SLICEgrad2[xpt+2*ypt] = -exp(-tmp_x*(-2. + tmp_y))*tmp_x*(-1. + tmp_x*tmp_y);
+		//SLICEgrad12[xpt+2*ypt] = exp(-tmp_x*(-2. + tmp_y))*(1. + tmp_x*(2. + (-3. + tmp_x*(-2. + tmp_y))*tmp_y));
+		//cout << "DEBUG: g(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEvals[xpt+2*ypt] << endl;
+		//cout << "DEBUG: g_{,x}(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEgrad1[xpt+2*ypt] << endl;
+		//cout << "DEBUG: g_{,y}(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEgrad2[xpt+2*ypt] << endl;
+		//cout << "DEBUG: g_{,xy}(" << x[xidx+xpt] << "," << y[yidx+ypt] << ") = " << SLICEgrad12[xpt+2*ypt] << endl;
+	}
+
+	double resultvalue, resultgrad1, resultgrad2;
+	bcuint(SLICEvals, SLICEgrad1, SLICEgrad2, SLICEgrad12,
+			x[xidx], x[xidx+1], y[yidx], y[yidx+1], x0, y0,
+			resultvalue, resultgrad1, resultgrad2);
+
+	return resultvalue;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+//**********************************************************************
+double interpPolyDirect(double * x, double * y, double x0, long size)
+{
+	double result, error;
+	polint(x, y, size, x0, &result, &error);
+	return result;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
+//**********************************************************************
+double interpBiPolyDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+{
+	double result, error;
+	polin2(x, y, z, x_size, y_size, x0, y0, &result, &error);
+	return result;
+}
+
+
+
 // End of file
