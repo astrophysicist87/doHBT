@@ -282,6 +282,7 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 Tdec = (&FOsurf_ptr[0])->Tdec;
 Pdec = (&FOsurf_ptr[0])->Pdec;
 Edec = (&FOsurf_ptr[0])->Edec;
+//cerr << "DEBUG: " << Tdec << "  " << Pdec << "  " << Edec << endl;
 double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
 
    for(int isurf=0; isurf<FO_length ; isurf++)
@@ -305,7 +306,6 @@ double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
 	double temp_phi = surf->phi;
 	double sin_temp_phi = sin(temp_phi);
 	double cos_temp_phi = cos(temp_phi);
-
       double gammaT = surf->gammaT;
       
       for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
@@ -327,8 +327,6 @@ double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
       {
          double p0 = SPinterp2_p0[ipt][ieta];
          double pz = SPinterp2_pz[ipt][ieta];
-	//double p0 = SPinterp1_p0[ipx][ipy][ieta];
-	//double pz = SPinterp1_pz[ipx][ipy][ieta];
          double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
          double f0;
          if(expon > 20) f0 = 0.0e0;
@@ -353,15 +351,16 @@ double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
 	zvec[0] = tau*ch_eta_s[ieta];
 	zvec[3] = tau*sh_eta_s[ieta];
 	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-	{
-		//dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] += S_p_withweight*weight_function(zvec, wfi);
-		//ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = log(dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi]);
-		ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = log(S_p_withweight*weight_function(zvec, wfi));
-	}
+		dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] += S_p_withweight*weight_function(zvec, wfi);
       }
       }
       }
    }
+//set log of dN_dypTdpTdphi_moments...
+	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
+		ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = log(dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi]);
    return;
 }
 
