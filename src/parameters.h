@@ -6,6 +6,10 @@
 using namespace std;
 
 #define SYMMETRIC_PT_PTS 0		// chooses whether or not to use gaussian spacing or symmetric spacing for pt points
+#define INTERPOLATION_FORMAT 2		// 0 - no interpolation, calculate everything exactly (bad idea)
+					// 1 - Cartesian grid spacing in px - py
+					// 2 - polar grid spacing in pT - pphi
+#define UNIFORM_SPACING true		// specifies uniform or non-uniform grid spacing for interpolation
 
 const double hbarC=0.197327053;  //GeV*fm
 
@@ -34,8 +38,34 @@ const int n_SP_pphi = 48;
 const double SP_pT_min = 0.0;
 const double SP_pT_max = 3.0;
 //const double SP_pT_max = 5.0;
-const int n_SP_px_pts = 101;
-const int n_SP_py_pts = 101;
+
+//parameters for interpolation grid
+//  - Cartesian
+const int n_interp1_px_pts = 27;
+const int n_interp1_py_pts = 27;
+const double interp1_px_min = -3.0;
+const double interp1_py_min = -3.0;
+const double interp1_px_max = 3.0;
+const double interp1_py_max = 3.0;
+//const double interp1_px_min = -0.1;
+//const double interp1_py_min = -0.1;
+//const double interp1_px_max = 0.1;
+//const double interp1_py_max = 0.1;
+const double Del1_x = (interp1_px_max - interp1_px_min) / (double)(n_interp1_px_pts-1);
+const double Del1_y = (interp1_py_max - interp1_py_min) / (double)(n_interp1_py_pts-1);
+//  - polar
+const int n_interp2_pT_pts = 51;
+const int n_interp2_pphi_pts = 51;
+const double interp2_pT_min = 0.0001;
+const double interp2_pphi_min = 0.0;
+const double interp2_pT_max = 3.0;
+const double interp2_pphi_max = 2.*M_PI;
+//const double interp2_px_min = -0.1;
+//const double interp2_py_min = -0.1;
+//const double interp2_px_max = 0.1;
+//const double interp2_py_max = 0.1;
+const double Del2_pT = (interp2_pT_max - interp2_pT_min) / (double)(n_interp2_pT_pts-1);
+const double Del2_pphi = (interp2_pphi_max - interp2_pphi_min) / (double)(n_interp2_pphi_pts-1);
 
 //correlation function info
 const int corrfuncdim = 1;

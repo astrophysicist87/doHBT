@@ -27,6 +27,7 @@ doHBT::doHBT()
    //default initial event and # of events for avg'ing routines
    initial_event = 1;
    n_events = 1000;
+  	for (int i=1; i<=1000; ++i) eventvector.push_back(i);
    //default: use delta_f in calculations
    use_delta_f = true;
    no_df_stem = "";

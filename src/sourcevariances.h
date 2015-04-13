@@ -58,7 +58,6 @@ class SourceVariances
 		double particle_gspin;  //particle degeneracy 
 		double particle_mu;
 
-		int n_tau_pts;
 		int n_zeta_pts;
 		int n_v_pts;
 		int n_s_pts;
@@ -66,7 +65,6 @@ class SourceVariances
 		double v_max;
 		double zeta_min;
 		double zeta_max;
-		double tau_min, tau_max;
 		double s_min, s_max;
 		
 		//array to hold resonance info
@@ -80,9 +78,10 @@ class SourceVariances
 		
 		//array to temporarily hold results of resonance SV integrations
 		int n_weighting_functions;  //number of source variances to consider
-		double * source_variances_array;
-		double **** resonance_source_variances_array;
+		//double * source_variances_array;
+		double **** integrated_spacetime_moments;
 		double **** dN_dypTdpTdphi_moments;
+		double **** ln_dN_dypTdpTdphi_moments;
 	
 		//needed for resonance calculations
 		//kinematic info
@@ -98,6 +97,18 @@ class SourceVariances
 		double* Pp;
 		double* Pm;
 		double * zvec;
+
+		//SP momentum arrays for interpolation grid
+		double* SPinterp1_px;
+		double* SPinterp1_py;
+		double*** SPinterp1_p0;
+		double*** SPinterp1_pz;
+		double* SPinterp2_pT;
+		double* SPinterp2_pphi;
+		double* sin_SPinterp2_pphi;
+		double* cos_SPinterp2_pphi;
+		double** SPinterp2_p0;
+		double** SPinterp2_pz;
 
 		FO_surf* current_FOsurf_ptr;
 		//FO surface info that is constant - to save time
@@ -142,11 +153,9 @@ class SourceVariances
 		double* eta_s_weight;
 
 		//points and weights for resonance integrals
-		double** tau_pts;
 		double* zeta_pts;
 		double* v_pts;
 		double** s_pts;
-		double** tau_wts;
 		double* zeta_wts;
 		double* v_wts;
 		double** s_wts;
@@ -155,16 +164,16 @@ class SourceVariances
 		double * VEC_pstar;
 		double * VEC_Estar;
 		double * VEC_DeltaY;
-		double ** VEC_Yp;
-		double ** VEC_Ym;
-		double *** VEC_P_Y;
-		double *** VEC_MTbar;
-		double *** VEC_DeltaMT;
-		double *** VEC_MTp;
-		double *** VEC_MTm;
-		double **** VEC_MT;
-		double **** VEC_PPhi_tilde;
-		double ***** VEC_Pp;
+		double * VEC_Yp;
+		double * VEC_Ym;
+		double ** VEC_P_Y;
+		double ** VEC_MTbar;
+		double ** VEC_DeltaMT;
+		double ** VEC_MTp;
+		double ** VEC_MTm;
+		double *** VEC_MT;
+		double *** VEC_PPhi_tilde;
+		double **** VEC_Pp;
 		double * VEC_s_factor;
 		double ** VEC_v_factor;
 		double *** VEC_zeta_factor;
@@ -215,10 +224,14 @@ class SourceVariances
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_with_weights(double*** SP_p0, double* SP_px, double* SP_py, double*** SP_pz, FO_surf* FOsurf_ptr, int reso_idx);
+		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int reso_idx);
+		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int reso_idx);
+		void Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py);
+		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
-		void Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local);
+		//void Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, int reso_idx);
+		void Do_resonance_integrals(FO_surf* FOsurf_ptr, int iKT, int iKphi, int reso_idx);
 		void Load_resonance_info(int reso_idx, double K_T_local, double K_phi_local);
 		void Update_source_variances(int iKT, int iKphi, int reso_idx);
 
@@ -246,15 +259,17 @@ class SourceVariances
 		void set_Ppm();
 		double get_Q();
 		double g(double s);
-		double do_all_integrals(int, int);
-		void do_all_integrals(int);
+		//double do_all_integrals(int, int);
+		void do_all_integrals(int iKT, int iKphi, int reso_idx);
 		double s_integ(int);
 		double v_integ(int);
 		double zeta_integ(int);
-		double tau_integ(int);
-		double C(double PK[], double tau, int);
 		void set_to_zero(double * array, int arraylength);
 		void set_surfpts();
+
+		// input and output function prototypes
+		void Output_SVdN_dypTdpTdphi(int folderindex);
+		void Output_SVdN_dypTdpT(int folderindex);
 
 		//parameters that the user is free to define
 		double plumberg_test_variable;

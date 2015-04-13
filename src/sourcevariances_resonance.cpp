@@ -138,66 +138,6 @@ double SourceVariances::g(double s)
 	return g_res;
 }
 
-/*void SourceVariances::all_integrals(double SVarray[])
-{
-	double s_sum = 0.;
-	Qfunc = get_Q();
-	
-	if (n_body == 2)
-	{
-		//then g(s) is delta-function, skip s-integration entirely
-		//double s_loc = m2*m2;
-		set_pstar(m2*m2);
-		set_Estar();
-		set_DeltaY();
-		set_Ypm();
-		s_sum = br*v_integ(SVarray)/(4.*M_PI*pstar);
-	}
-	else if (n_body == 3)
-	{
-		for (int is = 0; is < n_s_pts; is++)
-		{
-			double s_loc = s_pts[current_resonance_idx - 1][is];
-			set_pstar(s_loc);
-			set_Estar();
-			set_DeltaY();
-			set_Ypm();
-	
-			//g(s) only defined here for n_body == 3
-			double s_factor = s_wts[current_resonance_idx - 1][is]*g(s_loc);
-			double v_sum = 0.;
-			for (int iv = 0; iv < n_v_pts; iv++)
-			{
-				double v_loc = v_pts[iv];
-				set_P_Y(v_loc);
-				set_MTbar();
-				set_DeltaMT();
-				set_MTpm();
-
-				double v_factor = v_wts[iv]*DeltaY/(mT*mT*cosh(v_loc*DeltaY)*cosh(v_loc*DeltaY) - pT*pT);
-				double zeta_sum = 0.;
-				for (int izeta = 0; izeta < n_zeta_pts; izeta++)
-				{
-					double zeta_loc = zeta_pts[izeta];
-					double zeta_factor = zeta_wts[izeta]*(MTbar + DeltaMT*cos(zeta_loc));
-					double tau_sum = 0.;
-					for (int itau = 0; itau < n_tau_pts; itau++)
-					{
-						double tau_loc = tau_pts[current_resonance_idx - 1][itau];
-						double tau_factor = Gamma*exp(-Gamma*tau_loc)*tau_wts[current_resonance_idx - 1][itau];
-						tau_sum += tau_factor*(C(Pp, tau_loc, SVarray) + C(Pm, tau_loc, SVarray));
-					}
-					zeta_sum += zeta_factor*tau_sum;
-				}
-				v_sum += v_factor*zeta_sum;
-			}
-			s_sum += s_factor*v_sum;
-		}
-	}
-
-	return s_sum;
-}*/
-
 double SourceVariances::s_integ(int wfi)
 {
 	double s_sum = 0.;
@@ -264,64 +204,15 @@ double SourceVariances::zeta_integ(int wfi)
 		set_Ppm();
 
 		double zeta_factor = zeta_wts[izeta]*(MTbar + DeltaMT*cos(zeta_loc));
-		zeta_sum += zeta_factor*tau_integ(wfi);
+		//tau_integ no longer defined
+		//zeta_sum += zeta_factor*tau_integ(wfi);
 	}
 
 	return zeta_sum;
 }
 
-double SourceVariances::tau_integ(int wfi)
-{
-	double tau_sum = 0.;
-	
-	for (int itau = 0; itau < n_tau_pts; itau++)
-	{
-		double tau_loc = tau_pts[current_resonance_idx - 1][itau];
-		double tau_factor = Gamma*exp(-Gamma*tau_loc)*tau_wts[current_resonance_idx - 1][itau];
-		tau_sum += tau_factor*(C(Pp, tau_loc, wfi) + C(Pm, tau_loc, wfi));
-	}
 
-	return tau_sum;
-}
-
-/*double SourceVariances::tau_integ(int wfi)
-{
-	double Csum = 0.0;
-	double PK0, PK1, PK2, PK3, S_PK;
-	PK0 = Pp[0];
-	PK1 = Pp[1];
-	PK2 = Pp[2];
-	PK3 = Pp[3];
-	double one_by_Gamma_M = 1./(Gamma*Mres);
-	for (int tempidx = 1; tempidx <= 2; tempidx++)
-	{
-		if (tempidx != 1)
-			PK2 *= -1.;
-		for (int isurf = 0; isurf < FO_length; isurf++)
-		{
-
-			FO_surf* surf = &current_FOsurf_ptr[isurf];
-			double S_PK = Emissionfunction(PK0, PK1, PK2, PK3, surf);
-			double surftau = surf->tau;
-			double surfxpt = surf->xpt;
-			double surfypt = surf->ypt;
-	
-			//compute arguments of weight_function
-			//use boost-invariance: p_y == local_eta_s
-			zvec[0] = surftau*ch_p_y + PK0*one_by_Gamma_M;
-			zvec[1] = surfxpt*cos_cKphi + surfypt*sin_cKphi + PK1*one_by_Gamma_M;
-			zvec[2] = surfypt*cos_cKphi - surfxpt*sin_cKphi + PK2*one_by_Gamma_M;
-			zvec[3] = surftau*sh_p_y + PK3*one_by_Gamma_M;
-			//currently wrong!!!  just interested in approximate timing and optimization right now...
-			Csum += S_PK*weight_function(zvec, wfi);
-		}
-	}
-
-	return Csum;
-}*/
-
-
-double SourceVariances::do_all_integrals(int wfi, int ieta)
+/*double SourceVariances::do_all_integrals(int wfi, int ieta)
 {
 	*global_out_stream_ptr << "\t\t\t + Made it to do_all_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
@@ -396,47 +287,16 @@ double SourceVariances::do_all_integrals(int wfi, int ieta)
 	}
 
 	return ssum;
-}
+}*/
 
-double SourceVariances::C(double PK[], double tau, int wfi)
+
+void SourceVariances::do_all_integrals(int iKT, int iKphi, int reso_idx)
 {
-	double Csum = 0.;
-
-	double PK0 = PK[0];
-	double PK1 = PK[1];
-	double PK2 = PK[2];
-	double PK3 = PK[3];
-	double cPK0 = tau*PK[0]/Mres;
-	double cPK1 = tau*PK[1]/Mres;
-	double cPK2 = tau*PK[2]/Mres;
-	double cPK3 = tau*PK[3]/Mres;
-
-	for (int isurf = 0; isurf < FO_length; isurf++)
-	{
-		FO_surf* surf = &current_FOsurf_ptr[isurf];
-		double S_PK = Emissionfunction(PK0, PK1, PK2, PK3, surf);
-		double surftau = surf->tau;
-		double surfxpt = surf->xpt;
-		double surfypt = surf->ypt;
-
-		//compute arguments of weight_function
-		//use boost-invariance: p_y == local_eta_s
-		zvec[0] = surftau*ch_p_y + PK0;
-		zvec[1] = (surfxpt*cos_cKphi + surfypt*sin_cKphi) + PK1;
-		zvec[2] = (surfypt*cos_cKphi - surfxpt*sin_cKphi) + PK2;
-		zvec[3] = surftau*sh_p_y + PK3;
-		Csum += S_PK*weight_function(zvec, wfi);
-	}
-	return Csum;
-}
-
-void SourceVariances::do_all_integrals(int ieta, int reso_idx)
-{
-	*global_out_stream_ptr << "\t\t\t + Made it to do_all_integrals(): n_body = " << n_body << endl;
+	*global_out_stream_ptr << "   Made it to do_all_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
 	double ssum = 0.;
-	double local_eta_s_wt = eta_s_weight[ieta];
+	//double local_eta_s_wt = eta_s_weight[ieta];
 	double * ssum_vec = new double [n_weighting_functions];
 	double * vsum_vec = new double [n_weighting_functions];
 	double * zetasum_vec = new double [n_weighting_functions];
@@ -465,55 +325,32 @@ void SourceVariances::do_all_integrals(int ieta, int reso_idx)
 		{
 			time (&rawtime);
 			timeinfo = localtime (&rawtime);
-			//cerr << "Starting s-loop #" << is << " at " << asctime(timeinfo);
+			cerr << "Starting s-loop #" << is << " at " << asctime(timeinfo);
 			double vsum = 0.0;
     		set_to_zero(vsum_vec, n_weighting_functions);
 			for (int iv = 0; iv < n_v_pts; iv++)
 			{
-				double zetasum = 0.0;
+				//double zetasum = 0.0;
+				cerr << "\tStarting v-loop #" << iv << endl;
 				set_to_zero(zetasum_vec, n_weighting_functions);
 				for (int izeta = 0; izeta < n_zeta_pts; izeta++)
 				{
 					double PK0, PK1, PK2, PK3, S_PK;
-					double Csum = 0.0;
+					cerr << "\t\tStarting zeta-loop #" << izeta << endl;
 					set_to_zero(Csum_vec, n_weighting_functions);
-					PK0 = VEC_Pp[is][ieta][iv][izeta][0];
-					PK1 = VEC_Pp[is][ieta][iv][izeta][1];
-					PK2 = VEC_Pp[is][ieta][iv][izeta][2];
-					PK3 = VEC_Pp[is][ieta][iv][izeta][3];
-					//cerr << PK0 << "\t" << PK1 << "\t" << PK2 << "\t" << PK3 << endl;
+					PK0 = VEC_Pp[is][iv][izeta][0];
+					PK1 = VEC_Pp[is][iv][izeta][1];
+					PK2 = VEC_Pp[is][iv][izeta][2];
+					PK3 = VEC_Pp[is][iv][izeta][3];
+					cerr << PK0 << "\t" << PK1 << "\t" << PK2 << "\t" << PK3 << endl;
 					for (int tempidx = 1; tempidx <= 2; tempidx++)
 					{
 						if (tempidx != 1)
 						PK2 *= -1.;		//takes Pp --> Pm
-						/*for (int isurf = 0; isurf < FO_length; isurf++)
-						{
-							FO_surf* surf = &current_FOsurf_ptr[isurf];
-							double S_PK = Emissionfunction(PK0, PK1, PK2, PK3, surf);
-							//double S_PK = 1.;
-							//double surftau = surf->tau;
-							//double surfxpt = surf->xpt;
-							//double surfypt = surf->ypt;
-							double surftau = surf_tau_pts[isurf];
-							double surfxpt = surf_x_pts[isurf];
-							double surfypt = surf_y_pts[isurf];
-							//double surftau = 1.;
-							//double surfxpt = 1.;
-							//double surfypt = 1.;
-							
-						//compute arguments of weight_function
-							//use boost-invariance: p_y == local_eta_s
-							zvec[0] = surftau*ch_p_y + PK0*one_by_Gamma_M;
-							zvec[1] = surfxpt*cos_cKphi + surfypt*sin_cKphi + PK1*one_by_Gamma_M;
-							zvec[2] = surfypt*cos_cKphi - surfxpt*sin_cKphi + PK2*one_by_Gamma_M;
-							zvec[3] = surftau*sh_p_y + PK3*one_by_Gamma_M;
-							for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-								Csum_vec[iweight] += S_PK*weight_function(zvec, iweight);
-						}*/
 						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 						//just interpolate table of single particle spectra...
 						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							Csum_vec[iweight] += interpBiPolyDirect(SP_px, SP_py, dN_dypTdpTdphi_moments[reso_idx-1][iweight], PK1, PK2, n_SP_px_pts, n_SP_py_pts);
+							Csum_vec[iweight] += interpBiPolyDirect(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[reso_idx-1][iweight], PK1, PK2, n_interp1_px_pts, n_interp1_py_pts);
 					}
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 						zetasum_vec[iweight] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[iweight];
@@ -522,12 +359,14 @@ void SourceVariances::do_all_integrals(int ieta, int reso_idx)
 					vsum_vec[iweight] += VEC_v_factor[is][iv]*zetasum_vec[iweight];
 			}
 			for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-				ssum_vec[iweight] += Mres*local_eta_s_wt*VEC_s_factor[is]*vsum_vec[iweight];
+				ssum_vec[iweight] += Mres*VEC_s_factor[is]*vsum_vec[iweight];
 		}
 	}
 
 	//return ssum;
 	//SHOULD RETURN VECTOR OF SSUM_VEC SOURCEVARIANCES, BUT JUST CHECKING TIMING RIGHT NOW...
+	for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+		integrated_spacetime_moments[reso_idx-1][iweight][iKT][iKphi] = ssum_vec[iweight];
 	return;
 }
 

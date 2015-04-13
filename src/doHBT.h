@@ -199,6 +199,7 @@ class doHBT
       string global_runfolder;
       string global_resultsfolder_stem;
       string no_df_stem;
+	vector<int> eventvector;
 
    public:
       doHBT();
@@ -238,6 +239,8 @@ class doHBT
       void Get_source_variances(int, int);
       void Calculate_HBTradii_from_C_ev(int, int);
       void Get_HBTradii_from_Cbar_and_Cavg();
+      void Get_HBTradii_from_Cbar_and_Cavg_random(int);
+      void Simulate_subensemble_averaging();
       void Readin_results(int);
       void Readin_HBTev_results_only(int);
       void Readin_ev_plane_psi(int);
@@ -248,6 +251,8 @@ class doHBT
       void Output_Svars_results(int);
       void Output_AVG_results();
       void Output_CAVG_results();
+      void Update_subensemble_indexfile(int iM, int ibin);
+      void Output_CAVG_random_results(int iM, int ibin);
       void Output_HBTcfsev_results_only(int);
       void Output_dN_dypTdpTdphi(int folderindex);
       void Output_dN_dypTdpT(int folderindex);
@@ -310,7 +315,9 @@ class doHBT
       bool use_delta_f;
       bool append_output;
       int n_events;
+      int total_Nev;	//probably 1000 or something
       int initial_event;
+      int MmaxSEA;	//maximum number of times to sub-ensemble average
 };
 
 #endif

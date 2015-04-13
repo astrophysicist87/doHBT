@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-bool get_plane_angle_only = false;
+bool get_plane_angle_only = true;
    //instantiate doHBT class
    doHBT Source_function;
 
@@ -38,7 +38,7 @@ bool get_plane_angle_only = false;
    int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
-   Source_function.Set_use_delta_f(false);
+   Source_function.Set_use_delta_f(true);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";
@@ -141,6 +141,9 @@ if (get_plane_angle_only)
 	Source_function.Determine_plane_angle(FOsurf_ptr);
 	Source_function.Output_ev_plane_psi(folderindex);
 	Source_function.Output_ev_plane_psis(folderindex);
+	Source_function.Output_dN_dypTdpTdphi(folderindex);
+	Source_function.Output_dN_dypTdpT(folderindex);
+	Source_function.Output_ev_mean_pT(folderindex);
 	output << "Finished all." << endl;
 	finalize_PRfile(currentworkingdirectory);
 	output.close();

@@ -29,6 +29,72 @@ unsigned long int random_seed()
   return(*seed_ptr);
 }
 
+void logspace(double * x, double a, double b, int n)
+{
+//returns vector x of n logarithmically spaced points, with a and b as endpoints
+	double b_by_a = b/a;
+	double exponent = 1./(double)(n-1);
+	double gamma = pow(b_by_a, exponent);
+
+	//assume x has length n already
+	x[0] = a;
+	for (int i = 1; i < n; i++)
+		x[i] = gamma*x[i-1];
+
+	return;
+}
+
+void linspace(double * x, double a, double b, int n)
+{
+//returns vector x of n linearly spaced points, with a and b as endpoints
+	double Del_x = (b-a)/(double)(n-1);
+
+	//assume x has length n already
+	for (int i = 0; i < n; i++)
+		x[i] = a + Del_x * (double)i;
+
+	return;
+}
+
+
+void scalepoints(double * x, double a, double b, double scale, int n)
+{
+// n is length of x
+// returns x with x[0] == a, x[n-1] == b
+// for even n: 50% of points (linearly spaced) above scale, 50% (linearly spaced) below
+// for odd n: center point located at scale, 50% of rest (linearly spaced) above and 50% (linearly spaced) below
+
+	double * dummy;
+	if (n%2 == 0)	// if n is even
+	{
+		dummy = new double [n/2];
+		linspace(dummy, a, scale, n/2);
+		for (int i=0; i<(n/2); i++)
+			x[i] = dummy[i];
+		linspace(dummy, scale, b, n/2);
+		for (int i=(n/2); i<n; i++)
+			x[i] = dummy[i-(n/2)];
+	}
+	else	// if n is odd
+	{
+		dummy = new double [(n+1)/2];
+		linspace(dummy, a, scale, (n+1)/2);
+		for (int i=0; i<((n+1)/2); i++)
+			x[i] = dummy[i];
+		linspace(dummy, scale, b, (n+1)/2);
+		if (abs(dummy[0] - x[(n-1)/2]) >= 1.e-10)
+		{
+			cerr << "Scalepoints: mismatch of indices" << endl
+				<< "dummy[0] = " << dummy[0] << ", x[(n+1)/2] = " << x[(n+1)/2] << endl;
+			exit(1);
+		}
+		for (int i=((n+1)/2); i<n; i++)
+			x[i] = dummy[i - ((n-1)/2)];
+	}
+
+	return;
+}
+
 static int wt[16][16] = {
 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
@@ -64,13 +130,13 @@ long binarySearch(double * A, int length, double value, bool skip_out_of_range)
    if(value > A[idx_f])
    {
       if (skip_out_of_range) return -1;
-      cout << "CPbinarySearch: desired value is too large, exceeding the end of the table." << endl;
+      cout << "binarySearch: desired value is too large, exceeding the end of the table." << endl;
       exit(1);
    }
    if(value < A[idx_i])
    {
       if (skip_out_of_range) return -1;
-      cout << "CPbinarySearch: desired value is too small, exceeding the beginning of table." << endl;
+      cout << "binarySearch: desired value is too small, exceeding the beginning of table." << endl;
       exit(1);
    }
    idx = (int) floor((idx_f+idx_i)/2.);
@@ -261,17 +327,38 @@ void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1,
 //x1 and x2 of the independent variables; this routine returns an interpolated function value y,
 //and an accuracy indication dy (based only on the interpolation in the x1 direction, however).
 {
-	int j;
-	double * ymtmp = new double [m];
-	//ymtmp=vector(1,m);
-	for (j=0;j<m;j++)	//Loop over rows.
+bool do_x2_first = true;
+	if (do_x2_first)
 	{
-		//cout << "Made it to loop #" << j << endl;
-		polint(x2a, ya[j], n, x2, &ymtmp[j], dy); //Interpolate answer into temporary storage.
+		int j;
+		double * ymtmp = new double [m];
+		//ymtmp=vector(1,m);
+		for (j=0;j<m;j++)	//Loop over rows.
+		{
+			//cout << "Made it to loop #" << j << endl;
+			polint(x2a, ya[j], n, x2, &ymtmp[j], dy); //Interpolate answer into temporary storage.
+		}
+		//cout << "Made it through!" << endl;
+		polint(x1a, ymtmp, m, x1, y, dy); //Do the ﬁnal interpolation.
+		//cout << "Finished everything!" << endl;
 	}
-	//cout << "Made it through!" << endl;
-	polint(x1a, ymtmp, m, x1, y, dy); //Do the ﬁnal interpolation.
-	//cout << "Finished everything!" << endl;
+	else
+	{
+		//define and set transpose of data values
+		double ** yaT = new double * [n];
+		for (int ix2 = 0; ix2 < n; ix2++)
+		{
+			yaT[ix2] = new double [m];
+			for (int ix1 = 0; ix1 < m; ix1++)
+				yaT[ix2][ix1] = ya[ix1][ix2];
+		}
+
+		int j;
+		double * ymtmp = new double [n];
+		for (j=0;j<n;j++)
+			polint(x1a, yaT[j], m, x1, &ymtmp[j], dy);
+		polint(x2a, ymtmp, n, x2, y, dy);
+	}
 }
 
 
@@ -285,7 +372,7 @@ double interpLinearDirect(double * x, double * y, double x0, long size)
 // -- x0: where the interpolation should be performed
 {
   //long size = x->size();
-  if (size==1) {cout<<"CPinterpLinearDirect warning: table size = 1"<<endl; return y[0];}
+  if (size==1) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return y[0];}
   double dx = x[1]-x[0]; // increment in x
 
   // if close to left end:
@@ -296,21 +383,49 @@ double interpLinearDirect(double * x, double * y, double x0, long size)
 
   if (idx<0 || idx>=size-1)
   {
-    cout    << "CPinterpLinearDirect: x0 out of bounds." << endl
+    cout    << "interpLinearDirect: x0 out of bounds." << endl
             << "x ranges from " << x[0] << " to " << x[size-1] << ", "
             << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
     exit(1);
   }
 
   return y[idx] + (y[idx+1]-y[idx])/dx*(x0-x[idx]);
-
 }
+
+//**********************************************************************
+double interpLinearNondirect(double * x, double * y, double x0, long size)
+// Returns the interpreted value of y=y(x) at x=x0 using linear interpolation method.
+// -- x,y: the independent and dependent tables; x is assumed to be increasing but not equal spaced
+// -- x0: where the interpolation should be performed
+{
+  //long size = x->size();
+  if (size==1) {cout<<"interpLinearNondirect warning: table size = 1"<<endl; return y[0];}
+  double dx = x[1]-x[0]; // increment in x
+
+  // if close to left end:
+  if (abs(x0-x[0])<dx*1e-30) return y[0];
+
+  // find x's integer index
+  //long idx = floor((x0-x[0])/dx);
+  long idx = binarySearch(x, size, x0, true);
+
+  if (idx<0 || idx>=size-1)
+  {
+    cout    << "interpLinearNondirect: x0 out of bounds." << endl
+            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
+            << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+    exit(1);
+  }
+
+  return y[idx] + (y[idx+1]-y[idx])/dx*(x0-x[idx]);
+}
+
 
 //**********************************************************************
 double interpBiLinearDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
 {
   //long size = x->size();
-  if (x_size==1 && y_size==1) {cout<<"CPinterpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
+  if (x_size==1 && y_size==1) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
   double dx = x[1]-x[0]; // increment in x
   //double dy = y[1]-y[0]; // increment in y
 
@@ -318,12 +433,70 @@ double interpBiLinearDirect(double * x, double * y, double ** z, double x0, doub
   // find x's integer index
   long xidx = floor((x0-x[0])/dx);
 
-  double xidxINT = CPinterpLinearDirect(y, z[xidx], y0, y_size);
-  double xidxp1INT = CPinterpLinearDirect(y, z[xidx+1], y0, y_size);
+  double xidxINT = interpLinearDirect(y, z[xidx], y0, y_size);
+  double xidxp1INT = interpLinearDirect(y, z[xidx+1], y0, y_size);
 
   return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
 }
 
+
+//**********************************************************************
+double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+{
+  //long size = x->size();
+  if (x_size==1 && y_size==1) {cout<<"interpBiLinearNondirect warning: table size = 1"<<endl; return z[0][0];}
+  double dx = x[1]-x[0]; // increment in x
+  //double dy = y[1]-y[0]; // increment in y
+
+  // assume not close to edges for now...
+  // find x's integer index
+  //long xidx = floor((x0-x[0])/dx);
+  long xidx = binarySearch(x, x_size, x0, true);
+
+  double xidxINT = interpLinearNondirect(y, z[xidx], y0, y_size);
+  double xidxp1INT = interpLinearNondirect(y, z[xidx+1], y0, y_size);
+
+  return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+double interpNewtonDirect(double * x, double * y, double x0, long size)
+{
+	//size = N + 1 = total number of data points
+	int N = size - 1;
+
+	//evaluate coefficients
+	double * coeffs = new double [N+1];
+	double * uvec = new double [N+2];
+	uvec[0] = 0.0;
+
+	for (int i = 1; i<=N+1; i++)
+		uvec[i] = y[i-1];
+
+	coeffs[0] = uvec[1];
+	for (int m = 1; m<=N; m++)
+	{
+		for (int i = 1; i<=N-m+1; i++)
+			uvec[i] = (uvec[i+1] - uvec[i]) / (x[i+m-1] - x[i-1]);
+		coeffs[m] = uvec[1];
+	}
+
+	//compute interpolant polynomial
+	double P = coeffs[N];
+	for(int i = N; i>=1; i--)
+		P = P*(x0 - x[i-1]) + coeffs[i-1];
+	/*for (int i = 0; i <= N; i++)
+	{
+		cout << "coeffs[" << i << "] = " << coeffs[i] << endl;
+		cout << "uvec[" << i+1 << "] = " << uvec[i+1] << endl;
+	}*/
+
+	return P;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 
 //**********************************************************************
@@ -333,7 +506,7 @@ double interpCubicDirect(double * x, double * y, double x0, long size)
 // -- x0: where the interpolation should be performed
 {
   //long size = x->size();
-  if (size==1) {cout<<"CPinterpCubicDirect warning: table size = 1"; return y[0];}
+  if (size==1) {cout<<"interpCubicDirect warning: table size = 1"; return y[0];}
   double dx = x[1]-x[0]; // increment in x
 
   // if close to left end:
@@ -344,7 +517,7 @@ double interpCubicDirect(double * x, double * y, double x0, long size)
 
   if (idx<0 || idx>=size-1)
   {
-    cout    << "CPinterpCubicDirect: x0 out of bounds." << endl
+    cout    << "interpCubicDirect: x0 out of bounds." << endl
             << "x ranges from " << x[0] << " to " << x[size-1] << ", "
             << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
     exit(1);
@@ -381,7 +554,7 @@ double interpCubicDirect(double * x, double * y, double x0, long size)
 double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
 {
 	//long size = x->size();
-	if (x_size==1 && y_size) {cout<<"CPinterpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
+	if (x_size==1 && y_size) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
 	double dx = x[1]-x[0]; // increment in x
 	double dy = y[1]-y[0]; // increment in y
 	// find x's integer index
@@ -391,7 +564,7 @@ double interpBiCubicDirect(double * x, double * y, double ** z, double x0, doubl
 	// check for out-of-bounds points
 	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1)
 	{
-		cout << "CPinterpBiCubicDirect: point out of bounds." << endl
+		cout << "interpBiCubicDirect: point out of bounds." << endl
 			<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
 			<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
 			<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
@@ -469,6 +642,95 @@ double interpBiPolyDirect(double * x, double * y, double ** z, double x0, double
 	return result;
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////CALL THESE ROUTINES BELOW////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
+//**********************************************************************
+double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing)
+{
+// kind == 0: linear interpolation
+// kind == 1: cubic interpolation
+// kind == 2: polynomial interpolation
+	switch (kind)
+	{
+		case 0:
+		{
+			if (uniform_spacing)
+				return interpLinearDirect(x, y, x0, size);
+			else
+				return interpLinearNondirect(x, y, x0, size);
+			break;
+		}
+		case 1:
+		{
+			if (uniform_spacing)
+				return interpCubicDirect(x, y, x0, size);
+			else
+				cerr << "Error (interpolate1D): cubic interpolation with non-uniform spacing not supported!" << endl;
+			break;
+		}
+		case 2:
+		{
+			if (uniform_spacing)
+				return interpPolyDirect(x, y, x0, size);
+			else
+				cerr << "Error (interpolate1D): polynomial interpolation with non-uniform spacing not supported!" << endl;
+			break;
+		}
+		default:
+		{
+			cerr << "Error (interpolate1D): interpolation kind not supported!" << endl;
+			exit(1);
+			break;
+		}
+	}
+}
+
+
+//**********************************************************************
+double interpolate2D(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, int kind, bool uniform_spacing)
+{
+// kind == 0: linear interpolation
+// kind == 1: cubic interpolation
+// kind == 2: polynomial interpolation
+	switch (kind)
+	{
+		case 0:
+		{
+			if (uniform_spacing)
+				return interpBiLinearDirect(x, y, z, x0, y0, x_size, y_size);
+			else
+				return interpBiLinearNondirect(x, y, z, x0, y0, x_size, y_size);
+			break;
+		}
+		case 1:
+		{
+			if (uniform_spacing)
+				return interpBiCubicDirect(x, y, z, x0, y0, x_size, y_size);
+			else
+				cerr << "Error (interpolate2D): cubic interpolation with non-uniform spacing not supported!" << endl;
+			break;
+		}
+		case 2:
+		{
+			if (uniform_spacing)
+				return interpBiPolyDirect(x, y, z, x0, y0, x_size, y_size);
+			else
+				cerr << "Error (interpolate2D): polynomial interpolation with non-uniform spacing not supported!" << endl;
+			break;
+		}
+		default:
+		{
+			cerr << "Error (interpolate2D): interpolation kind not supported!" << endl;
+			exit(1);
+			break;
+		}
+	}
+}
 
 
 // End of file

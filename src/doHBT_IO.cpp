@@ -189,6 +189,48 @@ outputHBTcoeffs.close();
 	return;
 }
 
+void doHBT::Update_subensemble_indexfile(int iM, int ibin)
+{
+	ostringstream filename_indexfile;
+	filename_indexfile << global_runfolder << "/simulations/subensemble_nb" << patch::to_string(total_Nev/n_events) << "_indexfile.dat";
+	ofstream output(filename_indexfile.str().c_str(), ios::app);
+	
+	output << iM << "  " << ibin;
+	for (int iev = ibin*n_events; iev < (ibin+1)*n_events; iev++)
+		output << "  " << eventvector[iev];
+	output << endl;
+}
+
+void doHBT::Output_CAVG_random_results(int iM, int ibin)
+{
+	//ostringstream filename_stream_HBT;
+	//filename_stream_HBT << global_runfolder << "/simulations/CavgHBTradii_binning" << patch::to_string(iM) << "_nb" << patch::to_string(total_Nev/n_events) << "_bin" << patch::to_string(ibin) << no_df_stem << ".dat";
+	//ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
+	ostringstream filename_stream_HBTcfs;
+	filename_stream_HBTcfs << global_runfolder << "/simulations/CavgHBTradii_cfs_binning" << patch::to_string(iM) << "_nb" << patch::to_string(total_Nev/n_events) << "_bin" << patch::to_string(ibin) << no_df_stem << ".dat";
+	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
+
+for(int iKT = 0; iKT < n_localp_T; iKT++)
+{
+	//for(int Morder=0; Morder<n_order; Morder++)
+	for(int Morder=0; Morder<1; Morder++)
+		outputHBTcoeffs << K_T[iKT] << "  " << CavgR2_side_C[iKT][Morder] << "  " << CavgR2_out_C[iKT][Morder] << "  " << CavgR2_long_C[iKT][Morder] << endl;
+	/*for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+	{
+		//outputHBT << "Cavg  " << K_T[iKT] << "  " << K_phi[iKphi]
+		outputHBT << "-2  " << K_T[iKT] << "  " << K_phi[iKphi]
+			<< "  " << CavgR2_side[iKT][iKphi] << "  " << CavgR2_out[iKT][iKphi]
+			<< "  " << CavgR2_outside[iKT][iKphi] << "  " << CavgR2_long[iKT][iKphi]
+			<< "  " << CavgR2_sidelong[iKT][iKphi] << "  " << CavgR2_outlong[iKT][iKphi] << endl;
+	}*/
+}
+
+//outputHBT.close();
+outputHBTcoeffs.close();
+	return;
+}
+
+
 void doHBT::Readin_results(int folderindex)
 {
 double dummy;

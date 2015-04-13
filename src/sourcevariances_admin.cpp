@@ -36,7 +36,6 @@ SourceVariances::SourceVariances(particle_info* particle)
 	Pp = new double [4];
 	Pm = new double [4];
 
-	n_tau_pts = 10;
 	n_zeta_pts = 10;
 	n_v_pts = 10;
 	n_s_pts = 10;
@@ -86,34 +85,60 @@ SourceVariances::SourceVariances(particle_info* particle)
 	}
 	tempresonancefile.close();
 //cerr << "finished reading and processing resonances file..." << endl;
-	resonance_source_variances_array = new double *** [n_resonance];
-	dN_dypTdpTdphi_moments = new double *** [n_resonance];
-	for (int ir=0; ir<n_resonance; ir++)
+	integrated_spacetime_moments = new double *** [n_resonance+1];
+	//dN_dypTdpTdphi_moments = new double *** [n_resonance];
+	dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
+	ln_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
+	//for (int ir=0; ir<n_resonance; ir++)
+	for (int ir=0; ir<=n_resonance; ir++)
 	{
-		resonance_source_variances_array[ir] = new double ** [n_weighting_functions];
+		integrated_spacetime_moments[ir] = new double ** [n_weighting_functions];
 		dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		ln_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
 		for (int wfi=0; wfi<n_weighting_functions; wfi++)
 		{
-			resonance_source_variances_array[ir][wfi] = new double * [n_SP_pT];
-			dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_SP_px];
-			for (int ipt=0; ipt<n_SP_pT; ipt++)
+			integrated_spacetime_moments[ir][wfi] = new double * [n_localp_T];
+			if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
 			{
-				resonance_source_variances_array[ir][wfi][ipt] = new double [n_SP_pphi];
-				for (int ipt=0; ipt<n_SP_pT; ipt++)
-					resonance_source_variances_array[ir][wfi][ipt][iphi] = 0.0;
+				dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
+				ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
+				for (int ipx=0; ipx<n_interp1_px_pts; ipx++)
+				{
+					dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
+					ln_dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
+					for (int ipy=0; ipy<n_interp1_py_pts; ipy++)
+					{
+						dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+						ln_dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+					}
+				}
 			}
-			for (int ipx=0; ipx<n_SP_px_pts; ipx++)
+			else if (INTERPOLATION_FORMAT == 2) //using polar grid for interpolation (pT, pphi)
 			{
-				dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_SP_py_pts];
-				for (int ipy=0; ipy<n_SP_py_pts; ipy++)
-					dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+				dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+				ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+				for (int ipT=0; ipT<n_interp2_pT_pts; ipT++)
+				{
+					dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+					ln_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+					for (int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
+					{
+						dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+						ln_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+					}
+				}
+			}
+
+			for (int ipt=0; ipt<n_localp_T; ipt++)
+			{
+				integrated_spacetime_moments[ir][wfi][ipt] = new double [n_localp_phi];
+				for (int iphi=0; iphi<n_localp_phi; iphi++)
+					integrated_spacetime_moments[ir][wfi][ipt][iphi] = 0.0;
 			}
 		}
 	}
 	const double MeVToGeV = 0.001;
-	tau_pts = new double * [n_resonance];
 	s_pts = new double * [n_resonance];
-	tau_wts = new double * [n_resonance];
 	s_wts = new double * [n_resonance];
 	v_pts = new double [n_v_pts];
 	v_wts = new double [n_v_pts];
@@ -125,8 +150,6 @@ SourceVariances::SourceVariances(particle_info* particle)
 		resonances.resonance_decay_masses[ir][0] *= MeVToGeV;
 		resonances.resonance_decay_masses[ir][1] *= MeVToGeV;
 		resonances.resonance_Gamma[ir] *= MeVToGeV;
-		tau_pts[ir] = new double [n_tau_pts];
-		tau_wts[ir] = new double [n_tau_pts];
 		s_pts[ir] = new double [n_s_pts];
 		s_wts[ir] = new double [n_s_pts];
 	}
@@ -147,7 +170,6 @@ SourceVariances::SourceVariances(particle_info* particle)
 		double s_max_temp = (M_temp - particle_mass)*(M_temp - particle_mass);
 		// N.B. - this is only really necessary for 3-body decays,
 		//			but doesn't cause any problems for 2-body and is easier/simpler to code...
-		gauss_quadrature(n_tau_pts, 5, 0.0, 0.0, 0.0, Gamma_temp, tau_pts[ir], tau_wts[ir]);
 		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts[ir], s_wts[ir]);
 		/*DEBUG*///cout << ir << "     " << m2_temp << "     " << m3_temp << "     " << M_temp
 		/*DEBUG*///	<< "     " << particle_mass << "     " << s_min_temp << "     " << s_max_temp << endl;
@@ -164,6 +186,75 @@ SourceVariances::SourceVariances(particle_info* particle)
    SP_pphi_weight = new double [n_SP_pphi];
    gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2*M_PI, SP_pphi, SP_pphi_weight);
    SP_p_y = 0.0e0;
+
+//initialize and set evenly spaced grid of px-py points in transverse plane,
+//and corresponding p0 and pz points
+	SPinterp1_px = new double [n_interp1_px_pts];
+	SPinterp1_py = new double [n_interp1_py_pts];
+	SPinterp2_pT = new double [n_interp2_pT_pts];
+	SPinterp2_pphi = new double [n_interp2_pphi_pts];
+	sin_SPinterp2_pphi = new double [n_interp2_pphi_pts];
+	cos_SPinterp2_pphi = new double [n_interp2_pphi_pts];
+	SPinterp1_p0 = new double** [n_interp1_px_pts];
+	SPinterp1_pz = new double** [n_interp1_px_pts];
+	SPinterp2_p0 = new double* [n_interp2_pT_pts];
+	SPinterp2_pz = new double* [n_interp2_pT_pts];
+	double * dummywts1 = new double [n_interp1_px_pts];
+	double * dummywts2 = new double [n_interp1_py_pts];
+	double * dummywts3 = new double [n_interp2_pT_pts];
+	double * dummywts4 = new double [n_interp2_pphi_pts];
+	for(int ipx=0; ipx<n_interp1_px_pts; ipx++)
+	{
+		SPinterp1_p0[ipx] = new double* [n_interp1_py_pts];
+		SPinterp1_pz[ipx] = new double* [n_interp1_py_pts];
+		for(int ipy=0; ipy<n_interp1_py_pts; ipy++)
+		{
+			SPinterp1_p0[ipx][ipy] = new double [eta_s_npts];
+			SPinterp1_pz[ipx][ipy] = new double [eta_s_npts];
+		}
+	}
+	for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+	{
+		SPinterp2_p0[ipt] = new double [eta_s_npts];
+		SPinterp2_pz[ipt] = new double [eta_s_npts];
+	}
+	if (UNIFORM_SPACING)
+	{
+		//use uniformly spaced points in transverse momentum to make
+		//interpolation simpler/faster
+		for(int ipx=0; ipx<n_interp1_px_pts; ipx++)
+			SPinterp1_px[ipx] = interp1_px_min + (double)ipx*Del1_x;
+		for(int ipy=0; ipy<n_interp1_py_pts; ipy++)
+			SPinterp1_py[ipy] = interp1_py_min + (double)ipy*Del1_y;
+		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+			SPinterp2_pT[ipt] = interp2_pT_min + (double)ipt*Del2_pT;
+		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
+		{
+			SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
+			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
+			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
+		}
+	}
+	else
+	{
+		//try just gaussian points...
+		gauss_quadrature(n_interp1_px_pts, 1, 0.0, 1.0, interp1_px_min, interp1_px_max, SPinterp1_px, dummywts1);
+		gauss_quadrature(n_interp1_py_pts, 1, 0.0, 1.0, interp1_py_min, interp1_py_max, SPinterp1_py, dummywts2);
+		//gauss_quadrature(n_interp2_pT_pts, 5, 0.0, 0.0, 0.0, (double)n_interp2_pT_pts, SPinterp2_pT, dummywts3);
+		//logspace(SPinterp2_pT, interp2_pT_min, interp2_pT_max, n_interp2_pT_pts);
+		scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 1.0, n_interp2_pT_pts);
+		//gauss_quadrature(n_interp2_pT_pts, 1, 0.0, 0.0, interp2_pT_min, interp2_pT_max, SPinterp2_pT, dummywts3);
+		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+			cerr << SPinterp2_pT[ipt] << endl;
+		//gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, 2.*M_PI, 1.0, SPinterp2_pphi, dummywts4);
+		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
+		{
+			SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
+			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
+			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
+		}
+	}
+
    dN_dypTdpTdphi = new double* [n_SP_pT];
    cosine_iorder = new double* [n_SP_pT];
    sine_iorder = new double* [n_SP_pT];
@@ -205,8 +296,8 @@ SourceVariances::SourceVariances(particle_info* particle)
    K_phi_weight = new double [n_localp_phi];
    gauss_quadrature(n_localp_phi, 1, 0.0, 0.0, localp_phi_min, localp_phi_max, K_phi, K_phi_weight);
 
-	source_variances_array = new double [n_weighting_functions];
-	for (int i=0; i<n_weighting_functions; i++) source_variances_array[i] = 0.0;
+	//source_variances_array = new double [n_weighting_functions];
+	//for (int i=0; i<n_weighting_functions; i++) source_variances_array[i] = 0.0;
 
    //spatial rapidity grid
    eta_s = new double [eta_s_npts];

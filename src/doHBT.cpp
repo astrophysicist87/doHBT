@@ -5,6 +5,7 @@
 #include<cmath>
 #include<iomanip>
 #include<vector>
+#include<algorithm>
 #include<stdio.h>
 
 #include<gsl/gsl_sf_bessel.h>
@@ -556,80 +557,6 @@ cout  << endl << endl << endl;
    return;
 }
 
-/*void doHBT::Cal_local_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, double** local_dN_dypTdpTdphi, FO_surf* FOsurf_ptr)
-{
-   double sign = particle_sign;
-   double degen = particle_gspin;
-   double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
-
-   for(int isurf=0; isurf<FO_length ; isurf++)
-   {
-//cout << "isurf = " << isurf << endl;
-      FO_surf* surf = &FOsurf_ptr[isurf];
-      double tau = surf->tau;
-      double mu = surf->particle_mu[particle_id];
-//	cerr << mu << "   " << sign << "   " << degen << "   " << endl;
-      double vx = surf->vx;
-      double vy = surf->vy;
-      double Tdec = surf->Tdec;
-      double Pdec = surf->Pdec;
-      double Edec = surf->Edec;
-      double da0 = surf->da0;
-      double da1 = surf->da1;
-      double da2 = surf->da2;
-      double pi00 = surf->pi00;
-      double pi01 = surf->pi01;
-      double pi02 = surf->pi02;
-      double pi11 = surf->pi11;
-      double pi12 = surf->pi12;
-      double pi22 = surf->pi22;
-      double pi33 = surf->pi33;
-
-      double vT = sqrt(vx*vx + vy*vy);
-      double gammaT = 1./sqrt(1. - vT*vT);
-
-      double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-      
-      for(int ipt = 0; ipt < n_PT_pts; ipt++)
-      {
-      for(int iphi = 0; iphi < n_SP_pphi; iphi++)
-      {
-         double px = SP_px[ipt][iphi];
-         double py = SP_py[ipt][iphi];
-      for(int ieta=0; ieta < eta_s_npts; ieta++)
-      {
-         double p0 = SP_p0[ipt][ieta];
-         double pz = SP_pz[ipt][ieta];
-         double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
-         double f0;
-         if(expon > 20) f0 = 0.0e0;
-         else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
-
-         //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-         double pdsigma = p0*da0 + px*da1 + py*da2;
-
-         //viscous corrections
-         double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
-         double deltaf = 0.;
-	 if (use_delta_f)
-	 {
-		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
-	 }
-
-         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
-	 if (1. + deltaf < 0.0) S_p = 0.0;
-//cout << "S_p = " << S_p << endl;
-	double symmetry_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
-         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta direction
-         local_dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
-      }
-      }
-      }
-   }
-   return;
-}*/
-
 double doHBT::Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf)
 {
    double mu = surf->particle_mu[particle_id];
@@ -739,6 +666,49 @@ void doHBT::Get_HBTradii_from_Cbar_and_Cavg()
 
   return;
 }
+
+void doHBT::Simulate_subensemble_averaging()
+{
+	for (int iM = 0; iM < MmaxSEA; iM++)
+	{
+		// using built-in random generator:
+		random_shuffle ( eventvector.begin(), eventvector.end() );
+		
+		int nb = total_Nev/n_events;
+		for (int ibin = 0; ibin < nb; ibin++)
+		{
+			Get_HBTradii_from_Cbar_and_Cavg_random(ibin);
+			Update_subensemble_indexfile(iM, ibin);
+			Output_CAVG_random_results(iM, ibin);
+		}
+	}
+}
+
+void doHBT::Get_HBTradii_from_Cbar_and_Cavg_random(int ibin)
+{
+  // for i in given bin of events
+  for (int i = ibin*n_events; i < (ibin+1)*n_events; i++)
+  {
+	int ith_event = eventvector[i];
+	if (VERBOSE > 0) *global_out_stream_ptr << "Reading in results from event = " << ith_event << endl;
+	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(ith_event));
+	Readin_results(ith_event);
+	Update_avgSource_function(-1,-1);
+	Update_CavgSource_function(-1,-1);
+  }
+
+  Calculate_avgSource_function(-1,-1);
+  Calculate_CavgSource_function(-1,-1);
+
+  Determine_avgplane_angle();
+  //Determine_Cavgplane_angle();
+
+  Analyze_AVG_sourcefunction();
+  Analyze_CAVG_sourcefunction();
+
+  return;
+}
+
 
 void doHBT::Update_avgSource_function(int i = -1, int j = -1)
 {

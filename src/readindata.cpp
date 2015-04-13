@@ -151,6 +151,8 @@ void read_surfdat(int length, FO_surf* surf_ptr, string localpath)
      surfdat >> dummy >> dummy;
      surfdat >> surf_ptr[i].xpt;
      surfdat >> surf_ptr[i].ypt;
+     surf_ptr[i].r = sqrt(surf_ptr[i].xpt*surf_ptr[i].xpt + surf_ptr[i].ypt*surf_ptr[i].ypt);
+     surf_ptr[i].phi = atan2(surf_ptr[i].ypt, surf_ptr[i].xpt);
      surfdat.getline(rest_dummy, 512);
   }
   surfdat.close();
