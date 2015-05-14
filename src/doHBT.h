@@ -95,6 +95,7 @@ class doHBT
       double** anisotropic_flows_pTdiff_psin;
       double global_plane_psi;
       double mean_pT;
+      double ** eventByEventMultiplicities;
      
       //pair momentum
       double K_y;
@@ -145,6 +146,26 @@ class doHBT
       double **xo_xs_sin, **xl_xs_sin, **xo_xl_sin;
       double **xs2_sin, **xo2_sin, **xl2_sin, **t2_sin;
 
+      //azimuthally averaged source variances and HBT radii
+      double *azavg_S_func;
+      double *azavg_xs_S, *azavg_xo_S, *azavg_xl_S, *azavg_t_S;
+      double *azavg_xs_t_S, *azavg_xo_t_S, *azavg_xl_t_S;
+      double *azavg_xo_xs_S, *azavg_xl_xs_S, *azavg_xo_xl_S;
+      double *azavg_xs2_S, *azavg_xo2_S, *azavg_xl2_S, *azavg_t2_S;
+      double *azavg_R2_side, *azavg_R2_out, *azavg_R2_long, *azavg_R2_outside, *azavg_R2_sidelong, *azavg_R2_outlong;
+
+      //azimuthally averaged, EBE avgd. source variances and HBT radii
+      double *azavg_avgS_func;
+      double *azavg_avgxs_S, *azavg_avgxo_S, *azavg_avgxl_S, *azavg_avgt_S;
+      double *azavg_avgxs_t_S, *azavg_avgxo_t_S, *azavg_avgxl_t_S;
+      double *azavg_avgxo_xs_S, *azavg_avgxl_xs_S, *azavg_avgxo_xl_S;
+      double *azavg_avgxs2_S, *azavg_avgxo2_S, *azavg_avgxl2_S, *azavg_avgt2_S;
+      double *azavg_avgR2_side, *azavg_avgR2_out, *azavg_avgR2_long, *azavg_avgR2_outside, *azavg_avgR2_sidelong, *azavg_avgR2_outlong;
+      double *azavg_CavgS_func;
+      double *azavg_CavgR2_side_num, *azavg_CavgR2_out_num, *azavg_CavgR2_long_num;
+      double *azavg_CavgR2_outside_num, *azavg_CavgR2_sidelong_num, *azavg_CavgR2_outlong_num;
+      double *azavg_CavgR2_side, *azavg_CavgR2_out, *azavg_CavgR2_long, *azavg_CavgR2_outside, *azavg_CavgR2_sidelong, *azavg_CavgR2_outlong;
+
       //EBE avgd. source variances
       double **avgS_func;
       double **avgxs_S, **avgxo_S, **avgxl_S, **avgt_S;
@@ -155,10 +176,7 @@ class doHBT
       double **CavgS_func;
       double **CavgR2_side_num, **CavgR2_out_num, **CavgR2_long_num;
       double **CavgR2_outside_num, **CavgR2_sidelong_num, **CavgR2_outlong_num;
-      //double **Cavgxs_S, **Cavgxo_S, **Cavgxl_S, **Cavgt_S;
-      //double **Cavgxs_t_S, **Cavgxo_t_S, **Cavgxl_t_S;
-      //double **Cavgxo_xs_S, **Cavgxl_xs_S, **Cavgxo_xl_S;
-      //double **Cavgxs2_S, **Cavgxo2_S, **Cavgxl2_S, **Cavgt2_S;
+
 
       //HBT radii coefficients
       double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
@@ -207,6 +225,7 @@ class doHBT
 
       void Determine_plane_angle(FO_surf* FOsurf_ptr);
       void Get_EdNd3p_cfs(FO_surf* FOsurf_ptr);
+      void Get_azimuthally_averaged_EBE_Svars_and_HBTradii();
       void Determine_avgplane_angle();
       void Determine_Cavgplane_angle();
       void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
@@ -214,7 +233,10 @@ class doHBT
       void quick_Analyze_sourcefunction_vars();
       void Analyze_AVG_sourcefunction();
       void Analyze_CAVG_sourcefunction();
+      void Analyze_azimuthally_averaged_AVG_sourcefunction();
+      void Analyze_azimuthally_averaged_CAVG_sourcefunction();
       void Reset_EmissionData();
+      void Reset_source_variances_and_HBT_radii();
       void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
       void SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, bool includezeroes);
       void Output_Emission_Function(int iKT, int iKphi, int folderindex);
@@ -227,6 +249,10 @@ class doHBT
       void Update_CavgSource_function(int iKT, int iKphi);
       void Calculate_avgSource_function(int, int);
       void Calculate_CavgSource_function(int, int);
+      void Update_avgSource_function(int iKT);		//the azimuthally independent versions
+      void Update_CavgSource_function(int iKT);		//the azimuthally independent versions
+      void Calculate_avgSource_function(int);		//the azimuthally independent versions
+      void Calculate_CavgSource_function(int);		//the azimuthally independent versions
       bool fexists(const char *filename);
 
       void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
@@ -239,20 +265,31 @@ class doHBT
       void Get_source_variances(int, int);
       void Calculate_HBTradii_from_C_ev(int, int);
       void Get_HBTradii_from_Cbar_and_Cavg();
+      void Get_HBTradii_from_azimuthally_averaged_Cavg_and_Cbar();
       void Get_HBTradii_from_Cbar_and_Cavg_random(int);
+      void Get_HBTradii_from_azimuthally_averaged_Cavg_random(int);
+      void Get_HBTradii_from_Cbar_and_Cavg_fixed_events(vector<int> list_of_events);
       void Simulate_subensemble_averaging();
+      void Simulate_azimuthally_averaged_subensemble_averaging();
+
+      //input and output
       void Readin_results(int);
       void Readin_HBTev_results_only(int);
       void Readin_ev_plane_psi(int);
       void Readin_AVG_results();
+      void Read_in_event_multiplicity(int event);
       void Output_ev_plane_psi(int);
       void Output_results(int);
       void Output_GF_results(int);
       void Output_Svars_results(int);
+      void Output_azimuthally_averaged_results(int folderindex);
+      void Readin_azimuthally_averaged_results(int folderindex);
       void Output_AVG_results();
       void Output_CAVG_results();
+      void Output_azimuthally_averaged_Cbar_and_CAVG_results();
       void Update_subensemble_indexfile(int iM, int ibin);
       void Output_CAVG_random_results(int iM, int ibin);
+      void Output_azimuthally_averaged_CAVG_random_results(int iM, int ibin);
       void Output_HBTcfsev_results_only(int);
       void Output_dN_dypTdpTdphi(int folderindex);
       void Output_dN_dypTdpT(int folderindex);
@@ -264,6 +301,7 @@ class doHBT
       void Output_ev_EdNd3p_cfs(int folderindex);
       void Output_ev_mean_pT(int folderindex);
 
+      //functions to calcuate R2ij, various avgd. R2ij, etc.
       void Calculate_R2_side(int, int);
       void Calculate_R2_out(int, int);
       void Calculate_R2_outside(int, int);
@@ -284,6 +322,27 @@ class doHBT
       void Calculate_CavgR2_long(int, int);
       void Calculate_CavgR2_sidelong(int, int);
       void Calculate_CavgR2_outlong(int, int);
+
+      void Calculate_azimuthally_averaged_R2_side(int);
+      void Calculate_azimuthally_averaged_R2_out(int);
+      void Calculate_azimuthally_averaged_R2_outside(int);
+      void Calculate_azimuthally_averaged_R2_long(int);
+      void Calculate_azimuthally_averaged_R2_sidelong(int);
+      void Calculate_azimuthally_averaged_R2_outlong(int);
+
+      void Calculate_azimuthally_averaged_avgR2_side(int);
+      void Calculate_azimuthally_averaged_avgR2_out(int);
+      void Calculate_azimuthally_averaged_avgR2_outside(int);
+      void Calculate_azimuthally_averaged_avgR2_long(int);
+      void Calculate_azimuthally_averaged_avgR2_sidelong(int);
+      void Calculate_azimuthally_averaged_avgR2_outlong(int);
+
+      void Calculate_azimuthally_averaged_CavgR2_side(int);
+      void Calculate_azimuthally_averaged_CavgR2_out(int);
+      void Calculate_azimuthally_averaged_CavgR2_outside(int);
+      void Calculate_azimuthally_averaged_CavgR2_long(int);
+      void Calculate_azimuthally_averaged_CavgR2_sidelong(int);
+      void Calculate_azimuthally_averaged_CavgR2_outlong(int);
 
 //correlation function stuff
       void Cal_correlationfunction_1D(int, int);

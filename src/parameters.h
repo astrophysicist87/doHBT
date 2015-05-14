@@ -10,6 +10,8 @@ using namespace std;
 					// 1 - Cartesian grid spacing in px - py
 					// 2 - polar grid spacing in pT - pphi
 #define UNIFORM_SPACING true		// specifies uniform or non-uniform grid spacing for interpolation
+#define ASSUME_ETA_SYMMETRIC 1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
+					// 0 means just integrate over given range of eta_s without worrying about symmetry
 
 const double hbarC=0.197327053;  //GeV*fm
 
@@ -41,12 +43,12 @@ const double SP_pT_max = 3.0;
 
 //parameters for interpolation grid
 //  - Cartesian
-const int n_interp1_px_pts = 27;
-const int n_interp1_py_pts = 27;
-const double interp1_px_min = -3.0;
-const double interp1_py_min = -3.0;
-const double interp1_px_max = 3.0;
-const double interp1_py_max = 3.0;
+const int n_interp1_px_pts = 51;
+const int n_interp1_py_pts = 51;
+const double interp1_px_min = 0.01;
+const double interp1_py_min = -0.05;
+const double interp1_px_max = 0.21;
+const double interp1_py_max = 0.05;
 //const double interp1_px_min = -0.1;
 //const double interp1_py_min = -0.1;
 //const double interp1_px_max = 0.1;
@@ -54,9 +56,9 @@ const double interp1_py_max = 3.0;
 const double Del1_x = (interp1_px_max - interp1_px_min) / (double)(n_interp1_px_pts-1);
 const double Del1_y = (interp1_py_max - interp1_py_min) / (double)(n_interp1_py_pts-1);
 //  - polar
-const int n_interp2_pT_pts = 51;
-const int n_interp2_pphi_pts = 51;
-const double interp2_pT_min = 0.0001;
+const int n_interp2_pT_pts = 31;
+const int n_interp2_pphi_pts = 24;
+const double interp2_pT_min = 0.01;
 const double interp2_pphi_min = 0.0;
 const double interp2_pT_max = 3.0;
 const double interp2_pphi_max = 2.*M_PI;

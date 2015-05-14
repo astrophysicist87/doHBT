@@ -25,9 +25,9 @@ doHBT::doHBT()
 {
    //plumberg_test_variable = 3.14159;
    //default initial event and # of events for avg'ing routines
-   initial_event = 1;
-   n_events = 1000;
-  	for (int i=1; i<=1000; ++i) eventvector.push_back(i);
+   initial_event = 1;	//defaults for now
+   n_events = 1000;	//defaults for now
+   //for (int i=1; i<=1000; ++i) eventvector.push_back(i);
    //default: use delta_f in calculations
    use_delta_f = true;
    no_df_stem = "";
@@ -185,6 +185,23 @@ doHBT::doHBT()
    xl2_S = new double* [n_localp_T];
    t2_S = new double* [n_localp_T];
 
+   azavg_S_func = new double [n_localp_T];
+   azavg_xs_S = new double [n_localp_T];
+   azavg_xo_S = new double [n_localp_T];
+   azavg_xl_S = new double [n_localp_T];
+   azavg_t_S = new double [n_localp_T];
+   azavg_xs_t_S = new double [n_localp_T];
+   azavg_xo_t_S = new double [n_localp_T];
+   azavg_xl_t_S = new double [n_localp_T];
+   azavg_xo_xs_S = new double [n_localp_T];
+   azavg_xl_xs_S = new double [n_localp_T];
+   azavg_xo_xl_S = new double [n_localp_T];
+   azavg_xs2_S = new double [n_localp_T];
+   azavg_xo2_S = new double [n_localp_T];
+   azavg_xl2_S = new double [n_localp_T];
+   azavg_t2_S = new double [n_localp_T];
+
+
    xs_t_cos = new double* [n_localp_T];
    xo_t_cos = new double* [n_localp_T];
    xl_t_cos = new double* [n_localp_T];
@@ -222,6 +239,22 @@ doHBT::doHBT()
    avgxl2_S = new double* [n_localp_T];
    avgt2_S = new double* [n_localp_T];
 
+   azavg_avgS_func = new double [n_localp_T];
+   azavg_avgxs_S = new double [n_localp_T];
+   azavg_avgxo_S = new double [n_localp_T];
+   azavg_avgxl_S = new double [n_localp_T];
+   azavg_avgt_S = new double [n_localp_T];
+   azavg_avgxs_t_S = new double [n_localp_T];
+   azavg_avgxo_t_S = new double [n_localp_T];
+   azavg_avgxl_t_S = new double [n_localp_T];
+   azavg_avgxo_xs_S = new double [n_localp_T];
+   azavg_avgxl_xs_S = new double [n_localp_T];
+   azavg_avgxo_xl_S = new double [n_localp_T];
+   azavg_avgxs2_S = new double [n_localp_T];
+   azavg_avgxo2_S = new double [n_localp_T];
+   azavg_avgxl2_S = new double [n_localp_T];
+   azavg_avgt2_S = new double [n_localp_T];
+
    CavgS_func = new double* [n_localp_T];
    CavgR2_side_num = new double* [n_localp_T];
    CavgR2_out_num = new double* [n_localp_T];
@@ -229,20 +262,14 @@ doHBT::doHBT()
    CavgR2_outside_num = new double* [n_localp_T];
    CavgR2_sidelong_num = new double* [n_localp_T];
    CavgR2_outlong_num = new double* [n_localp_T];
-   //Cavgxs_S = new double* [n_localp_T];
-   //Cavgxo_S = new double* [n_localp_T];
-   //Cavgxl_S = new double* [n_localp_T];
-   //Cavgt_S = new double* [n_localp_T];
-   //Cavgxs_t_S = new double* [n_localp_T];
-   //Cavgxo_t_S = new double* [n_localp_T];
-   //Cavgxl_t_S = new double* [n_localp_T];
-   //Cavgxo_xs_S = new double* [n_localp_T];
-   //Cavgxl_xs_S = new double* [n_localp_T];
-   //Cavgxo_xl_S = new double* [n_localp_T];
-   //Cavgxs2_S = new double* [n_localp_T];
-   //Cavgxo2_S = new double* [n_localp_T];
-   //Cavgxl2_S = new double* [n_localp_T];
-   //Cavgt2_S = new double* [n_localp_T];
+
+   azavg_CavgS_func = new double [n_localp_T];
+   azavg_CavgR2_side_num = new double [n_localp_T];
+   azavg_CavgR2_out_num = new double [n_localp_T];
+   azavg_CavgR2_long_num = new double [n_localp_T];
+   azavg_CavgR2_outside_num = new double [n_localp_T];
+   azavg_CavgR2_sidelong_num = new double [n_localp_T];
+   azavg_CavgR2_outlong_num = new double [n_localp_T];
 
    R2_side = new double* [n_localp_T];
    R2_side_C = new double* [n_localp_T];
@@ -262,6 +289,13 @@ doHBT::doHBT()
    R2_outlong = new double* [n_localp_T];
    R2_outlong_C = new double* [n_localp_T];
    R2_outlong_S = new double* [n_localp_T];
+
+   azavg_R2_side = new double [n_localp_T];
+   azavg_R2_out = new double [n_localp_T];
+   azavg_R2_long = new double [n_localp_T];
+   azavg_R2_outside = new double [n_localp_T];
+   azavg_R2_sidelong = new double [n_localp_T];
+   azavg_R2_outlong = new double [n_localp_T];
 
    R2_side_err = new double* [n_localp_T];
    R2_out_err = new double* [n_localp_T];
@@ -292,6 +326,13 @@ doHBT::doHBT()
    avgR2_outlong_C = new double* [n_localp_T];
    avgR2_outlong_S = new double* [n_localp_T];
 
+   azavg_avgR2_side = new double [n_localp_T];
+   azavg_avgR2_out = new double [n_localp_T];
+   azavg_avgR2_long = new double [n_localp_T];
+   azavg_avgR2_outside = new double [n_localp_T];
+   azavg_avgR2_sidelong = new double [n_localp_T];
+   azavg_avgR2_outlong = new double [n_localp_T];
+
    CavgR2_side = new double* [n_localp_T];
    CavgR2_side_C = new double* [n_localp_T];
    CavgR2_side_S = new double* [n_localp_T];
@@ -311,6 +352,13 @@ doHBT::doHBT()
    CavgR2_outlong_C = new double* [n_localp_T];
    CavgR2_outlong_S = new double* [n_localp_T];
 
+   azavg_CavgR2_side = new double [n_localp_T];
+   azavg_CavgR2_out = new double [n_localp_T];
+   azavg_CavgR2_long = new double [n_localp_T];
+   azavg_CavgR2_outside = new double [n_localp_T];
+   azavg_CavgR2_sidelong = new double [n_localp_T];
+   azavg_CavgR2_outlong = new double [n_localp_T];
+
    for(int i=0; i<n_localp_T; i++)
    {
       S_func[i] = new double [n_localp_phi];
@@ -328,6 +376,22 @@ doHBT::doHBT()
       xo2_S[i] = new double [n_localp_phi];
       xl2_S[i] = new double [n_localp_phi];
       t2_S[i] = new double [n_localp_phi];
+
+      azavg_S_func[i] = 0.0;
+      azavg_xs_S[i] = 0.0;
+      azavg_xo_S[i] = 0.0;
+      azavg_xl_S[i] = 0.0;
+      azavg_t_S[i] = 0.0;
+      azavg_xs_t_S[i] = 0.0;
+      azavg_xo_t_S[i] = 0.0;
+      azavg_xl_t_S[i] = 0.0;
+      azavg_xo_xs_S[i] = 0.0;
+      azavg_xl_xs_S[i] = 0.0;
+      azavg_xo_xl_S[i] = 0.0;
+      azavg_xs2_S[i] = 0.0;
+      azavg_xo2_S[i] = 0.0;
+      azavg_xl2_S[i] = 0.0;
+      azavg_t2_S[i] = 0.0;
 
       xs_t_cos[i] = new double [n_order];
       xo_t_cos[i] = new double [n_order];
@@ -366,6 +430,22 @@ doHBT::doHBT()
       avgxl2_S[i] = new double [n_localp_phi];
       avgt2_S[i] = new double [n_localp_phi];
 
+      azavg_avgS_func[i] = 0.0;
+      azavg_avgxs_S[i] = 0.0;
+      azavg_avgxo_S[i] = 0.0;
+      azavg_avgxl_S[i] = 0.0;
+      azavg_avgt_S[i] = 0.0;
+      azavg_avgxs_t_S[i] = 0.0;
+      azavg_avgxo_t_S[i] = 0.0;
+      azavg_avgxl_t_S[i] = 0.0;
+      azavg_avgxo_xs_S[i] = 0.0;
+      azavg_avgxl_xs_S[i] = 0.0;
+      azavg_avgxo_xl_S[i] = 0.0;
+      azavg_avgxs2_S[i] = 0.0;
+      azavg_avgxo2_S[i] = 0.0;
+      azavg_avgxl2_S[i] = 0.0;
+      azavg_avgt2_S[i] = 0.0;
+
       CavgS_func[i] = new double [n_localp_phi];
       CavgR2_side_num[i] = new double [n_localp_phi];
       CavgR2_out_num[i] = new double [n_localp_phi];
@@ -373,20 +453,14 @@ doHBT::doHBT()
       CavgR2_outside_num[i] = new double [n_localp_phi];
       CavgR2_sidelong_num[i] = new double [n_localp_phi];
       CavgR2_outlong_num[i] = new double [n_localp_phi];
-      //Cavgxs_S[i] = new double [n_localp_phi];
-      //Cavgxo_S[i] = new double [n_localp_phi];
-      //Cavgxl_S[i] = new double [n_localp_phi];
-      //Cavgt_S[i] = new double [n_localp_phi];
-      //Cavgxs_t_S[i] = new double [n_localp_phi];
-      //Cavgxo_t_S[i] = new double [n_localp_phi];
-      //Cavgxl_t_S[i] = new double [n_localp_phi];
-      //Cavgxo_xs_S[i] = new double [n_localp_phi];
-      //Cavgxl_xs_S[i] = new double [n_localp_phi];
-      //Cavgxo_xl_S[i] = new double [n_localp_phi];
-      //Cavgxs2_S[i] = new double [n_localp_phi];
-      //Cavgxo2_S[i] = new double [n_localp_phi];
-      //Cavgxl2_S[i] = new double [n_localp_phi];
-      //Cavgt2_S[i] = new double [n_localp_phi];
+
+      azavg_CavgS_func[i] = 0.0;
+      azavg_CavgR2_side_num[i] = 0.0;
+      azavg_CavgR2_out_num[i] = 0.0;
+      azavg_CavgR2_long_num[i] = 0.0;
+      azavg_CavgR2_outside_num[i] = 0.0;
+      azavg_CavgR2_sidelong_num[i] = 0.0;
+      azavg_CavgR2_outlong_num[i] = 0.0;
 
       R2_side[i] = new double [n_localp_phi];
       R2_side_C[i] = new double [n_order];
@@ -406,6 +480,13 @@ doHBT::doHBT()
       R2_outlong[i] = new double [n_localp_phi];
       R2_outlong_C[i] = new double [n_order];
       R2_outlong_S[i] = new double [n_order];
+
+      azavg_R2_side[i] = 0.0;
+      azavg_R2_out[i] = 0.0;
+      azavg_R2_outside[i] = 0.0;
+      azavg_R2_long[i] = 0.0;
+      azavg_R2_sidelong[i] = 0.0;
+      azavg_R2_outlong[i] = 0.0;
 
       R2_side_err[i] = new double [n_localp_phi];
       R2_out_err[i] = new double [n_localp_phi];
@@ -436,6 +517,13 @@ doHBT::doHBT()
       avgR2_outlong_C[i] = new double [n_order];
       avgR2_outlong_S[i] = new double [n_order];
 
+      azavg_avgR2_side[i] = 0.0;
+      azavg_avgR2_out[i] = 0.0;
+      azavg_avgR2_outside[i] = 0.0;
+      azavg_avgR2_long[i] = 0.0;
+      azavg_avgR2_sidelong[i] = 0.0;
+      azavg_avgR2_outlong[i] = 0.0;
+
       CavgR2_side[i] = new double [n_localp_phi];
       CavgR2_side_C[i] = new double [n_order];
       CavgR2_side_S[i] = new double [n_order];
@@ -454,11 +542,80 @@ doHBT::doHBT()
       CavgR2_outlong[i] = new double [n_localp_phi];
       CavgR2_outlong_C[i] = new double [n_order];
       CavgR2_outlong_S[i] = new double [n_order];
+
+      azavg_CavgR2_side[i] = 0.0;
+      azavg_CavgR2_out[i] = 0.0;
+      azavg_CavgR2_outside[i] = 0.0;
+      azavg_CavgR2_long[i] = 0.0;
+      azavg_CavgR2_sidelong[i] = 0.0;
+      azavg_CavgR2_outlong[i] = 0.0;
    }
 
 //initialize all source variances and HBT radii/coeffs
 for(int i=0; i<n_localp_T; i++)
 {
+   //reset azimuthally averaged radii first
+      azavg_S_func[i] = 0.0;
+      azavg_xs_S[i] = 0.0;
+      azavg_xo_S[i] = 0.0;
+      azavg_xl_S[i] = 0.0;
+      azavg_t_S[i] = 0.0;
+      azavg_xs_t_S[i] = 0.0;
+      azavg_xo_t_S[i] = 0.0;
+      azavg_xl_t_S[i] = 0.0;
+      azavg_xo_xs_S[i] = 0.0;
+      azavg_xl_xs_S[i] = 0.0;
+      azavg_xo_xl_S[i] = 0.0;
+      azavg_xs2_S[i] = 0.0;
+      azavg_xo2_S[i] = 0.0;
+      azavg_xl2_S[i] = 0.0;
+      azavg_t2_S[i] = 0.0;
+
+      azavg_avgS_func[i] = 0.0;
+      azavg_avgxs_S[i] = 0.0;
+      azavg_avgxo_S[i] = 0.0;
+      azavg_avgxl_S[i] = 0.0;
+      azavg_avgt_S[i] = 0.0;
+      azavg_avgxs_t_S[i] = 0.0;
+      azavg_avgxo_t_S[i] = 0.0;
+      azavg_avgxl_t_S[i] = 0.0;
+      azavg_avgxo_xs_S[i] = 0.0;
+      azavg_avgxl_xs_S[i] = 0.0;
+      azavg_avgxo_xl_S[i] = 0.0;
+      azavg_avgxs2_S[i] = 0.0;
+      azavg_avgxo2_S[i] = 0.0;
+      azavg_avgxl2_S[i] = 0.0;
+      azavg_avgt2_S[i] = 0.0;
+
+      azavg_CavgS_func[i] = 0.0;
+      azavg_CavgR2_side_num[i] = 0.0;
+      azavg_CavgR2_out_num[i] = 0.0;
+      azavg_CavgR2_long_num[i] = 0.0;
+      azavg_CavgR2_outside_num[i] = 0.0;
+      azavg_CavgR2_sidelong_num[i] = 0.0;
+      azavg_CavgR2_outlong_num[i] = 0.0;
+
+      azavg_R2_side[i] = 0.0;
+      azavg_R2_out[i] = 0.0;
+      azavg_R2_outside[i] = 0.0;
+      azavg_R2_long[i] = 0.0;
+      azavg_R2_sidelong[i] = 0.0;
+      azavg_R2_outlong[i] = 0.0;
+
+      azavg_avgR2_side[i] = 0.0;
+      azavg_avgR2_out[i] = 0.0;
+      azavg_avgR2_outside[i] = 0.0;
+      azavg_avgR2_long[i] = 0.0;
+      azavg_avgR2_sidelong[i] = 0.0;
+      azavg_avgR2_outlong[i] = 0.0;
+
+      azavg_CavgR2_side[i] = 0.0;
+      azavg_CavgR2_out[i] = 0.0;
+      azavg_CavgR2_outside[i] = 0.0;
+      azavg_CavgR2_long[i] = 0.0;
+      azavg_CavgR2_sidelong[i] = 0.0;
+      azavg_CavgR2_outlong[i] = 0.0;
+
 	for(int j=0; j<n_localp_phi; j++)
 	{
 		S_func[i][j] = 0.;
@@ -500,20 +657,6 @@ for(int i=0; i<n_localp_T; i++)
 		CavgR2_long_num[i][j] = 0.;
 		CavgR2_sidelong_num[i][j] = 0.;
 		CavgR2_outlong_num[i][j] = 0.;
-		//Cavgxs_S[i][j] = 0.;
-		//Cavgxo_S[i][j] = 0.;
-		//Cavgxl_S[i][j] = 0.;
-		//Cavgt_S[i][j] = 0.;
-		//Cavgxs_t_S[i][j] = 0.;
-		//Cavgxo_t_S[i][j] = 0.;
-		//Cavgxl_t_S[i][j] = 0.;
-		//Cavgxo_xs_S[i][j] = 0.;
-		//Cavgxl_xs_S[i][j] = 0.;
-		//Cavgxo_xl_S[i][j] = 0.;
-		//Cavgxs2_S[i][j] = 0.;
-		//Cavgxo2_S[i][j] = 0.;
-		//Cavgxl2_S[i][j] = 0.;
-		//Cavgt2_S[i][j] = 0.;
 
 		R2_side[i][j] = 0.;
 		R2_out[i][j] = 0.;
@@ -663,6 +806,52 @@ void doHBT::Update_sourcefunction(particle_info* particle, int FOarray_length, i
 //reset only EBE source variances and EBE HBT radii/coeffs
 for(int i=0; i<n_localp_T; i++)
 {
+   //reset azimuthally averaged radii first
+      azavg_S_func[i] = 0.0;
+      azavg_xs_S[i] = 0.0;
+      azavg_xo_S[i] = 0.0;
+      azavg_xl_S[i] = 0.0;
+      azavg_t_S[i] = 0.0;
+      azavg_xs_t_S[i] = 0.0;
+      azavg_xo_t_S[i] = 0.0;
+      azavg_xl_t_S[i] = 0.0;
+      azavg_xo_xs_S[i] = 0.0;
+      azavg_xl_xs_S[i] = 0.0;
+      azavg_xo_xl_S[i] = 0.0;
+      azavg_xs2_S[i] = 0.0;
+      azavg_xo2_S[i] = 0.0;
+      azavg_xl2_S[i] = 0.0;
+      azavg_t2_S[i] = 0.0;
+
+      azavg_CavgS_func[i] = 0.0;
+      azavg_CavgR2_side_num[i] = 0.0;
+      azavg_CavgR2_out_num[i] = 0.0;
+      azavg_CavgR2_long_num[i] = 0.0;
+      azavg_CavgR2_outside_num[i] = 0.0;
+      azavg_CavgR2_sidelong_num[i] = 0.0;
+      azavg_CavgR2_outlong_num[i] = 0.0;
+
+      azavg_R2_side[i] = 0.0;
+      azavg_R2_out[i] = 0.0;
+      azavg_R2_outside[i] = 0.0;
+      azavg_R2_long[i] = 0.0;
+      azavg_R2_sidelong[i] = 0.0;
+      azavg_R2_outlong[i] = 0.0;
+
+      azavg_avgR2_side[i] = 0.0;
+      azavg_avgR2_out[i] = 0.0;
+      azavg_avgR2_outside[i] = 0.0;
+      azavg_avgR2_long[i] = 0.0;
+      azavg_avgR2_sidelong[i] = 0.0;
+      azavg_avgR2_outlong[i] = 0.0;
+
+      azavg_CavgR2_side[i] = 0.0;
+      azavg_CavgR2_out[i] = 0.0;
+      azavg_CavgR2_outside[i] = 0.0;
+      azavg_CavgR2_long[i] = 0.0;
+      azavg_CavgR2_sidelong[i] = 0.0;
+      azavg_CavgR2_outlong[i] = 0.0;
+
 	for(int j=0; j<n_localp_phi; j++)
 	{
 		S_func[i][j] = 0.;
@@ -681,12 +870,50 @@ for(int i=0; i<n_localp_T; i++)
 		xl2_S[i][j] = 0.;
 		t2_S[i][j] = 0.;
 
+		avgS_func[i][j] = 0.;
+		avgxs_S[i][j] = 0.;
+		avgxo_S[i][j] = 0.;
+		avgxl_S[i][j] = 0.;
+		avgt_S[i][j] = 0.;
+		avgxs_t_S[i][j] = 0.;
+		avgxo_t_S[i][j] = 0.;
+		avgxl_t_S[i][j] = 0.;
+		avgxo_xs_S[i][j] = 0.;
+		avgxl_xs_S[i][j] = 0.;
+		avgxo_xl_S[i][j] = 0.;
+		avgxs2_S[i][j] = 0.;
+		avgxo2_S[i][j] = 0.;
+		avgxl2_S[i][j] = 0.;
+		avgt2_S[i][j] = 0.;
+
+		CavgS_func[i][j] = 0.;
+		CavgR2_side_num[i][j] = 0.;
+		CavgR2_out_num[i][j] = 0.;
+		CavgR2_outside_num[i][j] = 0.;
+		CavgR2_long_num[i][j] = 0.;
+		CavgR2_sidelong_num[i][j] = 0.;
+		CavgR2_outlong_num[i][j] = 0.;
+
 		R2_side[i][j] = 0.;
 		R2_out[i][j] = 0.;
 		R2_outside[i][j] = 0.;
 		R2_long[i][j] = 0.;
 		R2_sidelong[i][j] = 0.;
 		R2_outlong[i][j] = 0.;
+
+		avgR2_side[i][j] = 0.;
+		avgR2_out[i][j] = 0.;
+		avgR2_outside[i][j] = 0.;
+		avgR2_long[i][j] = 0.;
+		avgR2_sidelong[i][j] = 0.;
+		avgR2_outlong[i][j] = 0.;
+
+		CavgR2_side[i][j] = 0.;
+		CavgR2_out[i][j] = 0.;
+		CavgR2_outside[i][j] = 0.;
+		CavgR2_long[i][j] = 0.;
+		CavgR2_sidelong[i][j] = 0.;
+		CavgR2_outlong[i][j] = 0.;
 	}
 	for(int j=0; j<n_order; j++)
 	{
@@ -723,6 +950,32 @@ for(int i=0; i<n_localp_T; i++)
 		xo2_sin[i][j] = 0.;
 		xl2_sin[i][j] = 0.;
 		t2_sin[i][j] = 0.;
+
+		avgR2_side_C[i][j] = 0.;
+		avgR2_side_S[i][j] = 0.;
+		avgR2_out_C[i][j] = 0.;
+		avgR2_out_S[i][j] = 0.;
+		avgR2_outside_C[i][j] = 0.;
+		avgR2_outside_S[i][j] = 0.;
+		avgR2_long_C[i][j] = 0.;
+		avgR2_long_S[i][j] = 0.;
+		avgR2_sidelong_C[i][j] = 0.;
+		avgR2_sidelong_S[i][j] = 0.;
+		avgR2_outlong_C[i][j] = 0.;
+		avgR2_outlong_S[i][j] = 0.;
+
+		CavgR2_side_C[i][j] = 0.;
+		CavgR2_side_S[i][j] = 0.;
+		CavgR2_out_C[i][j] = 0.;
+		CavgR2_out_S[i][j] = 0.;
+		CavgR2_outside_C[i][j] = 0.;
+		CavgR2_outside_S[i][j] = 0.;
+		CavgR2_long_C[i][j] = 0.;
+		CavgR2_long_S[i][j] = 0.;
+		CavgR2_sidelong_C[i][j] = 0.;
+		CavgR2_sidelong_S[i][j] = 0.;
+		CavgR2_outlong_C[i][j] = 0.;
+		CavgR2_outlong_S[i][j] = 0.;
 	}
 }
 
@@ -876,6 +1129,13 @@ doHBT::~doHBT()
    delete[] R2_outlong_C;
    delete[] R2_outlong_S;
 
+   delete[] azavg_R2_side;
+   delete[] azavg_R2_out;
+   delete[] azavg_R2_outside;
+   delete[] azavg_R2_long;
+   delete[] azavg_R2_sidelong;
+   delete[] azavg_R2_outlong;
+
    delete[] R2_side_err;
    delete[] R2_out_err;
    delete[] R2_outside_err;
@@ -926,6 +1186,13 @@ doHBT::~doHBT()
    delete[] avgR2_outlong_C;
    delete[] avgR2_outlong_S;
 
+   delete[] azavg_avgR2_side;
+   delete[] azavg_avgR2_out;
+   delete[] azavg_avgR2_outside;
+   delete[] azavg_avgR2_long;
+   delete[] azavg_avgR2_sidelong;
+   delete[] azavg_avgR2_outlong;
+
    delete[] CavgR2_side;
    delete[] CavgR2_side_C;
    delete[] CavgR2_side_S;
@@ -944,6 +1211,13 @@ doHBT::~doHBT()
    delete[] CavgR2_outlong;
    delete[] CavgR2_outlong_C;
    delete[] CavgR2_outlong_S;
+
+   delete[] azavg_CavgR2_side;
+   delete[] azavg_CavgR2_out;
+   delete[] azavg_CavgR2_outside;
+   delete[] azavg_CavgR2_long;
+   delete[] azavg_CavgR2_sidelong;
+   delete[] azavg_CavgR2_outlong;
 
    for(int i=0; i<n_localp_T; i++)
    {
@@ -986,20 +1260,6 @@ doHBT::~doHBT()
       delete[] CavgR2_long_num[i];
       delete[] CavgR2_sidelong_num[i];
       delete[] CavgR2_outlong_num[i];
-      //delete[] Cavgxs_S[i];
-      //delete[] Cavgxo_S[i];
-      //delete[] Cavgxl_S[i];
-      //delete[] Cavgt_S[i];
-      //delete[] Cavgxs_t_S[i];
-      //delete[] Cavgxo_t_S[i];
-      //delete[] Cavgxl_t_S[i];
-      //delete[] Cavgxo_xs_S[i];
-      //delete[] Cavgxl_xs_S[i];
-      //delete[] Cavgxo_xl_S[i];
-      //delete[] Cavgxs2_S[i];
-      //delete[] Cavgxo2_S[i];
-      //delete[] Cavgxl2_S[i];
-      //delete[] Cavgt2_S[i];
    }
    delete[] S_func;
    delete[] xs_S;
@@ -1017,6 +1277,22 @@ doHBT::~doHBT()
    delete[] xl2_S;
    delete[] t2_S;
 
+   delete[] azavg_S_func;
+   delete[] azavg_xs_S;
+   delete[] azavg_xo_S;
+   delete[] azavg_xl_S;
+   delete[] azavg_t_S;
+   delete[] azavg_xs_t_S;
+   delete[] azavg_xo_t_S;
+   delete[] azavg_xl_t_S;
+   delete[] azavg_xo_xs_S;
+   delete[] azavg_xl_xs_S;
+   delete[] azavg_xo_xl_S;
+   delete[] azavg_xs2_S;
+   delete[] azavg_xo2_S;
+   delete[] azavg_xl2_S;
+   delete[] azavg_t2_S;
+
    delete[] avgS_func;
    delete[] avgxs_S;
    delete[] avgxo_S;
@@ -1033,6 +1309,22 @@ doHBT::~doHBT()
    delete[] avgxl2_S;
    delete[] avgt2_S;
 
+   delete[] azavg_avgS_func;
+   delete[] azavg_avgxs_S;
+   delete[] azavg_avgxo_S;
+   delete[] azavg_avgxl_S;
+   delete[] azavg_avgt_S;
+   delete[] azavg_avgxs_t_S;
+   delete[] azavg_avgxo_t_S;
+   delete[] azavg_avgxl_t_S;
+   delete[] azavg_avgxo_xs_S;
+   delete[] azavg_avgxl_xs_S;
+   delete[] azavg_avgxo_xl_S;
+   delete[] azavg_avgxs2_S;
+   delete[] azavg_avgxo2_S;
+   delete[] azavg_avgxl2_S;
+   delete[] azavg_avgt2_S;
+
    delete[] CavgS_func;
    delete[] CavgR2_side_num;
    delete[] CavgR2_out_num;
@@ -1040,20 +1332,14 @@ doHBT::~doHBT()
    delete[] CavgR2_long_num;
    delete[] CavgR2_sidelong_num;
    delete[] CavgR2_outlong_num;
-   //delete[] Cavgxs_S;
-   //delete[] Cavgxo_S;
-   //delete[] Cavgxl_S;
-   //delete[] Cavgt_S;
-   //delete[] Cavgxs_t_S;
-   //delete[] Cavgxo_t_S;
-   //delete[] Cavgxl_t_S;
-   //delete[] Cavgxo_xs_S;
-   //delete[] Cavgxl_xs_S;
-   //delete[] Cavgxo_xl_S;
-   //delete[] Cavgxs2_S;
-   //delete[] Cavgxo2_S;
-   //delete[] Cavgxl2_S;
-   //delete[] Cavgt2_S;
+
+   delete[] azavg_CavgS_func;
+   delete[] azavg_CavgR2_side_num;
+   delete[] azavg_CavgR2_out_num;
+   delete[] azavg_CavgR2_outside_num;
+   delete[] azavg_CavgR2_long_num;
+   delete[] azavg_CavgR2_sidelong_num;
+   delete[] azavg_CavgR2_outlong_num;
 
    delete[] q_out;
    delete[] q_side;
@@ -1099,6 +1385,186 @@ void doHBT::Reset_EmissionData()
       (*Emissionfunction_ptr)[i].CDF_value = 0.0;
    }
 }
+
+void doHBT::Reset_source_variances_and_HBT_radii()
+{
+	//reset only EBE source variances and EBE HBT radii/coeffs
+	for(int i=0; i<n_localp_T; i++)
+	{
+		//reset azimuthally averaged radii first
+		azavg_S_func[i] = 0.0;
+		azavg_xs_S[i] = 0.0;
+		azavg_xo_S[i] = 0.0;
+		azavg_xl_S[i] = 0.0;
+		azavg_t_S[i] = 0.0;
+		azavg_xs_t_S[i] = 0.0;
+		azavg_xo_t_S[i] = 0.0;
+		azavg_xl_t_S[i] = 0.0;
+		azavg_xo_xs_S[i] = 0.0;
+		azavg_xl_xs_S[i] = 0.0;
+		azavg_xo_xl_S[i] = 0.0;
+		azavg_xs2_S[i] = 0.0;
+		azavg_xo2_S[i] = 0.0;
+		azavg_xl2_S[i] = 0.0;
+		azavg_t2_S[i] = 0.0;
+		
+		azavg_CavgS_func[i] = 0.0;
+		azavg_CavgR2_side_num[i] = 0.0;
+		azavg_CavgR2_out_num[i] = 0.0;
+		azavg_CavgR2_long_num[i] = 0.0;
+		azavg_CavgR2_outside_num[i] = 0.0;
+		azavg_CavgR2_sidelong_num[i] = 0.0;
+		azavg_CavgR2_outlong_num[i] = 0.0;
+		
+		azavg_R2_side[i] = 0.0;
+		azavg_R2_out[i] = 0.0;
+		azavg_R2_outside[i] = 0.0;
+		azavg_R2_long[i] = 0.0;
+		azavg_R2_sidelong[i] = 0.0;
+		azavg_R2_outlong[i] = 0.0;
+		
+		azavg_avgR2_side[i] = 0.0;
+		azavg_avgR2_out[i] = 0.0;
+		azavg_avgR2_outside[i] = 0.0;
+		azavg_avgR2_long[i] = 0.0;
+		azavg_avgR2_sidelong[i] = 0.0;
+		azavg_avgR2_outlong[i] = 0.0;
+		
+		azavg_CavgR2_side[i] = 0.0;
+		azavg_CavgR2_out[i] = 0.0;
+		azavg_CavgR2_outside[i] = 0.0;
+		azavg_CavgR2_long[i] = 0.0;
+		azavg_CavgR2_sidelong[i] = 0.0;
+		azavg_CavgR2_outlong[i] = 0.0;
+
+		for(int j=0; j<n_localp_phi; j++)
+		{
+			S_func[i][j] = 0.;
+			xs_S[i][j] = 0.;
+			xo_S[i][j] = 0.;
+			xl_S[i][j] = 0.;
+			t_S[i][j] = 0.;
+			xs_t_S[i][j] = 0.;
+			xo_t_S[i][j] = 0.;
+			xl_t_S[i][j] = 0.;
+			xo_xs_S[i][j] = 0.;
+			xl_xs_S[i][j] = 0.;
+			xo_xl_S[i][j] = 0.;
+			xs2_S[i][j] = 0.;
+			xo2_S[i][j] = 0.;
+			xl2_S[i][j] = 0.;
+			t2_S[i][j] = 0.;
+	
+			avgS_func[i][j] = 0.;
+			avgxs_S[i][j] = 0.;
+			avgxo_S[i][j] = 0.;
+			avgxl_S[i][j] = 0.;
+			avgt_S[i][j] = 0.;
+			avgxs_t_S[i][j] = 0.;
+			avgxo_t_S[i][j] = 0.;
+			avgxl_t_S[i][j] = 0.;
+			avgxo_xs_S[i][j] = 0.;
+			avgxl_xs_S[i][j] = 0.;
+			avgxo_xl_S[i][j] = 0.;
+			avgxs2_S[i][j] = 0.;
+			avgxo2_S[i][j] = 0.;
+			avgxl2_S[i][j] = 0.;
+			avgt2_S[i][j] = 0.;
+	
+			CavgS_func[i][j] = 0.;
+			CavgR2_side_num[i][j] = 0.;
+			CavgR2_out_num[i][j] = 0.;
+			CavgR2_outside_num[i][j] = 0.;
+			CavgR2_long_num[i][j] = 0.;
+			CavgR2_sidelong_num[i][j] = 0.;
+			CavgR2_outlong_num[i][j] = 0.;
+	
+			R2_side[i][j] = 0.;
+			R2_out[i][j] = 0.;
+			R2_outside[i][j] = 0.;
+			R2_long[i][j] = 0.;
+			R2_sidelong[i][j] = 0.;
+			R2_outlong[i][j] = 0.;
+	
+			avgR2_side[i][j] = 0.;
+			avgR2_out[i][j] = 0.;
+			avgR2_outside[i][j] = 0.;
+			avgR2_long[i][j] = 0.;
+			avgR2_sidelong[i][j] = 0.;
+			avgR2_outlong[i][j] = 0.;
+	
+			CavgR2_side[i][j] = 0.;
+			CavgR2_out[i][j] = 0.;
+			CavgR2_outside[i][j] = 0.;
+			CavgR2_long[i][j] = 0.;
+			CavgR2_sidelong[i][j] = 0.;
+			CavgR2_outlong[i][j] = 0.;
+		}
+		for(int j=0; j<n_order; j++)
+		{
+			R2_side_C[i][j] = 0.;
+			R2_side_S[i][j] = 0.;
+			R2_out_C[i][j] = 0.;
+			R2_out_S[i][j] = 0.;
+			R2_outside_C[i][j] = 0.;
+			R2_outside_S[i][j] = 0.;
+			R2_long_C[i][j] = 0.;
+			R2_long_S[i][j] = 0.;
+			R2_sidelong_C[i][j] = 0.;
+			R2_sidelong_S[i][j] = 0.;
+			R2_outlong_C[i][j] = 0.;
+			R2_outlong_S[i][j] = 0.;
+	
+			xs_t_cos[i][j] = 0.;
+			xo_t_cos[i][j] = 0.;
+			xl_t_cos[i][j] = 0.;
+			xo_xs_cos[i][j] = 0.;
+			xl_xs_cos[i][j] = 0.;
+			xo_xl_cos[i][j] = 0.;
+			xs2_cos[i][j] = 0.;
+			xo2_cos[i][j] = 0.;
+			xl2_cos[i][j] = 0.;
+			t2_cos[i][j] = 0.;
+			xs_t_sin[i][j] = 0.;
+			xo_t_sin[i][j] = 0.;
+			xl_t_sin[i][j] = 0.;
+			xo_xs_sin[i][j] = 0.;
+			xl_xs_sin[i][j] = 0.;
+			xo_xl_sin[i][j] = 0.;
+			xs2_sin[i][j] = 0.;
+			xo2_sin[i][j] = 0.;
+			xl2_sin[i][j] = 0.;
+			t2_sin[i][j] = 0.;
+	
+			avgR2_side_C[i][j] = 0.;
+			avgR2_side_S[i][j] = 0.;
+			avgR2_out_C[i][j] = 0.;
+			avgR2_out_S[i][j] = 0.;
+			avgR2_outside_C[i][j] = 0.;
+			avgR2_outside_S[i][j] = 0.;
+			avgR2_long_C[i][j] = 0.;
+			avgR2_long_S[i][j] = 0.;
+			avgR2_sidelong_C[i][j] = 0.;
+			avgR2_sidelong_S[i][j] = 0.;
+			avgR2_outlong_C[i][j] = 0.;
+			avgR2_outlong_S[i][j] = 0.;
+	
+			CavgR2_side_C[i][j] = 0.;
+			CavgR2_side_S[i][j] = 0.;
+			CavgR2_out_C[i][j] = 0.;
+			CavgR2_out_S[i][j] = 0.;
+			CavgR2_outside_C[i][j] = 0.;
+			CavgR2_outside_S[i][j] = 0.;
+			CavgR2_long_C[i][j] = 0.;
+			CavgR2_long_S[i][j] = 0.;
+			CavgR2_sidelong_C[i][j] = 0.;
+			CavgR2_sidelong_S[i][j] = 0.;
+			CavgR2_outlong_C[i][j] = 0.;
+			CavgR2_outlong_S[i][j] = 0.;
+		}
+	}
+}
+
 
 bool doHBT::fexists(const char *filename)
 {

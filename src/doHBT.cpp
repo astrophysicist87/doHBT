@@ -26,8 +26,6 @@
 //#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
 					// 0 - false
 #define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
-#define ASSUME_ETA_SYMMETRIC 1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
-					// 0 means just integrate over given range of eta_s without worrying about symmetry
 
 using namespace std;
 
@@ -53,6 +51,7 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
    // begin HBT calculations here...
    for(int iKT = 0; iKT < n_localp_T; iKT++)
    {
+      //if (iKT == 0) continue;	//temporary
       //cout << "Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
       if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
       double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
@@ -65,6 +64,7 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
          Get_source_variances(iKT, iKphi);
 	 //Update_avgSource_function(iKT, iKphi);
          Calculate_R2_side(iKT, iKphi);
+//return;
          Calculate_R2_out(iKT, iKphi);
          Calculate_R2_outside(iKT, iKphi);
          Calculate_R2_long(iKT, iKphi);
@@ -85,6 +85,61 @@ void doHBT::quick_Analyze_sourcefunction()
    }
    return;
 }
+
+void doHBT::Get_azimuthally_averaged_EBE_Svars_and_HBTradii()
+{
+	for(int iKT = 0; iKT < n_localp_T; iKT++)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+		double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+		beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+		{
+			azavg_S_func[iKT] += S_func[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xs_S[iKT] += xs_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xo_S[iKT] += xo_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xl_S[iKT] += xl_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_t_S[iKT] += t_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xs_t_S[iKT] += xs_t_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xo_t_S[iKT] += xo_t_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xl_t_S[iKT] += xl_t_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xo_xs_S[iKT] += xo_xs_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xl_xs_S[iKT] += xl_xs_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xo_xl_S[iKT] += xo_xl_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xs2_S[iKT] += xs2_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xo2_S[iKT] += xo2_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_xl2_S[iKT] += xl2_S[iKT][iKphi]*K_phi_weight[iKphi];
+			azavg_t2_S[iKT] += t2_S[iKT][iKphi]*K_phi_weight[iKphi];
+		}
+
+		azavg_S_func[iKT] /= (2.*M_PI);
+		azavg_xs_S[iKT] /= (2.*M_PI);
+		azavg_xo_S[iKT] /= (2.*M_PI);
+		azavg_xl_S[iKT] /= (2.*M_PI);
+		azavg_t_S[iKT] /= (2.*M_PI);
+		azavg_xs_t_S[iKT] /= (2.*M_PI);
+		azavg_xo_t_S[iKT] /= (2.*M_PI);
+		azavg_xl_t_S[iKT] /= (2.*M_PI);
+		azavg_xo_xs_S[iKT] /= (2.*M_PI);
+		azavg_xl_xs_S[iKT] /= (2.*M_PI);
+		azavg_xo_xl_S[iKT] /= (2.*M_PI);
+		azavg_xs2_S[iKT] /= (2.*M_PI);
+		azavg_xo2_S[iKT] /= (2.*M_PI);
+		azavg_xl2_S[iKT] /= (2.*M_PI);
+		azavg_t2_S[iKT] /= (2.*M_PI);
+
+		Calculate_azimuthally_averaged_R2_side(iKT);
+		Calculate_azimuthally_averaged_R2_out(iKT);
+		Calculate_azimuthally_averaged_R2_long(iKT);
+		Calculate_azimuthally_averaged_R2_outside(iKT);
+		Calculate_azimuthally_averaged_R2_outlong(iKT);
+		Calculate_azimuthally_averaged_R2_sidelong(iKT);
+		if (VERBOSE > 0) *global_out_stream_ptr << "   - Finished calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+	}
+
+	return;
+}
+
 
 void doHBT::quick_Analyze_sourcefunction_vars()
 {
@@ -138,6 +193,42 @@ void doHBT::Analyze_CAVG_sourcefunction()
          Calculate_CavgR2_outlong(iKT, iKphi);
       }
       CavgR2_Fourier_transform(iKT, 0.);
+   }
+
+   return;
+}
+
+void doHBT::Analyze_azimuthally_averaged_CAVG_sourcefunction()
+{
+   for(int iKT = 0; iKT < n_localp_T; iKT++)
+   {
+      if (VERBOSE > 1) *global_out_stream_ptr << "     --> Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+      beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+      Calculate_azimuthally_averaged_CavgR2_side(iKT);
+      Calculate_azimuthally_averaged_CavgR2_out(iKT);
+      Calculate_azimuthally_averaged_CavgR2_outside(iKT);
+      Calculate_azimuthally_averaged_CavgR2_long(iKT);
+      Calculate_azimuthally_averaged_CavgR2_sidelong(iKT);
+      Calculate_azimuthally_averaged_CavgR2_outlong(iKT);
+   }
+
+   return;
+}
+
+void doHBT::Analyze_azimuthally_averaged_AVG_sourcefunction()
+{
+   for(int iKT = 0; iKT < n_localp_T; iKT++)
+   {
+      if (VERBOSE > 1) *global_out_stream_ptr << "     --> Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+      beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+      Calculate_azimuthally_averaged_avgR2_side(iKT);
+      Calculate_azimuthally_averaged_avgR2_out(iKT);
+      Calculate_azimuthally_averaged_avgR2_outside(iKT);
+      Calculate_azimuthally_averaged_avgR2_long(iKT);
+      Calculate_azimuthally_averaged_avgR2_sidelong(iKT);
+      Calculate_azimuthally_averaged_avgR2_outlong(iKT);
    }
 
    return;
@@ -311,8 +402,8 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
         {
            S_p = 0.0e0;
         }
-//	  else
-//        {
+	  else
+        {
            double S_p_withweight = S_p*FOsurf_ptr[j].tau*eta_s_weight[i];
            (*Emissionfunction_ptr)[idx].data = S_p_withweight; 
            (*Emissionfunction_ptr)[idx].t = FOsurf_ptr[j].tau*ch_localetas;
@@ -322,12 +413,14 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
            (*Emissionfunction_ptr)[idx].y = FOsurf_ptr[j].ypt;
            (*Emissionfunction_ptr)[idx].r = sqrt(FOsurf_ptr[j].xpt*FOsurf_ptr[j].xpt + FOsurf_ptr[j].ypt*FOsurf_ptr[j].ypt);
            double temp_phi = atan2(FOsurf_ptr[j].ypt, FOsurf_ptr[j].xpt);
+		if (temp_phi < 0.0)
+			temp_phi += 2.*M_PI;
            (*Emissionfunction_ptr)[idx].phi = temp_phi;
            (*Emissionfunction_ptr)[idx].z = FOsurf_ptr[j].tau*sh_localetas;
            CDF += S_p_withweight;
            (*Emissionfunction_ptr)[idx].CDF_value = CDF;
            idx++;
-//        }
+        }
       }
   }
 //cerr << "Emissionfunction_length in SetEmissionData (before) for K_T = " << K_T_local << " and K_phi = " << K_phi_local << " is " << Emissionfunction_length << endl;
@@ -526,9 +619,10 @@ cout  << endl << endl << endl;
          double p0 = SP_p0[ipt][ieta];
          double pz = SP_pz[ipt][ieta];
          double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
-         double f0;
-         if(expon > 20) f0 = 0.0e0;
-         else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+         //double f0;
+         //if(expon > 20) f0 = 0.0e0;
+         //else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+	double f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
 
          //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
          double pdsigma = p0*da0 + px*da1 + py*da2;
@@ -543,6 +637,10 @@ cout  << endl << endl << endl;
 
          double S_p = prefactor*pdsigma*f0*(1.+deltaf);
 	 if (1. + deltaf < 0.0) S_p = 0.0;
+        if (flagneg == 1 && S_p < tol)
+        {
+           S_p = 0.0e0;
+        }
 //cout << "S_p = " << S_p << endl;
 	double symmetry_factor = 1.0;
 	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
@@ -639,6 +737,8 @@ void doHBT::Get_source_variances(int iKT, int iKphi)
 	t2_S[iKT][iKphi] += eta_even_factor*S_x_K*t*t;
    }
 
+//cerr << "DEBUG: " << S_func[iKT][iKphi] << "  " << xs_S[iKT][iKphi] << "  " << xs2_S[iKT][iKphi] << endl;
+
 return;
 }
 
@@ -667,6 +767,30 @@ void doHBT::Get_HBTradii_from_Cbar_and_Cavg()
   return;
 }
 
+void doHBT::Get_HBTradii_from_azimuthally_averaged_Cavg_and_Cbar()
+{
+//N.B. - f(-1) means do it for all iKT
+
+  for (int i = initial_event; i < initial_event + n_events; i++)
+  {
+	if (VERBOSE > 0) *global_out_stream_ptr << "Reading in results from event = " << i << endl;
+	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(i));
+	Readin_azimuthally_averaged_results(i);
+	Update_avgSource_function(-1);
+	Update_CavgSource_function(-1);
+  }
+
+  Calculate_avgSource_function(-1);
+  Calculate_CavgSource_function(-1);
+
+  Determine_avgplane_angle();
+
+  Analyze_azimuthally_averaged_AVG_sourcefunction();
+  Analyze_azimuthally_averaged_CAVG_sourcefunction();
+
+  return;
+}
+
 void doHBT::Simulate_subensemble_averaging()
 {
 	for (int iM = 0; iM < MmaxSEA; iM++)
@@ -677,6 +801,7 @@ void doHBT::Simulate_subensemble_averaging()
 		int nb = total_Nev/n_events;
 		for (int ibin = 0; ibin < nb; ibin++)
 		{
+			Reset_source_variances_and_HBT_radii();
 			Get_HBTradii_from_Cbar_and_Cavg_random(ibin);
 			Update_subensemble_indexfile(iM, ibin);
 			Output_CAVG_random_results(iM, ibin);
@@ -684,12 +809,82 @@ void doHBT::Simulate_subensemble_averaging()
 	}
 }
 
+void doHBT::Simulate_azimuthally_averaged_subensemble_averaging()
+{
+	for (int i=1; i<=total_Nev; ++i) eventvector.push_back(i);
+
+	for (int iM = 0; iM < MmaxSEA; iM++)
+	{
+		// using built-in random generator:
+		random_shuffle ( eventvector.begin(), eventvector.end() );
+		if (VERBOSE > 0) *global_out_stream_ptr << "Beginning binning iteration = " << iM << endl;
+		
+		int nb = total_Nev/n_events;
+		for (int ibin = 0; ibin < nb; ibin++)
+		{
+			if (VERBOSE > 1) *global_out_stream_ptr << "   - binning #" << iM << ": bin = " << ibin << endl;
+			Reset_source_variances_and_HBT_radii();
+			Get_HBTradii_from_azimuthally_averaged_Cavg_random(ibin);
+			Update_subensemble_indexfile(iM, ibin);
+			Output_azimuthally_averaged_CAVG_random_results(iM, ibin);
+		}
+		if (VERBOSE > 0) *global_out_stream_ptr << "Finished binning iteration = " << iM << endl << endl;
+	}
+}
+
+
 void doHBT::Get_HBTradii_from_Cbar_and_Cavg_random(int ibin)
 {
   // for i in given bin of events
   for (int i = ibin*n_events; i < (ibin+1)*n_events; i++)
   {
 	int ith_event = eventvector[i];
+	if (VERBOSE > 2) *global_out_stream_ptr << "Reading in results from event = " << ith_event << endl;
+	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(ith_event));
+	Readin_results(ith_event);
+	//Update_avgSource_function(-1,-1);
+	Update_CavgSource_function(-1,-1);
+  }
+
+  //Calculate_avgSource_function(-1,-1);
+  Calculate_CavgSource_function(-1,-1);
+
+  //Determine_avgplane_angle();
+  //Determine_Cavgplane_angle();
+
+  //Analyze_AVG_sourcefunction();
+  Analyze_CAVG_sourcefunction();
+
+  return;
+}
+
+void doHBT::Get_HBTradii_from_azimuthally_averaged_Cavg_random(int ibin)
+{
+  // for i in given bin of events
+  for (int i = ibin*n_events; i < (ibin+1)*n_events; i++)
+  {
+	int ith_event = eventvector[i];
+	if (VERBOSE > 2) *global_out_stream_ptr << "Reading in results from event = " << ith_event << endl;
+	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(ith_event));
+	Readin_azimuthally_averaged_results(ith_event);
+	Update_CavgSource_function(-1);
+  }
+
+  //with running sums all accumulated, divide by number of events in sub-ensemble
+  Calculate_CavgSource_function(-1);
+
+  //effective averages calculated, use to extract corresponding radii
+  Analyze_azimuthally_averaged_CAVG_sourcefunction();
+
+  return;
+}
+
+void doHBT::Get_HBTradii_from_Cbar_and_Cavg_fixed_events(vector<int> list_of_events)
+{
+  // for i in given bin of events
+  for (int i = 0; i < (int)list_of_events.size(); i++)
+  {
+	int ith_event = list_of_events[i];
 	if (VERBOSE > 0) *global_out_stream_ptr << "Reading in results from event = " << ith_event << endl;
 	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(ith_event));
 	Readin_results(ith_event);
@@ -707,159 +902,6 @@ void doHBT::Get_HBTradii_from_Cbar_and_Cavg_random(int ibin)
   Analyze_CAVG_sourcefunction();
 
   return;
-}
-
-
-void doHBT::Update_avgSource_function(int i = -1, int j = -1)
-{
-//N.B. - avgs. only contains sums here, have not actually been averaged yet
-   if (i < 0 || j < 0)
-   {
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-	{
-		avgS_func[iKT][iKphi] += S_func[iKT][iKphi];
-		avgxs_S[iKT][iKphi] += xs_S[iKT][iKphi];
-		avgxo_S[iKT][iKphi] += xo_S[iKT][iKphi];
-		avgxl_S[iKT][iKphi] += xl_S[iKT][iKphi];
-		avgt_S[iKT][iKphi] += t_S[iKT][iKphi];
-		avgxs_t_S[iKT][iKphi] += xs_t_S[iKT][iKphi];
-		avgxo_t_S[iKT][iKphi] += xo_t_S[iKT][iKphi];
-		avgxl_t_S[iKT][iKphi] += xl_t_S[iKT][iKphi];
-		avgxo_xs_S[iKT][iKphi] += xo_xs_S[iKT][iKphi];
-		avgxl_xs_S[iKT][iKphi] += xl_xs_S[iKT][iKphi];
-		avgxo_xl_S[iKT][iKphi] += xo_xl_S[iKT][iKphi];
-		avgxs2_S[iKT][iKphi] += xs2_S[iKT][iKphi];
-		avgxo2_S[iKT][iKphi] += xo2_S[iKT][iKphi];
-		avgxl2_S[iKT][iKphi] += xl2_S[iKT][iKphi];
-		avgt2_S[iKT][iKphi] += t2_S[iKT][iKphi];
-	}
-   }
-   else
-   {
-		avgS_func[i][j] += S_func[i][j];
-		avgxs_S[i][j] += xs_S[i][j];
-		avgxo_S[i][j] += xo_S[i][j];
-		avgxl_S[i][j] += xl_S[i][j];
-		avgt_S[i][j] += t_S[i][j];
-		avgxs_t_S[i][j] += xs_t_S[i][j];
-		avgxo_t_S[i][j] += xo_t_S[i][j];
-		avgxl_t_S[i][j] += xl_t_S[i][j];
-		avgxo_xs_S[i][j] += xo_xs_S[i][j];
-		avgxl_xs_S[i][j] += xl_xs_S[i][j];
-		avgxo_xl_S[i][j] += xo_xl_S[i][j];
-		avgxs2_S[i][j] += xs2_S[i][j];
-		avgxo2_S[i][j] += xo2_S[i][j];
-		avgxl2_S[i][j] += xl2_S[i][j];
-		avgt2_S[i][j] += t2_S[i][j];
-   }
-   return;
-}
-
-void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
-{
-//N.B. - avgs. only contains sums here, have not actually been averaged yet
-   if (i < 0 || j < 0)
-   {
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-	{
-		CavgS_func[iKT][iKphi] += S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		CavgR2_side_num[iKT][iKphi] += R2_side[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		CavgR2_out_num[iKT][iKphi] += R2_out[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		CavgR2_outside_num[iKT][iKphi] += R2_outside[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		CavgR2_long_num[iKT][iKphi] += R2_long[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		CavgR2_sidelong_num[iKT][iKphi] += R2_sidelong[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-		CavgR2_outlong_num[iKT][iKphi] += R2_outlong[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
-	}
-   }
-   else
-   {
-		CavgS_func[i][j] += S_func[i][j]*S_func[i][j];
-		CavgR2_side_num[i][j] += R2_side[i][j]*S_func[i][j]*S_func[i][j];
-		CavgR2_out_num[i][j] += R2_out[i][j]*S_func[i][j]*S_func[i][j];
-		CavgR2_outside_num[i][j] += R2_outside[i][j]*S_func[i][j]*S_func[i][j];
-		CavgR2_long_num[i][j] += R2_long[i][j]*S_func[i][j]*S_func[i][j];
-		CavgR2_sidelong_num[i][j] += R2_sidelong[i][j]*S_func[i][j]*S_func[i][j];
-		CavgR2_outlong_num[i][j] += R2_outlong[i][j]*S_func[i][j]*S_func[i][j];
-   }
-   return;
-}
-
-void doHBT::Calculate_avgSource_function(int i = -1, int j = -1)
-{
-//N.B. - avgs. only contains sums, doing averaging here
-   if (i < 0 || j < 0)
-   {
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-	{
-		avgS_func[iKT][iKphi] /= double(n_events);
-		avgxs_S[iKT][iKphi] /= double(n_events);
-		avgxo_S[iKT][iKphi] /= double(n_events);
-		avgxl_S[iKT][iKphi] /= double(n_events);
-		avgt_S[iKT][iKphi] /= double(n_events);
-		avgxs_t_S[iKT][iKphi] /= double(n_events);
-		avgxo_t_S[iKT][iKphi] /= double(n_events);
-		avgxl_t_S[iKT][iKphi] /= double(n_events);
-		avgxo_xs_S[iKT][iKphi] /= double(n_events);
-		avgxl_xs_S[iKT][iKphi] /= double(n_events);
-		avgxo_xl_S[iKT][iKphi] /= double(n_events);
-		avgxs2_S[iKT][iKphi] /= double(n_events);
-		avgxo2_S[iKT][iKphi] /= double(n_events);
-		avgxl2_S[iKT][iKphi] /= double(n_events);
-		avgt2_S[iKT][iKphi] /= double(n_events);
-	}
-   }
-   else
-   {
-		avgS_func[i][j] /= double(n_events);
-		avgxs_S[i][j] /= double(n_events);
-		avgxo_S[i][j] /= double(n_events);
-		avgxl_S[i][j] /= double(n_events);
-		avgt_S[i][j] /= double(n_events);
-		avgxs_t_S[i][j] /= double(n_events);
-		avgxo_t_S[i][j] /= double(n_events);
-		avgxl_t_S[i][j] /= double(n_events);
-		avgxo_xs_S[i][j] /= double(n_events);
-		avgxl_xs_S[i][j] /= double(n_events);
-		avgxo_xl_S[i][j] /= double(n_events);
-		avgxs2_S[i][j] /= double(n_events);
-		avgxo2_S[i][j] /= double(n_events);
-		avgxl2_S[i][j] /= double(n_events);
-		avgt2_S[i][j] /= double(n_events);
-   }
-   return;
-}
-
-void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
-{
-//N.B. - avgs. only contains sums, doing averaging here
-   if (i < 0 || j < 0)
-   {
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-	{
-		CavgS_func[iKT][iKphi] /= double(n_events);
-		CavgR2_side_num[iKT][iKphi] /= double(n_events);
-		CavgR2_out_num[iKT][iKphi] /= double(n_events);
-		CavgR2_outside_num[iKT][iKphi] /= double(n_events);
-		CavgR2_long_num[iKT][iKphi] /= double(n_events);
-		CavgR2_sidelong_num[iKT][iKphi] /= double(n_events);
-		CavgR2_outlong_num[iKT][iKphi] /= double(n_events);
-	}
-   }
-   else
-   {
-		CavgS_func[i][j] /= double(n_events);
-		CavgR2_side_num[i][j] /= double(n_events);
-		CavgR2_out_num[i][j] /= double(n_events);
-		CavgR2_outside_num[i][j] /= double(n_events);
-		CavgR2_long_num[i][j] /= double(n_events);
-		CavgR2_sidelong_num[i][j] /= double(n_events);
-		CavgR2_outlong_num[i][j] /= double(n_events);
-   }
-   return;
 }
 
 void doHBT::Determine_avgplane_angle()
@@ -934,208 +976,6 @@ void doHBT::Determine_Cavgplane_angle()
 	return;
 }
 
-void doHBT::Calculate_R2_side(int iKT, int iKphi)
-{
-   double norm = S_func[iKT][iKphi];
-   double term1 = xs2_S[iKT][iKphi];
-   double term2 = xs_S[iKT][iKphi];
-
-   R2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_R2_out(int iKT, int iKphi)
-{
-   double norm = S_func[iKT][iKphi];
-   double term1 = xo2_S[iKT][iKphi] - 2.*beta_perp*xo_t_S[iKT][iKphi] + beta_perp*beta_perp*t2_S[iKT][iKphi];
-   double term2 = xo_S[iKT][iKphi] - beta_perp*t_S[iKT][iKphi];
-
-   R2_out[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_R2_outside(int iKT, int iKphi)
-{
-   double norm = S_func[iKT][iKphi];
-   double term1 = xo_xs_S[iKT][iKphi] - beta_perp*xs_t_S[iKT][iKphi];
-   double term2 = xo_S[iKT][iKphi] - beta_perp*t_S[iKT][iKphi];
-   double term3 = xs_S[iKT][iKphi];
-
-   R2_outside[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_R2_long(int iKT, int iKphi)
-{
-   double norm = S_func[iKT][iKphi];
-   double term1 = xl2_S[iKT][iKphi] - 2.*beta_l*xl_t_S[iKT][iKphi] + beta_l*beta_l*t2_S[iKT][iKphi];
-   double term2 = xl_S[iKT][iKphi] - beta_l*t_S[iKT][iKphi];
-
-   R2_long[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_R2_outlong(int iKT, int iKphi)
-{
-   double norm = S_func[iKT][iKphi];
-   double term1 = xo_xl_S[iKT][iKphi] - beta_perp*xl_t_S[iKT][iKphi] - beta_l*xo_t_S[iKT][iKphi] + beta_perp*beta_l*t2_S[iKT][iKphi];
-   double term2 = xo_S[iKT][iKphi] - beta_perp*t_S[iKT][iKphi];
-   double term3 = xl_S[iKT][iKphi] - beta_l*t_S[iKT][iKphi];
-
-   R2_outlong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_R2_sidelong(int iKT, int iKphi)
-{
-   double norm = S_func[iKT][iKphi];
-   double term1 = xl_xs_S[iKT][iKphi] - beta_l*xs_t_S[iKT][iKphi];
-   double term2 = xs_S[iKT][iKphi];
-   double term3 = xl_S[iKT][iKphi] - beta_l*t_S[iKT][iKphi];
-
-   R2_sidelong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_avgR2_side(int iKT, int iKphi)
-{
-   double norm = avgS_func[iKT][iKphi];
-   double term1 = avgxs2_S[iKT][iKphi];
-   double term2 = avgxs_S[iKT][iKphi];
-
-   avgR2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-//debug
-//   cout << "avgR2_side[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgR2_side[iKT][iKphi] << endl;
-   return;
-}
-
-void doHBT::Calculate_avgR2_out(int iKT, int iKphi)
-{
-   double norm = avgS_func[iKT][iKphi];
-   double term1 = avgxo2_S[iKT][iKphi] - 2.*beta_perp*avgxo_t_S[iKT][iKphi] + beta_perp*beta_perp*avgt2_S[iKT][iKphi];
-   double term2 = avgxo_S[iKT][iKphi] - beta_perp*avgt_S[iKT][iKphi];
-
-   avgR2_out[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-//debug
-//   cout << "avgR2_out[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgR2_out[iKT][iKphi] << endl;
-//   cout << "avgxo2_S[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgxo2_S[iKT][iKphi] << endl;
-//   cout << "avgxo_t_S[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgxo_t_S[iKT][iKphi] << endl;
-//   cout << "avgt2_S[" << K_T[iKT] << "][" << K_phi[iKphi] << "] = " << avgt2_S[iKT][iKphi] << endl;
-//   cout << "beta_perp = " << beta_perp << endl;
-   return;
-}
-
-void doHBT::Calculate_avgR2_outside(int iKT, int iKphi)
-{
-   double norm = avgS_func[iKT][iKphi];
-   double term1 = avgxo_xs_S[iKT][iKphi] - beta_perp*avgxs_t_S[iKT][iKphi];
-   double term2 = avgxo_S[iKT][iKphi] - beta_perp*avgt_S[iKT][iKphi];
-   double term3 = avgxs_S[iKT][iKphi];
-
-   avgR2_outside[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_avgR2_long(int iKT, int iKphi)
-{
-   double norm = avgS_func[iKT][iKphi];
-   double term1 = avgxl2_S[iKT][iKphi] - 2.*beta_l*avgxl_t_S[iKT][iKphi] + beta_l*beta_l*avgt2_S[iKT][iKphi];
-   double term2 = avgxl_S[iKT][iKphi] - beta_l*avgt_S[iKT][iKphi];
-
-   avgR2_long[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_avgR2_outlong(int iKT, int iKphi)
-{
-   double norm = avgS_func[iKT][iKphi];
-   double term1 = avgxo_xl_S[iKT][iKphi] - beta_perp*avgxl_t_S[iKT][iKphi] - beta_l*avgxo_t_S[iKT][iKphi] + beta_perp*beta_l*avgt2_S[iKT][iKphi];
-   double term2 = avgxo_S[iKT][iKphi] - beta_perp*avgt_S[iKT][iKphi];
-   double term3 = avgxl_S[iKT][iKphi] - beta_l*avgt_S[iKT][iKphi];
-
-   avgR2_outlong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_avgR2_sidelong(int iKT, int iKphi)
-{
-   double norm = avgS_func[iKT][iKphi];
-   double term1 = avgxl_xs_S[iKT][iKphi] - beta_l*avgxs_t_S[iKT][iKphi];
-   double term2 = avgxs_S[iKT][iKphi];
-   double term3 = avgxl_S[iKT][iKphi] - beta_l*avgt_S[iKT][iKphi];
-
-   avgR2_sidelong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   return;
-}
-
-void doHBT::Calculate_CavgR2_side(int iKT, int iKphi)
-{
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxs2_S[iKT][iKphi];
-   //double term2 = Cavgxs_S[iKT][iKphi];
-
-   //CavgR2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   CavgR2_side[iKT][iKphi] = CavgR2_side_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
-   return;
-}
-
-void doHBT::Calculate_CavgR2_out(int iKT, int iKphi)
-{
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxo2_S[iKT][iKphi] - 2.*beta_perp*Cavgxo_t_S[iKT][iKphi] + beta_perp*beta_perp*Cavgt2_S[iKT][iKphi];
-   //double term2 = Cavgxo_S[iKT][iKphi] - beta_perp*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_out[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   CavgR2_out[iKT][iKphi] = CavgR2_out_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
-   return;
-}
-
-void doHBT::Calculate_CavgR2_outside(int iKT, int iKphi)
-{
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxo_xs_S[iKT][iKphi] - beta_perp*Cavgxs_t_S[iKT][iKphi];
-   //double term2 = Cavgxo_S[iKT][iKphi] - beta_perp*Cavgt_S[iKT][iKphi];
-   //double term3 = Cavgxs_S[iKT][iKphi];
-
-   //CavgR2_outside[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   CavgR2_outside[iKT][iKphi] = CavgR2_outside_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
-   return;
-}
-
-void doHBT::Calculate_CavgR2_long(int iKT, int iKphi)
-{
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxl2_S[iKT][iKphi] - 2.*beta_l*Cavgxl_t_S[iKT][iKphi] + beta_l*beta_l*Cavgt2_S[iKT][iKphi];
-   //double term2 = Cavgxl_S[iKT][iKphi] - beta_l*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_long[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   CavgR2_long[iKT][iKphi] = CavgR2_long_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
-   return;
-}
-
-void doHBT::Calculate_CavgR2_outlong(int iKT, int iKphi)
-{
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxo_xl_S[iKT][iKphi] - beta_perp*Cavgxl_t_S[iKT][iKphi] - beta_l*Cavgxo_t_S[iKT][iKphi] + beta_perp*beta_l*Cavgt2_S[iKT][iKphi];
-   //double term2 = Cavgxo_S[iKT][iKphi] - beta_perp*Cavgt_S[iKT][iKphi];
-   //double term3 = Cavgxl_S[iKT][iKphi] - beta_l*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_outlong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   CavgR2_outlong[iKT][iKphi] = CavgR2_outlong_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
-   return;
-}
-
-void doHBT::Calculate_CavgR2_sidelong(int iKT, int iKphi)
-{
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxl_xs_S[iKT][iKphi] - beta_l*Cavgxs_t_S[iKT][iKphi];
-   //double term2 = Cavgxs_S[iKT][iKphi];
-   //double term3 = Cavgxl_S[iKT][iKphi] - beta_l*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_sidelong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   CavgR2_sidelong[iKT][iKphi] = CavgR2_sidelong_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
-   return;
-}
 
 void doHBT::R2_Fourier_transform(int iKT, double plane_psi)
 {

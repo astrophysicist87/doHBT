@@ -7,6 +7,7 @@ SRCS= \
 process_Cbar_and_Cavg_events.cpp \
 $(SRCDIR)/readindata.cpp \
 $(SRCDIR)/doHBT.cpp \
+$(SRCDIR)/doHBT_R2ij.cpp \
 $(SRCDIR)/doHBT_GFroutines.cpp \
 $(SRCDIR)/doHBT_admin.cpp \
 $(SRCDIR)/doHBT_IO.cpp \
@@ -49,7 +50,7 @@ process_Cbar_and_Cavg_events.o : process_Cbar_and_Cavg_events.cpp process_Cbar_a
 readindata.o : $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/readindata.cpp
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/readindata.cpp -o readindata.o
 
-doHBT.o : $(SRCDIR)/doHBT.h $(SRCDIR)/parameters.h $(SRCDIR)/doHBT.cpp $(SRCDIR)/doHBT_GFroutines.cpp $(SRCDIR)/doHBT_admin.cpp $(SRCDIR)/doHBT_IO.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
+doHBT.o : $(SRCDIR)/doHBT.h $(SRCDIR)/parameters.h $(SRCDIR)/doHBT.cpp $(SRCDIR)/doHBT_R2ij.cpp $(SRCDIR)/doHBT_GFroutines.cpp $(SRCDIR)/doHBT_admin.cpp $(SRCDIR)/doHBT_IO.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/doHBT.cpp -o doHBT.o
 
 Arsenal.o : $(SRCDIR)/Arsenal.cpp $(SRCDIR)/Arsenal.h

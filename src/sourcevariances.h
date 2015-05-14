@@ -82,6 +82,7 @@ class SourceVariances
 		double **** integrated_spacetime_moments;
 		double **** dN_dypTdpTdphi_moments;
 		double **** ln_dN_dypTdpTdphi_moments;
+		double **** sign_of_dN_dypTdpTdphi_moments;
 	
 		//needed for resonance calculations
 		//kinematic info
@@ -215,8 +216,9 @@ class SourceVariances
 		~SourceVariances();
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr);
+		void Determine_plane_angle_check(FO_surf* FOsurf_ptr);
 		void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
-		void Analyze_sourcefunction_alternate(FO_surf* FOsurf_ptr);
+		void Analyze_sourcefunction_check(FO_surf* FOsurf_ptr);
 		void Reset_EmissionData();
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
 		void SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local);
@@ -224,7 +226,7 @@ class SourceVariances
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_with_weights(FO_surf* FOsurf_ptr, int reso_idx);
+		void Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py);
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);

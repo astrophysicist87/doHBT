@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-bool get_plane_angle_only = true;
+bool get_plane_angle_only = false;
    //instantiate doHBT class
    doHBT Source_function;
 
@@ -38,7 +38,7 @@ bool get_plane_angle_only = true;
    int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
-   Source_function.Set_use_delta_f(true);
+   Source_function.Set_use_delta_f(false);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";

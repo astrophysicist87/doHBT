@@ -4,6 +4,7 @@
 using namespace std;
 
 unsigned long int random_seed();
+int sgn(double val);
 void logspace(double * x, double a, double b, int n);
 void linspace(double * x, double a, double b, int n);
 void scalepoints(double * x, double a, double b, double scale, int n);
@@ -17,7 +18,7 @@ void bcuint(double * y, double * y1, double * y2, double * y12, double x1l, doub
 void polint(double xa[], double ya[], long n, double x, double *y, double *dy);
 void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1, double x2, double *y, double *dy);
 
-//interpolation routines
+//individual interpolation routines
 double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing);
 double interpolate2D(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, int kind, bool uniform_spacing);
 double interpLinearDirect(double * x, double * y, double x0, long size);
@@ -26,9 +27,15 @@ double interpBiLinearDirect(double * x, double * y, double ** z, double x0, doub
 double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 double interpCubicDirect(double * x, double * y, double x0, long size);
 double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
+double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 double interpPolyDirect(double * x, double * y, double x0, long size);
 double interpBiPolyDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 
+//miscellaneous interpolation routines
 double interpNewtonDirect(double * x, double * y, double x0, long size);
+
+//main interpolation routines
+double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing);
+double interpolate2D(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, int kind, bool uniform_spacing);
 
 #endif

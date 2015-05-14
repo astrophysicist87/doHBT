@@ -89,12 +89,14 @@ SourceVariances::SourceVariances(particle_info* particle)
 	//dN_dypTdpTdphi_moments = new double *** [n_resonance];
 	dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
 	ln_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
+	sign_of_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
 	//for (int ir=0; ir<n_resonance; ir++)
 	for (int ir=0; ir<=n_resonance; ir++)
 	{
 		integrated_spacetime_moments[ir] = new double ** [n_weighting_functions];
 		dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
 		ln_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		sign_of_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
 		for (int wfi=0; wfi<n_weighting_functions; wfi++)
 		{
 			integrated_spacetime_moments[ir][wfi] = new double * [n_localp_T];
@@ -102,14 +104,17 @@ SourceVariances::SourceVariances(particle_info* particle)
 			{
 				dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
 				ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
+				sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
 				for (int ipx=0; ipx<n_interp1_px_pts; ipx++)
 				{
 					dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
 					ln_dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
+					sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
 					for (int ipy=0; ipy<n_interp1_py_pts; ipy++)
 					{
 						dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
 						ln_dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+						sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
 					}
 				}
 			}
@@ -117,14 +122,17 @@ SourceVariances::SourceVariances(particle_info* particle)
 			{
 				dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
 				ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+				sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
 				for (int ipT=0; ipT<n_interp2_pT_pts; ipT++)
 				{
 					dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
 					ln_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+					sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
 					for (int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
 					{
 						dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
 						ln_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+						sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
 					}
 				}
 			}
@@ -234,6 +242,8 @@ SourceVariances::SourceVariances(particle_info* particle)
 			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
 			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
 		}
+		//for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+		//	cerr << SPinterp2_pT[ipt] << endl;
 	}
 	else
 	{
@@ -242,7 +252,7 @@ SourceVariances::SourceVariances(particle_info* particle)
 		gauss_quadrature(n_interp1_py_pts, 1, 0.0, 1.0, interp1_py_min, interp1_py_max, SPinterp1_py, dummywts2);
 		//gauss_quadrature(n_interp2_pT_pts, 5, 0.0, 0.0, 0.0, (double)n_interp2_pT_pts, SPinterp2_pT, dummywts3);
 		//logspace(SPinterp2_pT, interp2_pT_min, interp2_pT_max, n_interp2_pT_pts);
-		scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 1.0, n_interp2_pT_pts);
+		scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 0.25, n_interp2_pT_pts);
 		//gauss_quadrature(n_interp2_pT_pts, 1, 0.0, 0.0, interp2_pT_min, interp2_pT_max, SPinterp2_pT, dummywts3);
 		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
 			cerr << SPinterp2_pT[ipt] << endl;

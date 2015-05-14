@@ -29,6 +29,11 @@ unsigned long int random_seed()
   return(*seed_ptr);
 }
 
+int sgn(double val)
+{
+    return (0 < val) - (val < 0);
+}
+
 void logspace(double * x, double a, double b, int n)
 {
 //returns vector x of n logarithmically spaced points, with a and b as endpoints
@@ -621,6 +626,65 @@ double interpBiCubicDirect(double * x, double * y, double ** z, double x0, doubl
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
+//**********************************************************************
+double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+{
+	//long size = x->size();
+	if (x_size==1 && y_size) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return z[0][0];}
+	double dx = x[1]-x[0]; // increment in x
+	double dy = y[1]-y[0]; // increment in y
+	// find x's integer index
+	long xidx = floor((x0-x[0])/dx);
+	long yidx = floor((y0-y[0])/dy);
+
+	// check for out-of-bounds points
+	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1)
+	{
+		cout << "interpBiCubicDirect: point out of bounds." << endl
+			<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
+			<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
+			<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
+			<< "y0=" << y0 << ", " << "dy=" << dy << ", " << "yidx=" << yidx << endl;
+    	exit(1);
+	}
+
+  if (xidx==0)
+  {
+    // use quadratic interpolation at left end
+    double A0 = interpCubicDirect(y, z[0], y0, y_size);
+	double A1 = interpCubicDirect(y, z[1], y0, y_size);
+	double A2 = interpCubicDirect(y, z[2], y0, y_size);
+	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else if (xidx==x_size-2)
+  {
+    // use quadratic interpolation at right end
+    double A0 = interpCubicDirect(y, z[x_size-3], y0, y_size);
+	double A1 = interpCubicDirect(y, z[x_size-2], y0, y_size);
+	double A2 = interpCubicDirect(y, z[x_size-1], y0, y_size);
+	double deltaX = x0 - (x[0] + (xidx-1)*dx);
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else
+  {
+    // use cubic interpolation
+    double A0 = interpCubicDirect(y, z[xidx-1], y0, y_size);
+	double A1 = interpCubicDirect(y, z[xidx], y0, y_size);
+	double A2 = interpCubicDirect(y, z[xidx+1], y0, y_size);
+	double A3 = interpCubicDirect(y, z[xidx+2], y0, y_size);
+	double deltaX = x0 - (x[0] + xidx*dx);
+    //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
+    return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
+            + (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX
+            - (2.0*A0+3.0*A1-6.0*A2+A3)/(6.0*dx)*deltaX
+            + A1;
+  }
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 //**********************************************************************
 double interpPolyDirect(double * x, double * y, double x0, long size)
@@ -710,7 +774,8 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 		case 1:
 		{
 			if (uniform_spacing)
-				return interpBiCubicDirect(x, y, z, x0, y0, x_size, y_size);
+				return interpBiCubicDirectALT(x, y, z, x0, y0, x_size, y_size);
+				//return interpBiCubicDirect(x, y, z, x0, y0, x_size, y_size);
 			else
 				cerr << "Error (interpolate2D): cubic interpolation with non-uniform spacing not supported!" << endl;
 			break;
