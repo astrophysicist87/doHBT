@@ -73,28 +73,20 @@ void doHBT::Output_azimuthally_averaged_results(int folderindex)
 	filename_stream_HBT << global_path << "/HBTradii_azavg_ev" << folderindex << no_df_stem << ".dat";
 	//cerr << "Writing to " << filename_stream_HBT.str() << endl;
 	ofstream outputHBT;
-	outputHBT.open(filename_stream_HBT.str().c_str(), ios::app);
-	ostringstream filename_stream_S;
-	filename_stream_S << global_path << "/Sourcefunction_variances_azavg" << no_df_stem << ".dat";
-	//cerr << "Writing to " << filename_stream_S.str() << endl;
-	ofstream output_Svars(filename_stream_S.str().c_str(), ios::app);
+	outputHBT.open(filename_stream_HBT.str().c_str());
 
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
-		outputHBT << folderindex << "  " << K_T[iKT]
-			<< "  " << azavg_R2_side[iKT] << "  " << azavg_R2_out[iKT]
-			<< "  " << azavg_R2_outside[iKT] << "  " << azavg_R2_long[iKT]
-			<< "  " << azavg_R2_sidelong[iKT] << "  " << azavg_R2_outlong[iKT] << endl;
-         	output_Svars << scientific << setprecision(8) << setw(15)
-			<< K_T[iKT] << "   " << azavg_S_func[iKT] << "   "
-			<< azavg_xs_S[iKT]  << "   " << azavg_xo_S[iKT]  << "   " << azavg_xl_S[iKT]  << "   " << azavg_t_S[iKT]  << "   "
-			<< azavg_xs_t_S[iKT]  << "   " << azavg_xo_t_S[iKT]  << "   " << azavg_xl_t_S[iKT]  << "   " << azavg_xo_xs_S[iKT]  << "   "
-			<< azavg_xl_xs_S[iKT]  << "   " << azavg_xo_xl_S[iKT]  << "   " << azavg_xs2_S[iKT]  << "   " << azavg_xo2_S[iKT]  << "   "
-			<< azavg_xl2_S[iKT]  << "   " << azavg_t2_S[iKT] << endl;
+		outputHBT << folderindex << "   " << fixed << setprecision(1) << K_T[iKT]
+			<< setw(15) << setprecision(7) << azavg_R2_side[iKT]
+			<< setw(15) << azavg_R2_out[iKT]
+			<< setw(15) << azavg_R2_outside[iKT]
+			<< setw(15) << azavg_R2_long[iKT]
+			<< setw(15) << azavg_R2_sidelong[iKT]
+			<< setw(15) << azavg_R2_outlong[iKT] << endl;
 	}
 
 	outputHBT.close();
-	output_Svars.close();
 
 	return;
 }
@@ -140,15 +132,15 @@ void doHBT::Output_AVG_results()
 	ostringstream filename_stream_HBT;
 	//filename_stream_HBT << runfolder << "/avgHBTradii.dat";
 	int final_event = initial_event + n_events - 1;
-	filename_stream_HBT << global_runfolder << "/avgHBTradii_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
+	filename_stream_HBT << global_runfolder << "/CbarHBTradii_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
 	ofstream outputHBT(filename_stream_HBT.str().c_str(), ios::app);
 	ostringstream filename_stream_HBTcfs;
 	//filename_stream_HBTcfs << runfolder << "/avgHBTradii_cfs.dat";
-	filename_stream_HBTcfs << global_runfolder << "/avgHBTradii_cfs_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
+	filename_stream_HBTcfs << global_runfolder << "/CbarHBTradii_cfs_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
 	ofstream outputHBTcoeffs(filename_stream_HBTcfs.str().c_str(), ios::app);
 	ostringstream filename_stream_S;
 	//filename_stream_S << runfolder << "/avgSourcefunction_variances.dat";
-	filename_stream_S << global_runfolder << "/avgSourcefunction_variances_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
+	filename_stream_S << global_runfolder << "/CbarSourcefunction_variances_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
 	ofstream output_Svars(filename_stream_S.str().c_str(), ios::app);
 
 for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -170,7 +162,7 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 			<< "  " << avgR2_sidelong[iKT][iKphi] << "  " << avgR2_outlong[iKT][iKphi] << endl;
          	output_Svars << scientific << setprecision(8) << setw(15) 
 			<< K_T[iKT] << "   " << K_phi[iKphi] << "   " << avgS_func[iKT][iKphi] << "   "
-			<< avgxs_S[iKT][iKphi]  << "   " <<avgxo_S[iKT][iKphi]  << "   " << avgxl_S[iKT][iKphi]  << "   " << avgt_S[iKT][iKphi]  << "   "
+			<< avgxs_S[iKT][iKphi]  << "   " << avgxo_S[iKT][iKphi]  << "   " << avgxl_S[iKT][iKphi]  << "   " << avgt_S[iKT][iKphi]  << "   "
 			<< avgxs_t_S[iKT][iKphi]  << "   " << avgxo_t_S[iKT][iKphi]  << "   " << avgxl_t_S[iKT][iKphi]  << "   " << avgxo_xs_S[iKT][iKphi]  << "   "
 			<< avgxl_xs_S[iKT][iKphi]  << "   " << avgxo_xl_S[iKT][iKphi]  << "   " << avgxs2_S[iKT][iKphi]  << "   " << avgxo2_S[iKT][iKphi]  << "   "
 			<< avgxl2_S[iKT][iKphi]  << "   " << avgt2_S[iKT][iKphi] << endl;
@@ -226,19 +218,27 @@ void doHBT::Output_azimuthally_averaged_Cbar_and_CAVG_results()
 	ostringstream filename_stream_Cavg;
 	int final_event = initial_event + n_events - 1;
 	filename_stream_Cavg << global_runfolder << "/CavgHBTradii_azavg_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
-	ofstream outputCavg(filename_stream_Cavg.str().c_str(), ios::app);
+	ofstream outputCavg(filename_stream_Cavg.str().c_str());
 	ostringstream filename_stream_Cbar;
 	filename_stream_Cbar << global_runfolder << "/CbarHBTradii_azavg_evs" << patch::to_string(initial_event) << "to" << patch::to_string(final_event) << no_df_stem << ".dat";
-	ofstream outputCbar(filename_stream_Cbar.str().c_str(), ios::app);
+	ofstream outputCbar(filename_stream_Cbar.str().c_str());
 
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
-		outputCavg << K_T[iKT] << "  " << azavg_CavgR2_side[iKT] << "  " << azavg_CavgR2_out[iKT]
-			<< "  " << azavg_CavgR2_outside[iKT] << "  " << azavg_CavgR2_long[iKT]
-			<< "  " << azavg_CavgR2_sidelong[iKT] << "  " << azavg_CavgR2_outlong[iKT] << endl;
-		outputCbar << K_T[iKT] << "  " << azavg_avgR2_side[iKT] << "  " << azavg_avgR2_out[iKT]
-			<< "  " << azavg_avgR2_outside[iKT] << "  " << azavg_avgR2_long[iKT]
-			<< "  " << azavg_avgR2_sidelong[iKT] << "  " << azavg_avgR2_outlong[iKT] << endl;
+		outputCavg << fixed << setprecision(1) << K_T[iKT]
+			<< setw(15) << setprecision(7) << azavg_CavgR2_side[iKT]
+			<< setw(15) << azavg_CavgR2_out[iKT]
+			<< setw(15) << azavg_CavgR2_outside[iKT]
+			<< setw(15) << azavg_CavgR2_long[iKT]
+			<< setw(15) << azavg_CavgR2_sidelong[iKT]
+			<< setw(15) << azavg_CavgR2_outlong[iKT] << endl;
+		outputCbar << fixed << setprecision(1) << K_T[iKT]
+			<< setw(15) << setprecision(7) << azavg_avgR2_side[iKT]
+			<< setw(15) << azavg_avgR2_out[iKT]
+			<< setw(15) << azavg_avgR2_outside[iKT]
+			<< setw(15) << azavg_avgR2_long[iKT]
+			<< setw(15) << azavg_avgR2_sidelong[iKT]
+			<< setw(15) << azavg_avgR2_outlong[iKT] << endl;
 	}
 
 	outputCavg.close();
@@ -374,11 +374,6 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 	return;
 }
 
-
-
-
-
-
 void doHBT::Readin_azimuthally_averaged_results(int folderindex)
 {
 double dummy;
@@ -387,10 +382,6 @@ double dummy;
 	//cerr << "Writing to " << filename_stream_HBT.str() << endl;
 	ifstream inputHBT;
 	inputHBT.open(filename_stream_HBT.str().c_str(), ios::app);
-	ostringstream filename_stream_S;
-	filename_stream_S << global_path << "/Sourcefunction_variances_azavg" << no_df_stem << ".dat";
-	//cerr << "Writing to " << filename_stream_S.str() << endl;
-	ifstream input_Svars(filename_stream_S.str().c_str(), ios::app);
 
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
@@ -401,35 +392,12 @@ double dummy;
 		inputHBT >> azavg_R2_long[iKT];
 		inputHBT >> azavg_R2_sidelong[iKT];
 		inputHBT >> azavg_R2_outlong[iKT];
-
-         	input_Svars >> dummy;
-         	input_Svars >> azavg_S_func[iKT];
-         	input_Svars >> azavg_xs_S[iKT];
-         	input_Svars >> azavg_xo_S[iKT];
-         	input_Svars >> azavg_xl_S[iKT];
-         	input_Svars >> azavg_t_S[iKT];
-         	input_Svars >> azavg_xs_t_S[iKT];
-         	input_Svars >> azavg_xo_t_S[iKT];
-         	input_Svars >> azavg_xl_t_S[iKT];
-         	input_Svars >> azavg_xo_xs_S[iKT];
-         	input_Svars >> azavg_xl_xs_S[iKT];
-         	input_Svars >> azavg_xo_xl_S[iKT];
-         	input_Svars >> azavg_xs2_S[iKT];
-         	input_Svars >> azavg_xo2_S[iKT];
-         	input_Svars >> azavg_xl2_S[iKT];
-         	input_Svars >> azavg_t2_S[iKT];
 	}
 
 	inputHBT.close();
-	input_Svars.close();
 
 	return;
 }
-
-
-
-
-
 
 
 void doHBT::Readin_HBTev_results_only(int folderindex)
@@ -461,17 +429,34 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 	return;
 }
 
-void doHBT::Read_in_event_multiplicity(int event)
+void doHBT::Output_event_multiplicity(int folderindex)
+{
+	double dummy;
+	ostringstream filename_stream;
+	filename_stream << global_path << "/azavg_multiplicities_vs_KT.dat";
+	ofstream output(filename_stream.str().c_str());
+
+	for(int iKT = 0; iKT < n_localp_T; iKT++)
+		output << fixed << setprecision(1) << K_T[iKT] << setw(15) << setprecision(5) << azavg_S_func[iKT] << setw(15) << azavg_squared_S_func[iKT] << endl;
+
+	output.close();
+
+	return;
+}
+
+
+void doHBT::Read_in_event_multiplicity(int folderindex)
 {
 	double dummy;
 	ostringstream filename_stream;
 	//filename_stream << "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.00/simulations/subensemble_nb100_indexfile.dat";
 	//filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << no_df_stem << ".dat";
-	filename_stream << "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.00/results-" << event+1 << "/Multiplicities_vs_KT_cfs_0.dat";
+	//filename_stream << "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.00/results-" << event+1 << "/Multiplicities_vs_KT_cfs_0.dat";
+	filename_stream << global_path << "/azavg_multiplicities_vs_KT.dat";
 	ifstream input(filename_stream.str().c_str());
 
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
-		input >> dummy >> eventByEventMultiplicities[iKT][event];
+		input >> dummy >> eventByEventMultiplicities[iKT][folderindex-1];
 
 	input.close();
 

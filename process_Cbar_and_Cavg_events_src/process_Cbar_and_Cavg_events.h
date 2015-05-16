@@ -9,4 +9,6 @@ using namespace std;
 const double plumbergtest = 0.;
 //const int n_order = 10;
 
+#define AZIMUTHAL	false
+
 #endif

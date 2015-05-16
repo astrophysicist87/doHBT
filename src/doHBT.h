@@ -134,7 +134,7 @@ class doHBT
 
 
       //source variances
-      double **S_func;
+      double **S_func, **squared_S_func;
       double **xs_S, **xo_S, **xl_S, **t_S;
       double **xs_t_S, **xo_t_S, **xl_t_S;
       double **xo_xs_S, **xl_xs_S, **xo_xl_S;
@@ -147,21 +147,13 @@ class doHBT
       double **xs2_sin, **xo2_sin, **xl2_sin, **t2_sin;
 
       //azimuthally averaged source variances and HBT radii
-      double *azavg_S_func;
-      double *azavg_xs_S, *azavg_xo_S, *azavg_xl_S, *azavg_t_S;
-      double *azavg_xs_t_S, *azavg_xo_t_S, *azavg_xl_t_S;
-      double *azavg_xo_xs_S, *azavg_xl_xs_S, *azavg_xo_xl_S;
-      double *azavg_xs2_S, *azavg_xo2_S, *azavg_xl2_S, *azavg_t2_S;
+      double *azavg_S_func, *azavg_squared_S_func;
       double *azavg_R2_side, *azavg_R2_out, *azavg_R2_long, *azavg_R2_outside, *azavg_R2_sidelong, *azavg_R2_outlong;
 
       //azimuthally averaged, EBE avgd. source variances and HBT radii
-      double *azavg_avgS_func;
-      double *azavg_avgxs_S, *azavg_avgxo_S, *azavg_avgxl_S, *azavg_avgt_S;
-      double *azavg_avgxs_t_S, *azavg_avgxo_t_S, *azavg_avgxl_t_S;
-      double *azavg_avgxo_xs_S, *azavg_avgxl_xs_S, *azavg_avgxo_xl_S;
-      double *azavg_avgxs2_S, *azavg_avgxo2_S, *azavg_avgxl2_S, *azavg_avgt2_S;
+      double *azavg_avgS_func, *azavg_squared_avgS_func;
       double *azavg_avgR2_side, *azavg_avgR2_out, *azavg_avgR2_long, *azavg_avgR2_outside, *azavg_avgR2_sidelong, *azavg_avgR2_outlong;
-      double *azavg_CavgS_func;
+      double *azavg_Cavg_squared_S_func;
       double *azavg_CavgR2_side_num, *azavg_CavgR2_out_num, *azavg_CavgR2_long_num;
       double *azavg_CavgR2_outside_num, *azavg_CavgR2_sidelong_num, *azavg_CavgR2_outlong_num;
       double *azavg_CavgR2_side, *azavg_CavgR2_out, *azavg_CavgR2_long, *azavg_CavgR2_outside, *azavg_CavgR2_sidelong, *azavg_CavgR2_outlong;
@@ -173,7 +165,7 @@ class doHBT
       double **avgxo_xs_S, **avgxl_xs_S, **avgxo_xl_S;
       double **avgxs2_S, **avgxo2_S, **avgxl2_S, **avgt2_S;
 
-      double **CavgS_func;
+      double **CavgS_func_squared;
       double **CavgR2_side_num, **CavgR2_out_num, **CavgR2_long_num;
       double **CavgR2_outside_num, **CavgR2_sidelong_num, **CavgR2_outlong_num;
 
@@ -218,6 +210,7 @@ class doHBT
       string global_resultsfolder_stem;
       string no_df_stem;
 	vector<int> eventvector;
+      int checkpoint_index;
 
    public:
       doHBT();
@@ -225,7 +218,8 @@ class doHBT
 
       void Determine_plane_angle(FO_surf* FOsurf_ptr);
       void Get_EdNd3p_cfs(FO_surf* FOsurf_ptr);
-      void Get_azimuthally_averaged_EBE_Svars_and_HBTradii();
+      void Get_azimuthally_averaged_multiplicities();
+      void Get_azimuthally_averaged_EBE_HBTradii();
       void Determine_avgplane_angle();
       void Determine_Cavgplane_angle();
       void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
@@ -277,7 +271,8 @@ class doHBT
       void Readin_HBTev_results_only(int);
       void Readin_ev_plane_psi(int);
       void Readin_AVG_results();
-      void Read_in_event_multiplicity(int event);
+      void Read_in_event_multiplicity(int);
+      void Output_event_multiplicity(int);
       void Output_ev_plane_psi(int);
       void Output_results(int);
       void Output_GF_results(int);
@@ -322,6 +317,10 @@ class doHBT
       void Calculate_CavgR2_long(int, int);
       void Calculate_CavgR2_sidelong(int, int);
       void Calculate_CavgR2_outlong(int, int);
+
+      void Calculate_azimuthally_averaged_squared_S_func(int iKT);
+      void Calculate_azimuthally_averaged_squared_avgS_func(int iKT);
+      void Calculate_azimuthally_averaged_Cavg_squared_S_func(int iKT);
 
       void Calculate_azimuthally_averaged_R2_side(int);
       void Calculate_azimuthally_averaged_R2_out(int);
@@ -368,6 +367,7 @@ class doHBT
       void Set_runfolder(string runfolder);
       void Set_use_delta_f(bool usrdef_usedeltaf);
       void Set_particle_mass(double usrdef_particle_mass);
+      void debugger();
 
       //parameters that the user is free to define
       double plumberg_test_variable;

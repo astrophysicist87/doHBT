@@ -29,51 +29,6 @@
 
 using namespace std;
 
-void doHBT::Update_avgSource_function(int i = -1)
-{
-//N.B. - avgs. only contains sums here, have not actually been averaged yet
-   if (i < 0)
-   {
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	{
-		azavg_avgS_func[iKT] += azavg_S_func[iKT];
-		azavg_avgxs_S[iKT] += azavg_xs_S[iKT];
-		azavg_avgxo_S[iKT] += azavg_xo_S[iKT];
-		azavg_avgxl_S[iKT] += azavg_xl_S[iKT];
-		azavg_avgt_S[iKT] += azavg_t_S[iKT];
-		azavg_avgxs_t_S[iKT] += azavg_xs_t_S[iKT];
-		azavg_avgxo_t_S[iKT] += azavg_xo_t_S[iKT];
-		azavg_avgxl_t_S[iKT] += azavg_xl_t_S[iKT];
-		azavg_avgxo_xs_S[iKT] += azavg_xo_xs_S[iKT];
-		azavg_avgxl_xs_S[iKT] += azavg_xl_xs_S[iKT];
-		azavg_avgxo_xl_S[iKT] += azavg_xo_xl_S[iKT];
-		azavg_avgxs2_S[iKT] += azavg_xs2_S[iKT];
-		azavg_avgxo2_S[iKT] += azavg_xo2_S[iKT];
-		azavg_avgxl2_S[iKT] += azavg_xl2_S[iKT];
-		azavg_avgt2_S[iKT] += azavg_t2_S[iKT];
-	}
-   }
-   else
-   {
-		azavg_avgS_func[i] += azavg_S_func[i];
-		azavg_avgxs_S[i] += azavg_xs_S[i];
-		azavg_avgxo_S[i] += azavg_xo_S[i];
-		azavg_avgxl_S[i] += azavg_xl_S[i];
-		azavg_avgt_S[i] += azavg_t_S[i];
-		azavg_avgxs_t_S[i] += azavg_xs_t_S[i];
-		azavg_avgxo_t_S[i] += azavg_xo_t_S[i];
-		azavg_avgxl_t_S[i] += azavg_xl_t_S[i];
-		azavg_avgxo_xs_S[i] += azavg_xo_xs_S[i];
-		azavg_avgxl_xs_S[i] += azavg_xl_xs_S[i];
-		azavg_avgxo_xl_S[i] += azavg_xo_xl_S[i];
-		azavg_avgxs2_S[i] += azavg_xs2_S[i];
-		azavg_avgxo2_S[i] += azavg_xo2_S[i];
-		azavg_avgxl2_S[i] += azavg_xl2_S[i];
-		azavg_avgt2_S[i] += azavg_t2_S[i];
-   }
-   return;
-}
-
 void doHBT::Update_avgSource_function(int i = -1, int j = -1)
 {
 //N.B. - avgs. only contains sums here, have not actually been averaged yet
@@ -128,24 +83,24 @@ void doHBT::Update_CavgSource_function(int i = -1)
    {
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
-		azavg_CavgS_func[iKT] += azavg_S_func[iKT]*azavg_S_func[iKT];
-		azavg_CavgR2_side_num[iKT] += azavg_R2_side[iKT]*azavg_S_func[iKT]*azavg_S_func[iKT];
-		azavg_CavgR2_out_num[iKT] += azavg_R2_out[iKT]*azavg_S_func[iKT]*azavg_S_func[iKT];
-		azavg_CavgR2_outside_num[iKT] += azavg_R2_outside[iKT]*azavg_S_func[iKT]*azavg_S_func[iKT];
-		azavg_CavgR2_long_num[iKT] += azavg_R2_long[iKT]*azavg_S_func[iKT]*azavg_S_func[iKT];
-		azavg_CavgR2_sidelong_num[iKT] += azavg_R2_sidelong[iKT]*azavg_S_func[iKT]*azavg_S_func[iKT];
-		azavg_CavgR2_outlong_num[iKT] += azavg_R2_outlong[iKT]*azavg_S_func[iKT]*azavg_S_func[iKT];
+		azavg_Cavg_squared_S_func[iKT] += azavg_squared_S_func[iKT];
+		azavg_CavgR2_side_num[iKT] += azavg_R2_side[iKT]*azavg_squared_S_func[iKT];
+		azavg_CavgR2_out_num[iKT] += azavg_R2_out[iKT]*azavg_squared_S_func[iKT];
+		azavg_CavgR2_outside_num[iKT] += azavg_R2_outside[iKT]*azavg_squared_S_func[iKT];
+		azavg_CavgR2_long_num[iKT] += azavg_R2_long[iKT]*azavg_squared_S_func[iKT];
+		azavg_CavgR2_sidelong_num[iKT] += azavg_R2_sidelong[iKT]*azavg_squared_S_func[iKT];
+		azavg_CavgR2_outlong_num[iKT] += azavg_R2_outlong[iKT]*azavg_squared_S_func[iKT];
 	}
    }
    else
    {
-		azavg_CavgS_func[i] += azavg_S_func[i]*azavg_S_func[i];
-		azavg_CavgR2_side_num[i] += azavg_R2_side[i]*azavg_S_func[i]*azavg_S_func[i];
-		azavg_CavgR2_out_num[i] += azavg_R2_out[i]*azavg_S_func[i]*azavg_S_func[i];
-		azavg_CavgR2_outside_num[i] += azavg_R2_outside[i]*azavg_S_func[i]*azavg_S_func[i];
-		azavg_CavgR2_long_num[i] += azavg_R2_long[i]*azavg_S_func[i]*azavg_S_func[i];
-		azavg_CavgR2_sidelong_num[i] += azavg_R2_sidelong[i]*azavg_S_func[i]*azavg_S_func[i];
-		azavg_CavgR2_outlong_num[i] += azavg_R2_outlong[i]*azavg_S_func[i]*azavg_S_func[i];
+		azavg_Cavg_squared_S_func[i] += azavg_squared_S_func[i];
+		azavg_CavgR2_side_num[i] += azavg_R2_side[i]*azavg_squared_S_func[i];
+		azavg_CavgR2_out_num[i] += azavg_R2_out[i]*azavg_squared_S_func[i];
+		azavg_CavgR2_outside_num[i] += azavg_R2_outside[i]*azavg_squared_S_func[i];
+		azavg_CavgR2_long_num[i] += azavg_R2_long[i]*azavg_squared_S_func[i];
+		azavg_CavgR2_sidelong_num[i] += azavg_R2_sidelong[i]*azavg_squared_S_func[i];
+		azavg_CavgR2_outlong_num[i] += azavg_R2_outlong[i]*azavg_squared_S_func[i];
    }
    return;
 }
@@ -159,7 +114,7 @@ void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 	{
-		CavgS_func[iKT][iKphi] += S_func[iKT][iKphi]*S_func[iKT][iKphi];
+		CavgS_func_squared[iKT][iKphi] += S_func[iKT][iKphi]*S_func[iKT][iKphi];
 		CavgR2_side_num[iKT][iKphi] += R2_side[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
 		CavgR2_out_num[iKT][iKphi] += R2_out[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
 		CavgR2_outside_num[iKT][iKphi] += R2_outside[iKT][iKphi]*S_func[iKT][iKphi]*S_func[iKT][iKphi];
@@ -170,7 +125,7 @@ void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
    }
    else
    {
-		CavgS_func[i][j] += S_func[i][j]*S_func[i][j];
+		CavgS_func_squared[i][j] += S_func[i][j]*S_func[i][j];
 		CavgR2_side_num[i][j] += R2_side[i][j]*S_func[i][j]*S_func[i][j];
 		CavgR2_out_num[i][j] += R2_out[i][j]*S_func[i][j]*S_func[i][j];
 		CavgR2_outside_num[i][j] += R2_outside[i][j]*S_func[i][j]*S_func[i][j];
@@ -227,52 +182,6 @@ void doHBT::Calculate_avgSource_function(int i = -1, int j = -1)
    return;
 }
 
-void doHBT::Calculate_avgSource_function(int i = -1)
-{
-//N.B. - avgs. only contains sums, doing averaging here
-   if (i < 0)
-   {
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	{
-		azavg_avgS_func[iKT] /= double(n_events);
-		azavg_avgxs_S[iKT] /= double(n_events);
-		azavg_avgxo_S[iKT] /= double(n_events);
-		azavg_avgxl_S[iKT] /= double(n_events);
-		azavg_avgt_S[iKT] /= double(n_events);
-		azavg_avgxs_t_S[iKT] /= double(n_events);
-		azavg_avgxo_t_S[iKT] /= double(n_events);
-		azavg_avgxl_t_S[iKT] /= double(n_events);
-		azavg_avgxo_xs_S[iKT] /= double(n_events);
-		azavg_avgxl_xs_S[iKT] /= double(n_events);
-		azavg_avgxo_xl_S[iKT] /= double(n_events);
-		azavg_avgxs2_S[iKT] /= double(n_events);
-		azavg_avgxo2_S[iKT] /= double(n_events);
-		azavg_avgxl2_S[iKT] /= double(n_events);
-		azavg_avgt2_S[iKT] /= double(n_events);
-	}
-   }
-   else
-   {
-		azavg_avgS_func[i] /= double(n_events);
-		azavg_avgxs_S[i] /= double(n_events);
-		azavg_avgxo_S[i] /= double(n_events);
-		azavg_avgxl_S[i] /= double(n_events);
-		azavg_avgt_S[i] /= double(n_events);
-		azavg_avgxs_t_S[i] /= double(n_events);
-		azavg_avgxo_t_S[i] /= double(n_events);
-		azavg_avgxl_t_S[i] /= double(n_events);
-		azavg_avgxo_xs_S[i] /= double(n_events);
-		azavg_avgxl_xs_S[i] /= double(n_events);
-		azavg_avgxo_xl_S[i] /= double(n_events);
-		azavg_avgxs2_S[i] /= double(n_events);
-		azavg_avgxo2_S[i] /= double(n_events);
-		azavg_avgxl2_S[i] /= double(n_events);
-		azavg_avgt2_S[i] /= double(n_events);
-   }
-   return;
-}
-
-
 void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
 {
 //N.B. - avgs. only contains sums, doing averaging here
@@ -281,7 +190,7 @@ void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 	{
-		CavgS_func[iKT][iKphi] /= double(n_events);
+		CavgS_func_squared[iKT][iKphi] /= double(n_events);
 		CavgR2_side_num[iKT][iKphi] /= double(n_events);
 		CavgR2_out_num[iKT][iKphi] /= double(n_events);
 		CavgR2_outside_num[iKT][iKphi] /= double(n_events);
@@ -292,7 +201,7 @@ void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
    }
    else
    {
-		CavgS_func[i][j] /= double(n_events);
+		CavgS_func_squared[i][j] /= double(n_events);
 		CavgR2_side_num[i][j] /= double(n_events);
 		CavgR2_out_num[i][j] /= double(n_events);
 		CavgR2_outside_num[i][j] /= double(n_events);
@@ -310,7 +219,7 @@ void doHBT::Calculate_CavgSource_function(int i = -1)
    {
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
-		azavg_CavgS_func[iKT] /= double(n_events);
+		azavg_Cavg_squared_S_func[iKT] /= double(n_events);
 		azavg_CavgR2_side_num[iKT] /= double(n_events);
 		azavg_CavgR2_out_num[iKT] /= double(n_events);
 		azavg_CavgR2_outside_num[iKT] /= double(n_events);
@@ -321,7 +230,7 @@ void doHBT::Calculate_CavgSource_function(int i = -1)
    }
    else
    {
-		azavg_CavgS_func[i] /= double(n_events);
+		azavg_Cavg_squared_S_func[i] /= double(n_events);
 		azavg_CavgR2_side_num[i] /= double(n_events);
 		azavg_CavgR2_out_num[i] /= double(n_events);
 		azavg_CavgR2_outside_num[i] /= double(n_events);
@@ -469,236 +378,316 @@ void doHBT::Calculate_avgR2_sidelong(int iKT, int iKphi)
 
 void doHBT::Calculate_CavgR2_side(int iKT, int iKphi)
 {
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxs2_S[iKT][iKphi];
-   //double term2 = Cavgxs_S[iKT][iKphi];
-
-   //CavgR2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   CavgR2_side[iKT][iKphi] = CavgR2_side_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
+   CavgR2_side[iKT][iKphi] = CavgR2_side_num[iKT][iKphi] / CavgS_func_squared[iKT][iKphi];
    return;
 }
 
 void doHBT::Calculate_CavgR2_out(int iKT, int iKphi)
 {
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxo2_S[iKT][iKphi] - 2.*beta_perp*Cavgxo_t_S[iKT][iKphi] + beta_perp*beta_perp*Cavgt2_S[iKT][iKphi];
-   //double term2 = Cavgxo_S[iKT][iKphi] - beta_perp*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_out[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   CavgR2_out[iKT][iKphi] = CavgR2_out_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
+   CavgR2_out[iKT][iKphi] = CavgR2_out_num[iKT][iKphi] / CavgS_func_squared[iKT][iKphi];
    return;
 }
 
 void doHBT::Calculate_CavgR2_outside(int iKT, int iKphi)
 {
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxo_xs_S[iKT][iKphi] - beta_perp*Cavgxs_t_S[iKT][iKphi];
-   //double term2 = Cavgxo_S[iKT][iKphi] - beta_perp*Cavgt_S[iKT][iKphi];
-   //double term3 = Cavgxs_S[iKT][iKphi];
-
-   //CavgR2_outside[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   CavgR2_outside[iKT][iKphi] = CavgR2_outside_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
+   CavgR2_outside[iKT][iKphi] = CavgR2_outside_num[iKT][iKphi] / CavgS_func_squared[iKT][iKphi];
    return;
 }
 
 void doHBT::Calculate_CavgR2_long(int iKT, int iKphi)
 {
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxl2_S[iKT][iKphi] - 2.*beta_l*Cavgxl_t_S[iKT][iKphi] + beta_l*beta_l*Cavgt2_S[iKT][iKphi];
-   //double term2 = Cavgxl_S[iKT][iKphi] - beta_l*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_long[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   CavgR2_long[iKT][iKphi] = CavgR2_long_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
+   CavgR2_long[iKT][iKphi] = CavgR2_long_num[iKT][iKphi] / CavgS_func_squared[iKT][iKphi];
    return;
 }
 
 void doHBT::Calculate_CavgR2_outlong(int iKT, int iKphi)
 {
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxo_xl_S[iKT][iKphi] - beta_perp*Cavgxl_t_S[iKT][iKphi] - beta_l*Cavgxo_t_S[iKT][iKphi] + beta_perp*beta_l*Cavgt2_S[iKT][iKphi];
-   //double term2 = Cavgxo_S[iKT][iKphi] - beta_perp*Cavgt_S[iKT][iKphi];
-   //double term3 = Cavgxl_S[iKT][iKphi] - beta_l*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_outlong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   CavgR2_outlong[iKT][iKphi] = CavgR2_outlong_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
+   CavgR2_outlong[iKT][iKphi] = CavgR2_outlong_num[iKT][iKphi] / CavgS_func_squared[iKT][iKphi];
    return;
 }
 
 void doHBT::Calculate_CavgR2_sidelong(int iKT, int iKphi)
 {
-   //double norm = CavgS_func[iKT][iKphi];
-   //double term1 = Cavgxl_xs_S[iKT][iKphi] - beta_l*Cavgxs_t_S[iKT][iKphi];
-   //double term2 = Cavgxs_S[iKT][iKphi];
-   //double term3 = Cavgxl_S[iKT][iKphi] - beta_l*Cavgt_S[iKT][iKphi];
-
-   //CavgR2_sidelong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
-   CavgR2_sidelong[iKT][iKphi] = CavgR2_sidelong_num[iKT][iKphi] / CavgS_func[iKT][iKphi];
+   CavgR2_sidelong[iKT][iKphi] = CavgR2_sidelong_num[iKT][iKphi] / CavgS_func_squared[iKT][iKphi];
    return;
+}
+
+void doHBT::Calculate_azimuthally_averaged_squared_S_func(int iKT)
+{
+	azavg_squared_S_func[iKT] = 0.0;
+	for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+	{
+		squared_S_func[iKT][iKphi] = S_func[iKT][iKphi]*S_func[iKT][iKphi];
+   		azavg_squared_S_func[iKT] += squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+	}
+
+	azavg_squared_S_func[iKT] /= (2.*M_PI);
+
+	return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_R2_side(int iKT)
 {
-   double norm = azavg_S_func[iKT];
-   double term1 = azavg_xs2_S[iKT];
-   double term2 = azavg_xs_S[iKT];
+   azavg_R2_side[iKT] = 0.0;
 
-   azavg_R2_side[iKT] = term1/norm - term2*term2/(norm*norm);
-   //cerr << "R^2_s(KT = " << K_T[iKT] << ") = " << R2_side[iKT] << endl;
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_R2_side[iKT] += R2_side[iKT][iKphi]*squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_R2_side[iKT] /= (2.*M_PI*azavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_R2_out(int iKT)
 {
-   double norm = azavg_S_func[iKT];
-   double term1 = azavg_xo2_S[iKT] - 2.*beta_perp*azavg_xo_t_S[iKT] + beta_perp*beta_perp*azavg_t2_S[iKT];
-   double term2 = azavg_xo_S[iKT] - beta_perp*azavg_t_S[iKT];
+   azavg_R2_out[iKT] = 0.0;
 
-   azavg_R2_out[iKT] = term1/norm - term2*term2/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_R2_out[iKT] += R2_out[iKT][iKphi]*squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_R2_out[iKT] /= (2.*M_PI*azavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_R2_outside(int iKT)
 {
-   double norm = azavg_S_func[iKT];
-   double term1 = azavg_xo_xs_S[iKT] - beta_perp*azavg_xs_t_S[iKT];
-   double term2 = azavg_xo_S[iKT] - beta_perp*azavg_t_S[iKT];
-   double term3 = azavg_xs_S[iKT];
+   azavg_R2_outside[iKT] = 0.0;
 
-   azavg_R2_outside[iKT] = term1/norm - term2*term3/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_R2_outside[iKT] += R2_outside[iKT][iKphi]*squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_R2_outside[iKT] /= (2.*M_PI*azavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_R2_long(int iKT)
 {
-   double norm = azavg_S_func[iKT];
-   double term1 = azavg_xl2_S[iKT] - 2.*beta_l*azavg_xl_t_S[iKT] + beta_l*beta_l*azavg_t2_S[iKT];
-   double term2 = azavg_xl_S[iKT] - beta_l*azavg_t_S[iKT];
+   azavg_R2_long[iKT] = 0.0;
 
-   azavg_R2_long[iKT] = term1/norm - term2*term2/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_R2_long[iKT] += R2_long[iKT][iKphi]*squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_R2_long[iKT] /= (2.*M_PI*azavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_R2_outlong(int iKT)
 {
-   double norm = azavg_S_func[iKT];
-   double term1 = azavg_xo_xl_S[iKT] - beta_perp*azavg_xl_t_S[iKT] - beta_l*azavg_xo_t_S[iKT] + beta_perp*beta_l*azavg_t2_S[iKT];
-   double term2 = azavg_xo_S[iKT] - beta_perp*azavg_t_S[iKT];
-   double term3 = azavg_xl_S[iKT] - beta_l*azavg_t_S[iKT];
+   azavg_R2_outlong[iKT] = 0.0;
 
-   azavg_R2_outlong[iKT] = term1/norm - term2*term3/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_R2_outlong[iKT] += R2_outlong[iKT][iKphi]*squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_R2_outlong[iKT] /= (2.*M_PI*azavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_R2_sidelong(int iKT)
 {
-   double norm = azavg_S_func[iKT];
-   double term1 = azavg_xl_xs_S[iKT] - beta_l*azavg_xs_t_S[iKT];
-   double term2 = azavg_xs_S[iKT];
-   double term3 = azavg_xl_S[iKT] - beta_l*azavg_t_S[iKT];
+   azavg_R2_sidelong[iKT] = 0.0;
 
-   azavg_R2_sidelong[iKT] = term1/norm - term2*term3/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_R2_sidelong[iKT] += R2_sidelong[iKT][iKphi]*squared_S_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_R2_sidelong[iKT] /= (2.*M_PI*azavg_squared_S_func[iKT]);
    return;
 }
 
+void doHBT::Calculate_azimuthally_averaged_squared_avgS_func(int iKT)
+{
+	if (iKT < 0)
+	{//if iKT is negative, do it for all KT values
+		for (int i = 0; i < n_localp_T; i++)
+		{
+			azavg_squared_avgS_func[i] = 0.0;
+			
+			for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+				azavg_squared_avgS_func[i] += avgS_func[i][iKphi]*avgS_func[i][iKphi]*K_phi_weight[iKphi];
+			
+			azavg_squared_avgS_func[i] /= (2.*M_PI);
+		}
+	}
+	else
+	{//otherwise, just do it for the specified KT value
+		azavg_squared_avgS_func[iKT] = 0.0;
+		
+		for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+			azavg_squared_avgS_func[iKT] += avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+		
+		azavg_squared_avgS_func[iKT] /= (2.*M_PI);
+	}
+
+   return;
+}
 
 void doHBT::Calculate_azimuthally_averaged_avgR2_side(int iKT)
 {
-   double norm = azavg_avgS_func[iKT];
-   double term1 = azavg_avgxs2_S[iKT];
-   double term2 = azavg_avgxs_S[iKT];
+   azavg_avgR2_side[iKT] = 0.0;
 
-   azavg_avgR2_side[iKT] = term1/norm - term2*term2/(norm*norm);
-//debug
-//   cout << "avgR2_side[" << K_T[iKT] << "][" << K_phi << "] = " << avgR2_side[iKT] << endl;
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_avgR2_side[iKT] += avgR2_side[iKT][iKphi]*avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_avgR2_side[iKT] /= (2.*M_PI*azavg_squared_avgS_func[iKT]);
+
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_avgR2_out(int iKT)
 {
-   double norm = azavg_avgS_func[iKT];
-   double term1 = azavg_avgxo2_S[iKT] - 2.*beta_perp*azavg_avgxo_t_S[iKT] + beta_perp*beta_perp*azavg_avgt2_S[iKT];
-   double term2 = azavg_avgxo_S[iKT] - beta_perp*azavg_avgt_S[iKT];
+   azavg_avgR2_out[iKT] = 0.0;
 
-   azavg_avgR2_out[iKT] = term1/norm - term2*term2/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_avgR2_out[iKT] += avgR2_out[iKT][iKphi]*avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_avgR2_out[iKT] /= (2.*M_PI*azavg_squared_avgS_func[iKT]);
+
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_avgR2_outside(int iKT)
 {
-   double norm = azavg_avgS_func[iKT];
-   double term1 = azavg_avgxo_xs_S[iKT] - beta_perp*azavg_avgxs_t_S[iKT];
-   double term2 = azavg_avgxo_S[iKT] - beta_perp*azavg_avgt_S[iKT];
-   double term3 = azavg_avgxs_S[iKT];
+   azavg_avgR2_outside[iKT] = 0.0;
 
-   azavg_avgR2_outside[iKT] = term1/norm - term2*term3/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_avgR2_outside[iKT] += avgR2_outside[iKT][iKphi]*avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_avgR2_outside[iKT] /= (2.*M_PI*azavg_squared_avgS_func[iKT]);
+
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_avgR2_long(int iKT)
 {
-   double norm = azavg_avgS_func[iKT];
-   double term1 = azavg_avgxl2_S[iKT] - 2.*beta_l*azavg_avgxl_t_S[iKT] + beta_l*beta_l*azavg_avgt2_S[iKT];
-   double term2 = azavg_avgxl_S[iKT] - beta_l*azavg_avgt_S[iKT];
+   azavg_avgR2_long[iKT] = 0.0;
 
-   azavg_avgR2_long[iKT] = term1/norm - term2*term2/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_avgR2_long[iKT] += avgR2_long[iKT][iKphi]*avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_avgR2_long[iKT] /= (2.*M_PI*azavg_squared_avgS_func[iKT]);
+
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_avgR2_outlong(int iKT)
 {
-   double norm = azavg_avgS_func[iKT];
-   double term1 = azavg_avgxo_xl_S[iKT] - beta_perp*azavg_avgxl_t_S[iKT] - beta_l*azavg_avgxo_t_S[iKT] + beta_perp*beta_l*azavg_avgt2_S[iKT];
-   double term2 = azavg_avgxo_S[iKT] - beta_perp*azavg_avgt_S[iKT];
-   double term3 = azavg_avgxl_S[iKT] - beta_l*azavg_avgt_S[iKT];
+   azavg_avgR2_outlong[iKT] = 0.0;
 
-   azavg_avgR2_outlong[iKT] = term1/norm - term2*term3/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_avgR2_outlong[iKT] += avgR2_outlong[iKT][iKphi]*avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_avgR2_outlong[iKT] /= (2.*M_PI*azavg_squared_avgS_func[iKT]);
+
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_avgR2_sidelong(int iKT)
 {
-   double norm = azavg_avgS_func[iKT];
-   double term1 = azavg_avgxl_xs_S[iKT] - beta_l*azavg_avgxs_t_S[iKT];
-   double term2 = azavg_avgxs_S[iKT];
-   double term3 = azavg_avgxl_S[iKT] - beta_l*azavg_avgt_S[iKT];
+   azavg_avgR2_sidelong[iKT] = 0.0;
 
-   azavg_avgR2_sidelong[iKT] = term1/norm - term2*term3/(norm*norm);
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_avgR2_sidelong[iKT] += avgR2_sidelong[iKT][iKphi]*avgS_func[iKT][iKphi]*avgS_func[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_avgR2_sidelong[iKT] /= (2.*M_PI*azavg_squared_avgS_func[iKT]);
+
    return;
 }
 
+void doHBT::Calculate_azimuthally_averaged_Cavg_squared_S_func(int iKT)
+{
+	if (iKT < 0)
+	{//if iKT is negative, do it for all KT values
+		for (int i = 0; i < n_localp_T; i++)
+		{
+			azavg_Cavg_squared_S_func[i] = 0.0;
+			
+			for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+				azavg_Cavg_squared_S_func[i] += CavgS_func_squared[iKT][iKphi]*K_phi_weight[iKphi];
+			
+			azavg_Cavg_squared_S_func[i] /= (2.*M_PI);
+		}
+	}
+	else
+	{//otherwise, just do it for the specified KT value
+		azavg_Cavg_squared_S_func[iKT] = 0.0;
+		
+		for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+			azavg_Cavg_squared_S_func[iKT] += CavgS_func_squared[iKT][iKphi]*K_phi_weight[iKphi];
+		
+		azavg_Cavg_squared_S_func[iKT] /= (2.*M_PI);
+	}
+
+   return;
+}
+
+
 void doHBT::Calculate_azimuthally_averaged_CavgR2_side(int iKT)
 {
-   azavg_CavgR2_side[iKT] = azavg_CavgR2_side_num[iKT] / azavg_CavgS_func[iKT];
+   //azavg_CavgR2_side[iKT] = azavg_CavgR2_side_num[iKT] / azavg_Cavg_squared_S_func[iKT];
+   azavg_CavgR2_side[iKT] = 0.0;
+
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_CavgR2_side[iKT] += CavgR2_side_num[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_CavgR2_side[iKT] /= (2.*M_PI*azavg_Cavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_CavgR2_out(int iKT)
 {
-   azavg_CavgR2_out[iKT] = azavg_CavgR2_out_num[iKT] / azavg_CavgS_func[iKT];
+   //azavg_CavgR2_out[iKT] = azavg_CavgR2_out_num[iKT] / azavg_Cavg_squared_S_func[iKT];
+   azavg_CavgR2_out[iKT] = 0.0;
+
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_CavgR2_out[iKT] += CavgR2_out_num[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_CavgR2_out[iKT] /= (2.*M_PI*azavg_Cavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_CavgR2_outside(int iKT)
 {
-   azavg_CavgR2_outside[iKT] = azavg_CavgR2_outside_num[iKT] / azavg_CavgS_func[iKT];
+   //azavg_CavgR2_outside[iKT] = azavg_CavgR2_outside_num[iKT] / azavg_Cavg_squared_S_func[iKT];
+   azavg_CavgR2_outside[iKT] = 0.0;
+
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_CavgR2_outside[iKT] += CavgR2_outside_num[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_CavgR2_outside[iKT] /= (2.*M_PI*azavg_Cavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_CavgR2_long(int iKT)
 {
-   azavg_CavgR2_long[iKT] = azavg_CavgR2_long_num[iKT] / azavg_CavgS_func[iKT];
+   //azavg_CavgR2_long[iKT] = azavg_CavgR2_long_num[iKT] / azavg_Cavg_squared_S_func[iKT];
+   azavg_CavgR2_long[iKT] = 0.0;
+
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_CavgR2_long[iKT] += CavgR2_long_num[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_CavgR2_long[iKT] /= (2.*M_PI*azavg_Cavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_CavgR2_outlong(int iKT)
 {
-   azavg_CavgR2_outlong[iKT] = azavg_CavgR2_outlong_num[iKT] / azavg_CavgS_func[iKT];
+   //azavg_CavgR2_outlong[iKT] = azavg_CavgR2_outlong_num[iKT] / azavg_Cavg_squared_S_func[iKT];
+   azavg_CavgR2_outlong[iKT] = 0.0;
+
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_CavgR2_outlong[iKT] += CavgR2_outlong_num[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_CavgR2_outlong[iKT] /= (2.*M_PI*azavg_Cavg_squared_S_func[iKT]);
    return;
 }
 
 void doHBT::Calculate_azimuthally_averaged_CavgR2_sidelong(int iKT)
 {
-   azavg_CavgR2_sidelong[iKT] = azavg_CavgR2_sidelong_num[iKT] / azavg_CavgS_func[iKT];
+   //azavg_CavgR2_sidelong[iKT] = azavg_CavgR2_sidelong_num[iKT] / azavg_Cavg_squared_S_func[iKT];
+   azavg_CavgR2_sidelong[iKT] = 0.0;
+
+   for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+   	azavg_CavgR2_sidelong[iKT] += CavgR2_sidelong_num[iKT][iKphi]*K_phi_weight[iKphi];
+
+   azavg_CavgR2_sidelong[iKT] /= (2.*M_PI*azavg_Cavg_squared_S_func[iKT]);
    return;
 }
 

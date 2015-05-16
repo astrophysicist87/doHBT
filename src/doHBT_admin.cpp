@@ -27,6 +27,7 @@ doHBT::doHBT()
    //default initial event and # of events for avg'ing routines
    initial_event = 1;	//defaults for now
    n_events = 1000;	//defaults for now
+   checkpoint_index = 1;
    //for (int i=1; i<=1000; ++i) eventvector.push_back(i);
    //default: use delta_f in calculations
    use_delta_f = true;
@@ -170,6 +171,7 @@ doHBT::doHBT()
    }
 
    S_func = new double* [n_localp_T];
+   squared_S_func = new double* [n_localp_T];
    xs_S = new double* [n_localp_T];
    xo_S = new double* [n_localp_T];
    xl_S = new double* [n_localp_T];
@@ -185,22 +187,8 @@ doHBT::doHBT()
    xl2_S = new double* [n_localp_T];
    t2_S = new double* [n_localp_T];
 
+   azavg_squared_S_func = new double [n_localp_T];
    azavg_S_func = new double [n_localp_T];
-   azavg_xs_S = new double [n_localp_T];
-   azavg_xo_S = new double [n_localp_T];
-   azavg_xl_S = new double [n_localp_T];
-   azavg_t_S = new double [n_localp_T];
-   azavg_xs_t_S = new double [n_localp_T];
-   azavg_xo_t_S = new double [n_localp_T];
-   azavg_xl_t_S = new double [n_localp_T];
-   azavg_xo_xs_S = new double [n_localp_T];
-   azavg_xl_xs_S = new double [n_localp_T];
-   azavg_xo_xl_S = new double [n_localp_T];
-   azavg_xs2_S = new double [n_localp_T];
-   azavg_xo2_S = new double [n_localp_T];
-   azavg_xl2_S = new double [n_localp_T];
-   azavg_t2_S = new double [n_localp_T];
-
 
    xs_t_cos = new double* [n_localp_T];
    xo_t_cos = new double* [n_localp_T];
@@ -239,23 +227,9 @@ doHBT::doHBT()
    avgxl2_S = new double* [n_localp_T];
    avgt2_S = new double* [n_localp_T];
 
-   azavg_avgS_func = new double [n_localp_T];
-   azavg_avgxs_S = new double [n_localp_T];
-   azavg_avgxo_S = new double [n_localp_T];
-   azavg_avgxl_S = new double [n_localp_T];
-   azavg_avgt_S = new double [n_localp_T];
-   azavg_avgxs_t_S = new double [n_localp_T];
-   azavg_avgxo_t_S = new double [n_localp_T];
-   azavg_avgxl_t_S = new double [n_localp_T];
-   azavg_avgxo_xs_S = new double [n_localp_T];
-   azavg_avgxl_xs_S = new double [n_localp_T];
-   azavg_avgxo_xl_S = new double [n_localp_T];
-   azavg_avgxs2_S = new double [n_localp_T];
-   azavg_avgxo2_S = new double [n_localp_T];
-   azavg_avgxl2_S = new double [n_localp_T];
-   azavg_avgt2_S = new double [n_localp_T];
+   azavg_squared_avgS_func = new double [n_localp_T];
 
-   CavgS_func = new double* [n_localp_T];
+   CavgS_func_squared = new double* [n_localp_T];
    CavgR2_side_num = new double* [n_localp_T];
    CavgR2_out_num = new double* [n_localp_T];
    CavgR2_long_num = new double* [n_localp_T];
@@ -263,7 +237,7 @@ doHBT::doHBT()
    CavgR2_sidelong_num = new double* [n_localp_T];
    CavgR2_outlong_num = new double* [n_localp_T];
 
-   azavg_CavgS_func = new double [n_localp_T];
+   azavg_Cavg_squared_S_func = new double [n_localp_T];
    azavg_CavgR2_side_num = new double [n_localp_T];
    azavg_CavgR2_out_num = new double [n_localp_T];
    azavg_CavgR2_long_num = new double [n_localp_T];
@@ -362,6 +336,7 @@ doHBT::doHBT()
    for(int i=0; i<n_localp_T; i++)
    {
       S_func[i] = new double [n_localp_phi];
+      squared_S_func[i] = new double [n_localp_phi];
       xs_S[i] = new double [n_localp_phi];
       xo_S[i] = new double [n_localp_phi];
       xl_S[i] = new double [n_localp_phi];
@@ -377,21 +352,8 @@ doHBT::doHBT()
       xl2_S[i] = new double [n_localp_phi];
       t2_S[i] = new double [n_localp_phi];
 
+      azavg_squared_S_func[i] = 0.0;
       azavg_S_func[i] = 0.0;
-      azavg_xs_S[i] = 0.0;
-      azavg_xo_S[i] = 0.0;
-      azavg_xl_S[i] = 0.0;
-      azavg_t_S[i] = 0.0;
-      azavg_xs_t_S[i] = 0.0;
-      azavg_xo_t_S[i] = 0.0;
-      azavg_xl_t_S[i] = 0.0;
-      azavg_xo_xs_S[i] = 0.0;
-      azavg_xl_xs_S[i] = 0.0;
-      azavg_xo_xl_S[i] = 0.0;
-      azavg_xs2_S[i] = 0.0;
-      azavg_xo2_S[i] = 0.0;
-      azavg_xl2_S[i] = 0.0;
-      azavg_t2_S[i] = 0.0;
 
       xs_t_cos[i] = new double [n_order];
       xo_t_cos[i] = new double [n_order];
@@ -430,23 +392,7 @@ doHBT::doHBT()
       avgxl2_S[i] = new double [n_localp_phi];
       avgt2_S[i] = new double [n_localp_phi];
 
-      azavg_avgS_func[i] = 0.0;
-      azavg_avgxs_S[i] = 0.0;
-      azavg_avgxo_S[i] = 0.0;
-      azavg_avgxl_S[i] = 0.0;
-      azavg_avgt_S[i] = 0.0;
-      azavg_avgxs_t_S[i] = 0.0;
-      azavg_avgxo_t_S[i] = 0.0;
-      azavg_avgxl_t_S[i] = 0.0;
-      azavg_avgxo_xs_S[i] = 0.0;
-      azavg_avgxl_xs_S[i] = 0.0;
-      azavg_avgxo_xl_S[i] = 0.0;
-      azavg_avgxs2_S[i] = 0.0;
-      azavg_avgxo2_S[i] = 0.0;
-      azavg_avgxl2_S[i] = 0.0;
-      azavg_avgt2_S[i] = 0.0;
-
-      CavgS_func[i] = new double [n_localp_phi];
+      CavgS_func_squared[i] = new double [n_localp_phi];
       CavgR2_side_num[i] = new double [n_localp_phi];
       CavgR2_out_num[i] = new double [n_localp_phi];
       CavgR2_long_num[i] = new double [n_localp_phi];
@@ -454,7 +400,7 @@ doHBT::doHBT()
       CavgR2_sidelong_num[i] = new double [n_localp_phi];
       CavgR2_outlong_num[i] = new double [n_localp_phi];
 
-      azavg_CavgS_func[i] = 0.0;
+      azavg_Cavg_squared_S_func[i] = 0.0;
       azavg_CavgR2_side_num[i] = 0.0;
       azavg_CavgR2_out_num[i] = 0.0;
       azavg_CavgR2_long_num[i] = 0.0;
@@ -555,39 +501,10 @@ doHBT::doHBT()
 for(int i=0; i<n_localp_T; i++)
 {
    //reset azimuthally averaged radii first
+      azavg_squared_S_func[i] = 0.0;
       azavg_S_func[i] = 0.0;
-      azavg_xs_S[i] = 0.0;
-      azavg_xo_S[i] = 0.0;
-      azavg_xl_S[i] = 0.0;
-      azavg_t_S[i] = 0.0;
-      azavg_xs_t_S[i] = 0.0;
-      azavg_xo_t_S[i] = 0.0;
-      azavg_xl_t_S[i] = 0.0;
-      azavg_xo_xs_S[i] = 0.0;
-      azavg_xl_xs_S[i] = 0.0;
-      azavg_xo_xl_S[i] = 0.0;
-      azavg_xs2_S[i] = 0.0;
-      azavg_xo2_S[i] = 0.0;
-      azavg_xl2_S[i] = 0.0;
-      azavg_t2_S[i] = 0.0;
 
-      azavg_avgS_func[i] = 0.0;
-      azavg_avgxs_S[i] = 0.0;
-      azavg_avgxo_S[i] = 0.0;
-      azavg_avgxl_S[i] = 0.0;
-      azavg_avgt_S[i] = 0.0;
-      azavg_avgxs_t_S[i] = 0.0;
-      azavg_avgxo_t_S[i] = 0.0;
-      azavg_avgxl_t_S[i] = 0.0;
-      azavg_avgxo_xs_S[i] = 0.0;
-      azavg_avgxl_xs_S[i] = 0.0;
-      azavg_avgxo_xl_S[i] = 0.0;
-      azavg_avgxs2_S[i] = 0.0;
-      azavg_avgxo2_S[i] = 0.0;
-      azavg_avgxl2_S[i] = 0.0;
-      azavg_avgt2_S[i] = 0.0;
-
-      azavg_CavgS_func[i] = 0.0;
+      azavg_Cavg_squared_S_func[i] = 0.0;
       azavg_CavgR2_side_num[i] = 0.0;
       azavg_CavgR2_out_num[i] = 0.0;
       azavg_CavgR2_long_num[i] = 0.0;
@@ -619,6 +536,7 @@ for(int i=0; i<n_localp_T; i++)
 	for(int j=0; j<n_localp_phi; j++)
 	{
 		S_func[i][j] = 0.;
+		squared_S_func[i][j] = 0.;
 		xs_S[i][j] = 0.;
 		xo_S[i][j] = 0.;
 		xl_S[i][j] = 0.;
@@ -650,7 +568,7 @@ for(int i=0; i<n_localp_T; i++)
 		avgxl2_S[i][j] = 0.;
 		avgt2_S[i][j] = 0.;
 
-		CavgS_func[i][j] = 0.;
+		CavgS_func_squared[i][j] = 0.;
 		CavgR2_side_num[i][j] = 0.;
 		CavgR2_out_num[i][j] = 0.;
 		CavgR2_outside_num[i][j] = 0.;
@@ -807,23 +725,10 @@ void doHBT::Update_sourcefunction(particle_info* particle, int FOarray_length, i
 for(int i=0; i<n_localp_T; i++)
 {
    //reset azimuthally averaged radii first
+      azavg_squared_S_func[i] = 0.0;
       azavg_S_func[i] = 0.0;
-      azavg_xs_S[i] = 0.0;
-      azavg_xo_S[i] = 0.0;
-      azavg_xl_S[i] = 0.0;
-      azavg_t_S[i] = 0.0;
-      azavg_xs_t_S[i] = 0.0;
-      azavg_xo_t_S[i] = 0.0;
-      azavg_xl_t_S[i] = 0.0;
-      azavg_xo_xs_S[i] = 0.0;
-      azavg_xl_xs_S[i] = 0.0;
-      azavg_xo_xl_S[i] = 0.0;
-      azavg_xs2_S[i] = 0.0;
-      azavg_xo2_S[i] = 0.0;
-      azavg_xl2_S[i] = 0.0;
-      azavg_t2_S[i] = 0.0;
 
-      azavg_CavgS_func[i] = 0.0;
+      azavg_Cavg_squared_S_func[i] = 0.0;
       azavg_CavgR2_side_num[i] = 0.0;
       azavg_CavgR2_out_num[i] = 0.0;
       azavg_CavgR2_long_num[i] = 0.0;
@@ -855,6 +760,7 @@ for(int i=0; i<n_localp_T; i++)
 	for(int j=0; j<n_localp_phi; j++)
 	{
 		S_func[i][j] = 0.;
+		squared_S_func[i][j] = 0.;
 		xs_S[i][j] = 0.;
 		xo_S[i][j] = 0.;
 		xl_S[i][j] = 0.;
@@ -886,7 +792,7 @@ for(int i=0; i<n_localp_T; i++)
 		avgxl2_S[i][j] = 0.;
 		avgt2_S[i][j] = 0.;
 
-		CavgS_func[i][j] = 0.;
+		CavgS_func_squared[i][j] = 0.;
 		CavgR2_side_num[i][j] = 0.;
 		CavgR2_out_num[i][j] = 0.;
 		CavgR2_outside_num[i][j] = 0.;
@@ -1222,6 +1128,7 @@ doHBT::~doHBT()
    for(int i=0; i<n_localp_T; i++)
    {
       delete[] S_func[i];
+      delete[] squared_S_func[i];
       delete[] xs_S[i];
       delete[] xo_S[i];
       delete[] xl_S[i];
@@ -1253,7 +1160,7 @@ doHBT::~doHBT()
       delete[] avgxl2_S[i];
       delete[] avgt2_S[i];
 
-      delete[] CavgS_func[i];
+      delete[] CavgS_func_squared[i];
       delete[] CavgR2_side_num[i];
       delete[] CavgR2_out_num[i];
       delete[] CavgR2_outside_num[i];
@@ -1262,6 +1169,7 @@ doHBT::~doHBT()
       delete[] CavgR2_outlong_num[i];
    }
    delete[] S_func;
+   delete[] squared_S_func;
    delete[] xs_S;
    delete[] xo_S;
    delete[] xl_S;
@@ -1276,22 +1184,6 @@ doHBT::~doHBT()
    delete[] xo2_S;
    delete[] xl2_S;
    delete[] t2_S;
-
-   delete[] azavg_S_func;
-   delete[] azavg_xs_S;
-   delete[] azavg_xo_S;
-   delete[] azavg_xl_S;
-   delete[] azavg_t_S;
-   delete[] azavg_xs_t_S;
-   delete[] azavg_xo_t_S;
-   delete[] azavg_xl_t_S;
-   delete[] azavg_xo_xs_S;
-   delete[] azavg_xl_xs_S;
-   delete[] azavg_xo_xl_S;
-   delete[] azavg_xs2_S;
-   delete[] azavg_xo2_S;
-   delete[] azavg_xl2_S;
-   delete[] azavg_t2_S;
 
    delete[] avgS_func;
    delete[] avgxs_S;
@@ -1309,23 +1201,7 @@ doHBT::~doHBT()
    delete[] avgxl2_S;
    delete[] avgt2_S;
 
-   delete[] azavg_avgS_func;
-   delete[] azavg_avgxs_S;
-   delete[] azavg_avgxo_S;
-   delete[] azavg_avgxl_S;
-   delete[] azavg_avgt_S;
-   delete[] azavg_avgxs_t_S;
-   delete[] azavg_avgxo_t_S;
-   delete[] azavg_avgxl_t_S;
-   delete[] azavg_avgxo_xs_S;
-   delete[] azavg_avgxl_xs_S;
-   delete[] azavg_avgxo_xl_S;
-   delete[] azavg_avgxs2_S;
-   delete[] azavg_avgxo2_S;
-   delete[] azavg_avgxl2_S;
-   delete[] azavg_avgt2_S;
-
-   delete[] CavgS_func;
+   delete[] CavgS_func_squared;
    delete[] CavgR2_side_num;
    delete[] CavgR2_out_num;
    delete[] CavgR2_outside_num;
@@ -1333,7 +1209,7 @@ doHBT::~doHBT()
    delete[] CavgR2_sidelong_num;
    delete[] CavgR2_outlong_num;
 
-   delete[] azavg_CavgS_func;
+   delete[] azavg_Cavg_squared_S_func;
    delete[] azavg_CavgR2_side_num;
    delete[] azavg_CavgR2_out_num;
    delete[] azavg_CavgR2_outside_num;
@@ -1392,23 +1268,8 @@ void doHBT::Reset_source_variances_and_HBT_radii()
 	for(int i=0; i<n_localp_T; i++)
 	{
 		//reset azimuthally averaged radii first
-		azavg_S_func[i] = 0.0;
-		azavg_xs_S[i] = 0.0;
-		azavg_xo_S[i] = 0.0;
-		azavg_xl_S[i] = 0.0;
-		azavg_t_S[i] = 0.0;
-		azavg_xs_t_S[i] = 0.0;
-		azavg_xo_t_S[i] = 0.0;
-		azavg_xl_t_S[i] = 0.0;
-		azavg_xo_xs_S[i] = 0.0;
-		azavg_xl_xs_S[i] = 0.0;
-		azavg_xo_xl_S[i] = 0.0;
-		azavg_xs2_S[i] = 0.0;
-		azavg_xo2_S[i] = 0.0;
-		azavg_xl2_S[i] = 0.0;
-		azavg_t2_S[i] = 0.0;
 		
-		azavg_CavgS_func[i] = 0.0;
+		azavg_Cavg_squared_S_func[i] = 0.0;
 		azavg_CavgR2_side_num[i] = 0.0;
 		azavg_CavgR2_out_num[i] = 0.0;
 		azavg_CavgR2_long_num[i] = 0.0;
@@ -1440,6 +1301,7 @@ void doHBT::Reset_source_variances_and_HBT_radii()
 		for(int j=0; j<n_localp_phi; j++)
 		{
 			S_func[i][j] = 0.;
+			squared_S_func[i][j] = 0.;
 			xs_S[i][j] = 0.;
 			xo_S[i][j] = 0.;
 			xl_S[i][j] = 0.;
@@ -1471,7 +1333,7 @@ void doHBT::Reset_source_variances_and_HBT_radii()
 			avgxl2_S[i][j] = 0.;
 			avgt2_S[i][j] = 0.;
 	
-			CavgS_func[i][j] = 0.;
+			CavgS_func_squared[i][j] = 0.;
 			CavgR2_side_num[i][j] = 0.;
 			CavgR2_out_num[i][j] = 0.;
 			CavgR2_outside_num[i][j] = 0.;
@@ -1571,5 +1433,13 @@ bool doHBT::fexists(const char *filename)
   ifstream ifile(filename);
   return ifile;
 }
+
+void doHBT::debugger()
+{
+	cerr << "You made it to checkpoint #" << checkpoint_index << "!" << endl;
+	checkpoint_index++;
+	return;
+}
+
 
 //End of file

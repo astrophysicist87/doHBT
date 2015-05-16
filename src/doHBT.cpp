@@ -86,48 +86,29 @@ void doHBT::quick_Analyze_sourcefunction()
    return;
 }
 
-void doHBT::Get_azimuthally_averaged_EBE_Svars_and_HBTradii()
+void doHBT::Get_azimuthally_averaged_multiplicities()
+{
+	for (int iKT = 0; iKT < n_localp_T; iKT++)
+	{
+		azavg_S_func[iKT] = 0;
+	
+		for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+			azavg_S_func[iKT] += S_func[iKT][iKphi]*K_phi_weight[iKphi];
+		
+		azavg_S_func[iKT] /= (2.*M_PI);
+	}
+	
+	return;
+}
+
+void doHBT::Get_azimuthally_averaged_EBE_HBTradii()
 {
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
 		double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
 		beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
-		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-		{
-			azavg_S_func[iKT] += S_func[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xs_S[iKT] += xs_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xo_S[iKT] += xo_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xl_S[iKT] += xl_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_t_S[iKT] += t_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xs_t_S[iKT] += xs_t_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xo_t_S[iKT] += xo_t_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xl_t_S[iKT] += xl_t_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xo_xs_S[iKT] += xo_xs_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xl_xs_S[iKT] += xl_xs_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xo_xl_S[iKT] += xo_xl_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xs2_S[iKT] += xs2_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xo2_S[iKT] += xo2_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_xl2_S[iKT] += xl2_S[iKT][iKphi]*K_phi_weight[iKphi];
-			azavg_t2_S[iKT] += t2_S[iKT][iKphi]*K_phi_weight[iKphi];
-		}
-
-		azavg_S_func[iKT] /= (2.*M_PI);
-		azavg_xs_S[iKT] /= (2.*M_PI);
-		azavg_xo_S[iKT] /= (2.*M_PI);
-		azavg_xl_S[iKT] /= (2.*M_PI);
-		azavg_t_S[iKT] /= (2.*M_PI);
-		azavg_xs_t_S[iKT] /= (2.*M_PI);
-		azavg_xo_t_S[iKT] /= (2.*M_PI);
-		azavg_xl_t_S[iKT] /= (2.*M_PI);
-		azavg_xo_xs_S[iKT] /= (2.*M_PI);
-		azavg_xl_xs_S[iKT] /= (2.*M_PI);
-		azavg_xo_xl_S[iKT] /= (2.*M_PI);
-		azavg_xs2_S[iKT] /= (2.*M_PI);
-		azavg_xo2_S[iKT] /= (2.*M_PI);
-		azavg_xl2_S[iKT] /= (2.*M_PI);
-		azavg_t2_S[iKT] /= (2.*M_PI);
-
+		Calculate_azimuthally_averaged_squared_S_func(iKT);
 		Calculate_azimuthally_averaged_R2_side(iKT);
 		Calculate_azimuthally_averaged_R2_out(iKT);
 		Calculate_azimuthally_averaged_R2_long(iKT);
@@ -198,24 +179,6 @@ void doHBT::Analyze_CAVG_sourcefunction()
    return;
 }
 
-void doHBT::Analyze_azimuthally_averaged_CAVG_sourcefunction()
-{
-   for(int iKT = 0; iKT < n_localp_T; iKT++)
-   {
-      if (VERBOSE > 1) *global_out_stream_ptr << "     --> Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
-      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
-      beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
-      Calculate_azimuthally_averaged_CavgR2_side(iKT);
-      Calculate_azimuthally_averaged_CavgR2_out(iKT);
-      Calculate_azimuthally_averaged_CavgR2_outside(iKT);
-      Calculate_azimuthally_averaged_CavgR2_long(iKT);
-      Calculate_azimuthally_averaged_CavgR2_sidelong(iKT);
-      Calculate_azimuthally_averaged_CavgR2_outlong(iKT);
-   }
-
-   return;
-}
-
 void doHBT::Analyze_azimuthally_averaged_AVG_sourcefunction()
 {
    for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -223,12 +186,32 @@ void doHBT::Analyze_azimuthally_averaged_AVG_sourcefunction()
       if (VERBOSE > 1) *global_out_stream_ptr << "     --> Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
       double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
       beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+      Calculate_azimuthally_averaged_squared_avgS_func(iKT);
       Calculate_azimuthally_averaged_avgR2_side(iKT);
       Calculate_azimuthally_averaged_avgR2_out(iKT);
       Calculate_azimuthally_averaged_avgR2_outside(iKT);
       Calculate_azimuthally_averaged_avgR2_long(iKT);
       Calculate_azimuthally_averaged_avgR2_sidelong(iKT);
       Calculate_azimuthally_averaged_avgR2_outlong(iKT);
+   }
+
+   return;
+}
+
+void doHBT::Analyze_azimuthally_averaged_CAVG_sourcefunction()
+{
+   for(int iKT = 0; iKT < n_localp_T; iKT++)
+   {
+      if (VERBOSE > 1) *global_out_stream_ptr << "     --> Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
+      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+      beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+      Calculate_azimuthally_averaged_Cavg_squared_S_func(iKT);
+      Calculate_azimuthally_averaged_CavgR2_side(iKT);
+      Calculate_azimuthally_averaged_CavgR2_out(iKT);
+      Calculate_azimuthally_averaged_CavgR2_outside(iKT);
+      Calculate_azimuthally_averaged_CavgR2_long(iKT);
+      Calculate_azimuthally_averaged_CavgR2_sidelong(iKT);
+      Calculate_azimuthally_averaged_CavgR2_outlong(iKT);
    }
 
    return;
@@ -775,15 +758,17 @@ void doHBT::Get_HBTradii_from_azimuthally_averaged_Cavg_and_Cbar()
   {
 	if (VERBOSE > 0) *global_out_stream_ptr << "Reading in results from event = " << i << endl;
 	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(i));
-	Readin_azimuthally_averaged_results(i);
-	Update_avgSource_function(-1);
-	Update_CavgSource_function(-1);
+	Readin_results(i);
+	Update_avgSource_function(-1, -1);
+	Update_CavgSource_function(-1, -1);
   }
 
-  Calculate_avgSource_function(-1);
-  Calculate_CavgSource_function(-1);
+  Calculate_avgSource_function(-1, -1);
+  Calculate_CavgSource_function(-1, -1);
 
-  Determine_avgplane_angle();
+  //Determine_avgplane_angle();
+  Analyze_AVG_sourcefunction();	//azimuthally averaged calculation most convenient in terms of \bar{R}^2_{ij},
+				//so need to calculate those first
 
   Analyze_azimuthally_averaged_AVG_sourcefunction();
   Analyze_azimuthally_averaged_CAVG_sourcefunction();
@@ -958,9 +943,9 @@ void doHBT::Determine_Cavgplane_angle()
 		for (int iKT = 0; iKT < n_localp_T; iKT++)
 		for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 		{
-			denominator += K_T[iKT]*K_phi_weight[iKphi]*CavgS_func[iKT][iKphi];
-			numeratorCOS += K_T[iKT]*cos_mK_phi[iKphi]*K_phi_weight[iKphi]*CavgS_func[iKT][iKphi];
-			numeratorSIN += K_T[iKT]*sin_mK_phi[iKphi]*K_phi_weight[iKphi]*CavgS_func[iKT][iKphi];
+			denominator += K_T[iKT]*K_phi_weight[iKphi]*CavgS_func_squared[iKT][iKphi];
+			numeratorCOS += K_T[iKT]*cos_mK_phi[iKphi]*K_phi_weight[iKphi]*CavgS_func_squared[iKT][iKphi];
+			numeratorSIN += K_T[iKT]*sin_mK_phi[iKphi]*K_phi_weight[iKphi]*CavgS_func_squared[iKT][iKphi];
 		}
 
 		if (Morder == 0)

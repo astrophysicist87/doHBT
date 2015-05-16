@@ -72,12 +72,34 @@ int main(int argc, char *argv[])
 
    //do the actual average HBT calculations...
    //Source_function.Get_HBTradii_from_C_ev();
-   //Source_function.Get_HBTradii_from_Cbar_and_Cavg();
-   Source_function.Get_HBTradii_from_azimuthally_averaged_Cavg_and_Cbar();
+   output << "***************************************************************" << endl;
+   output << "Beginning ensemble averaging calculations" << endl;
+   output << "***************************************************************" << endl << endl;
+   if (AZIMUTHAL)
+   {
+	Source_function.Get_HBTradii_from_Cbar_and_Cavg();
+	output << "\tComputed azimuthally sensitive ensemble averages" << endl << endl;
+   }
+   else
+   {
+	Source_function.Get_HBTradii_from_azimuthally_averaged_Cavg_and_Cbar();
+	output << "\tComputed azimuthally averaged ensemble averages" << endl << endl;
+   }
+   output << "***************************************************************" << endl;
+   output << "Finished ensemble averaging calculations" << endl;
+   output << "***************************************************************" << endl << endl;
 
    //Output results
-   //Source_function.Output_AVG_results();
-   Source_function.Output_azimuthally_averaged_Cbar_and_CAVG_results();
+   output << "Saving results..." << endl;
+   if (AZIMUTHAL)
+   {
+	Source_function.Output_AVG_results();
+	Source_function.Output_CAVG_results();
+   }
+   else
+   {
+	Source_function.Output_azimuthally_averaged_Cbar_and_CAVG_results();
+   }
    //Source_function.Output_avgplane_psis();
    //Source_function.Output_Cavgplane_psis();
    output << "Finished." << endl;
