@@ -25,14 +25,17 @@ using namespace std;
 
 const double PI = 3.14159265358979323846264338327950;
 const double hbarC=0.197327053;  //GeV*fm
-const int qnpts = 201;
-const double init_q = 0.003;
-const double delta_q = 0.006;
+//const int qnpts = 201;
+//const double init_q = 0.003;
+//const double delta_q = 0.006;
+const int qnpts = 50;
+const double init_q = 0.01;
+const double delta_q = 0.01;
 const int order = 43;
 const int half_order = (order - 1)/2;
 const double limit = 5.;
 const double M1_4PI = 1./(4.*PI);
-const double m_pion = 0.139;  //in GeV
+const double m_pion = 0.13957;  //in GeV
 
 double eps_2_bar_cmd;	//defined from 0..0.5
 double eps_3_bar_cmd;	//defined from 0..0.5
@@ -50,7 +53,7 @@ double Rad_cmd;
 double T0_cmd;
 double flow_angle_cmd;
 double Phi_K_cmd;
-const double eps_2_bar_default = 0.25;
+const double eps_2_bar_default = 0.;
 const double eps_3_bar_default = 0.;
 const double v_2_bar_default = 0.;
 const double v_3_bar_default = 0.;
@@ -66,10 +69,15 @@ const double Rad_default = 4.5;
 const double flow_angle_default = 0.;
 const double T0_default = 0.12;
 const double Phi_K_default = 0.;
-double r_lower=0., r_upper=4.*limit, phi_lower=-PI, phi_upper=PI;
-double eta_lower=-limit, eta_upper=limit, tau_lower=0., tau_upper=4.*limit;
+//double r_lower=0., r_upper=4.*limit, phi_lower=-PI, phi_upper=PI;
+//double eta_lower=-limit, eta_upper=limit, tau_lower=0., tau_upper=4.*limit;
 
 double my_q_out = 0., my_q_side = 0., my_q_long = 0.;
+
+int n_localp_T = 5, n_localp_phi = 51;
+double localp_T_min = 0.0, localp_T_max = 2.0;
+double localp_phi_min = -M_PI, localp_phi_max = M_PI;
+double * K_T, * K_phi, * K_phi_weight, * cos_K_phi, * sin_K_phi;
 
 string path = "results";
 //string path = ".";	//current directory
@@ -95,6 +103,9 @@ struct phys_params
 	double Delta_tau, Delta_eta, beta_perp, beta_long;
 
 	double v_3_bar, eps_3_bar, psi_3_bar, Phi_K, v_2_bar, eps_2_bar, psi_2_bar;
+
+	double cos_2psi2bar, sin_2psi2bar, cos_3psi3bar, sin_3psi3bar, cos_Phi_K, sin_Phi_K;
+	double sin_phi, cos_phi, sin_2phi, cos_2phi, sin_3phi, cos_3phi;
 };
 
 struct position
@@ -139,7 +150,7 @@ double heaviside_theta(double x)
 	return ((x >= 0.) ? 1. : 0.);
 }
 
-struct phys_params inits;
+struct phys_params current_params;
 
 vector<double>* xi_ptr;
 vector<double>* wi_ptr;
@@ -167,6 +178,12 @@ vector<int>* integration_intervals_vec;
       double* Correl_1D_side_err;
       double* Correl_1D_long;
       double* Correl_1D_long_err;
+      double* Correl_1D_out_num;
+      double* Correl_1D_out_den;
+      double* Correl_1D_side_num;
+      double* Correl_1D_side_den;
+      double* Correl_1D_long_num;
+      double* Correl_1D_long_den;
       double*** Correl_3D;
       double*** Correl_3D_err;
       double* q_out;

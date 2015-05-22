@@ -305,8 +305,10 @@ void doHBT::Determine_plane_angle(FO_surf* FOsurf_ptr)
          plane_angle[iorder] = 0.0e0;
       else
          plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
-   }
 
+   }
+   for(int ipt=0; ipt<n_SP_pT; ipt++)
+	dN_dypTdpT[ipt] /= (2.*M_PI);
 //cout << "Currently getting <p_T> stuff..." << endl;
 
    mean_pT = 0.;

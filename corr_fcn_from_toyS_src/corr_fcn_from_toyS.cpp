@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <cstring>
+#include <ctime>
 #include <string>
 #include <time.h>
 #include <sstream>
@@ -34,7 +35,7 @@ using namespace std;
 double S_function(double r, double phi, double eta, double tau, void * params_ptr);
 double eta_t(double r, double phi, void * params_ptr);
 phys_params get_parameters();
-int Cal_correlationfunction_1D_from_toyS();
+int Cal_correlationfunction_1D_from_toyS(int, int);
 int Cal_correlationfunction_3D_from_toyS();
 void Output_Correlationfunction_1D();
 void Output_Correlationfunction_3D();
@@ -42,8 +43,8 @@ void initialize_corr_fcns();
 double corr_fcn_integrand_re(vector<double>* xpts, void * params_ptr);
 double corr_fcn_integrand_im(vector<double>* xpts, void * params_ptr);
 
-bool output_to_screen = true;
-bool output_to_file = false;
+bool output_to_screen = false;
+bool output_to_file = true;
 
 size_t n;
 string input_filename;
@@ -243,16 +244,36 @@ if(1) return (1);
 	//set the points needed to perform the integrations
 	set_gaussian_points();
 
+   //pair momentum
+   K_T = new double [n_localp_T];
+   double dK_T = (localp_T_max - localp_T_min)/((double)n_localp_T - 1. + 1.e-100);
+   for(int i=0; i<n_localp_T; i++) K_T[i] = localp_T_min + i*dK_T;
+   K_phi = new double [n_localp_phi];
+   cos_K_phi = new double [n_localp_phi];
+   sin_K_phi = new double [n_localp_phi];
+   K_phi_weight = new double [n_localp_phi];
+   //gauss_quadrature(n_localp_phi, 1, 0.0, 0.0, localp_phi_min, localp_phi_max, K_phi, K_phi_weight);
+   gauss (n_localp_phi, 0, localp_phi_min, localp_phi_max, K_phi, K_phi_weight);
+for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+{
+cos_K_phi[iKphi] = cos(K_phi[iKphi]);
+sin_K_phi[iKphi] = sin(K_phi[iKphi]);
+}
+
+for (int iKT = 0; iKT < n_localp_T; iKT++)
+for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+{
 	//set up correlation functions
 	initialize_corr_fcns();
 
 	//do actual integration to get and fill correlation functions
-	success = Cal_correlationfunction_1D_from_toyS();
+	success = Cal_correlationfunction_1D_from_toyS(iKT, iKphi);
 	//success = Cal_correlationfunction_3D_from_toyS();
 
 	//output results
 	Output_Correlationfunction_1D();
 	//Output_Correlationfunction_3D();
+}
 
 /**************************************************************************/
 /***********************END MAIN PART OF THE PROGRAM***********************/
@@ -264,35 +285,35 @@ if(1) return (1);
 
 phys_params get_parameters()
 {
-	//struct phys_params inits;
+	//struct phys_params current_params;
 
 	//Define parameters for function to be integrated here
-	inits.T_0 = T0_cmd;
-	inits.Y_rapidity = 0.;
-	inits.Rad = Rad_cmd;
-	inits.eta_f = eta_f_cmd;
-	inits.tau_f = tau_f_cmd;
-	inits.K_perp = K_perp_cmd;
-	inits.M_perp = sqrt(m_pion*m_pion + inits.K_perp*inits.K_perp);
-	inits.Phi_K = Phi_K_cmd;
-	inits.eta_0 = eta_0_cmd;
-	inits.Delta_tau = Delta_tau_cmd;
-	inits.Delta_eta = Delta_eta_cmd;
-	inits.beta_perp = inits.K_perp/inits.M_perp;
-	inits.beta_long = 0.;
+	current_params.T_0 = T0_cmd;
+	current_params.Y_rapidity = 0.;
+	current_params.Rad = Rad_cmd;
+	current_params.eta_f = eta_f_cmd;
+	current_params.tau_f = tau_f_cmd;
+	current_params.K_perp = K_perp_cmd;
+	current_params.M_perp = sqrt(m_pion*m_pion + current_params.K_perp*current_params.K_perp);
+	current_params.Phi_K = Phi_K_cmd;
+	current_params.eta_0 = eta_0_cmd;
+	current_params.Delta_tau = Delta_tau_cmd;
+	current_params.Delta_eta = Delta_eta_cmd;
+	current_params.beta_perp = current_params.K_perp/current_params.M_perp;
+	current_params.beta_long = 0.;
 
-	inits.eps_2_bar = eps_2_bar_cmd;
-	inits.eps_3_bar = eps_3_bar_cmd;
-	inits.v_2_bar = v_2_bar_cmd;
-	inits.v_3_bar = v_3_bar_cmd;
-	inits.psi_2_bar = psi_2_bar_cmd;
-	inits.psi_3_bar = psi_3_bar_cmd;
+	current_params.eps_2_bar = eps_2_bar_cmd;
+	current_params.eps_3_bar = eps_3_bar_cmd;
+	current_params.v_2_bar = v_2_bar_cmd;
+	current_params.v_3_bar = v_3_bar_cmd;
+	current_params.psi_2_bar = psi_2_bar_cmd;
+	current_params.psi_3_bar = psi_3_bar_cmd;
 
-	return (inits);
+	return (current_params);
 }
 
 
-/*double S_function(double r, double phi, double eta, double tau, void * params_ptr)
+double S_function(double r, double phi, double eta, double tau, void * params_ptr)
 {
 	phys_params params = * (struct phys_params *) params_ptr;
 
@@ -305,12 +326,30 @@ phys_params get_parameters()
 	double K_perp = params.K_perp;
 	double Delta_tau = params.Delta_tau;
 	double Delta_eta = params.Delta_eta;
-	double Phi_K = params.Phi_K;
+	//double Phi_K = params.Phi_K;
+	double cos_Phi_K = params.cos_Phi_K;
+	double sin_Phi_K = params.sin_Phi_K;
 
 	double eps_2_bar = params.eps_2_bar;
-	double psi_2_bar = params.psi_2_bar;
+	//double psi_2_bar = params.psi_2_bar;
+	double cos_2psi_2_bar = params.cos_2psi2bar;
+	double sin_2psi_2_bar = params.sin_2psi2bar;
 	double eps_3_bar = params.eps_3_bar;
-	double psi_3_bar = params.psi_3_bar;
+	//double psi_3_bar = params.psi_3_bar;
+	double cos_3psi3bar = params.cos_3psi3bar;
+	double sin_3psi3bar = params.sin_3psi3bar;
+	double cos_phi = params.cos_phi;
+	double sin_phi = params.sin_phi;
+	double cos_2phi = params.cos_2phi;
+	double sin_2phi = params.sin_2phi;
+	double cos_3phi = params.cos_3phi;
+	double sin_3phi = params.sin_3phi;
+
+	double n3_factor = cos_3phi * cos_3psi3bar + sin_3phi * sin_3psi3bar;
+	double n2_factor = cos_2phi * cos_2psi2bar + sin_2phi * sin_2psi2bar;
+	double eta_t = eta_f * (r/Rad) * (1. + 2. * v_2_bar * n2_factor + 2. * v_3_bar * n3_factor)
+	double sh_eta_t = sinh(eta_t);
+	double ch_eta_t = sqrt(1.+sh_eta_t*sh_eta_t);
 
 	//Expression for function is long and complicated,
 	//so break it up into constituent terms
@@ -319,26 +358,26 @@ phys_params get_parameters()
 	//term0 = 0.;
 	term1 = (eta-eta_0)*(eta-eta_0) / (2.*Delta_eta*Delta_eta);
 	//term1 = 0.;
-	term2 = (M_perp/T_0) * cosh(eta - Y_rapidity) * cosh(eta_t(r, phi, &params));
+	term2 = (M_perp/T_0) * cosh(eta - Y_rapidity) * ch_eta_t;
 	//term2 = 0.;
-	term3 = (K_perp/T_0) * (cos(phi) * cos(Phi_K) + sin(phi) * sin(Phi_K)) * sinh(eta_t(r, phi, &params));
+	term3 = (K_perp/T_0) * (cos_phi * cos_Phi_K + sin_phi * sin_Phi_K) * sh_eta_t;
 	//term3 = 0.;
-	term4 = (r*r)/(2.*Rad*Rad) * (1.+2.*eps_3_bar*( cos(3.*phi) * cos(3.*psi_3_bar) + sin(3.*phi) * sin(3.*psi_3_bar) )    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-					+2.*eps_2_bar*( cos(2.*phi) * cos(2.*psi_2_bar) + sin(2.*phi) * sin(2.*psi_2_bar) ));  //changed minus signs to plus signs //5/16/2013
+	term4 = (r*r)/(2.*Rad*Rad) * (1.+2.*eps_3_bar*n3_factor    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+					+2.*eps_2_bar*n2_factor);  //changed minus signs to plus signs //5/16/2013
 	//term4 = 0.;
 
 	return (exp(-term0 - term1 - term2 + term3 - term4));
 	//return (1.);
-}*/
+}
 
-double S_function(double r, double phi, double eta, double tau, void * params_ptr)
+/*double S_function(double r, double phi, double eta, double tau, void * params_ptr)
 {
 	phys_params params = * (struct phys_params *) params_ptr;
 
 	double Rad = params.Rad;
 
 	return (heaviside_theta(Rad - r) * heaviside_theta(r));
-}
+}*/
 
 double eta_t(double r, double phi, void * params_ptr)
 {
@@ -355,24 +394,47 @@ double eta_t(double r, double phi, void * params_ptr)
 					+2.*v_2_bar*( cos(2.*phi) * cos(2.*psi_2_bar) + sin(2.*phi) * sin(2.*psi_2_bar) )));
 }
 
-int Cal_correlationfunction_1D_from_toyS()
+void Update_current_params(int iKT, int iKphi)
 {
-cout << "K_T = "  << inits.K_perp << "\t" << " and K_phi = " << inits.Phi_K << endl;
+	double local_KT = K_T[iKT];
+	double local_Kphi = K_phi[iKphi];
+	current_params.K_perp = local_KT;
+	current_params.M_perp = sqrt(local_KT*local_KT + m_pion*m_pion);
+	current_params.beta_perp = local_KT/current_params.M_perp;
+	current_params.Phi_K = local_Kphi;
+}
+
+int Cal_correlationfunction_1D_from_toyS(int iKT, int iKphi)
+{
+//cout << "K_T = "  << current_params.K_perp << "\t" << " and K_phi = " << current_params.Phi_K << endl;
 double integ1 = 0., integ2 = 0., sum = 0., error = 1.e-4;
+
+Update_current_params(iKT, iKphi);
 
 my_q_out = 0.;
 my_q_side = 0.;
 my_q_long = 0.;
-double spectra = integrate(&corr_fcn_integrand_re, &inits, lower_limits_vec, upper_limits_vec, integration_intervals_vec)/(hbarC*hbarC*hbarC);
+double spectra = integrate(&corr_fcn_integrand_re, &current_params, lower_limits_vec, upper_limits_vec, integration_intervals_vec)/(hbarC*hbarC*hbarC);
 
-   cout << "generating the 1d slices of the correlation function along q_out, q_side, and q_long direction... " << endl;
+//if (output_to_screen)
+time_t now = time(0);
+tm *ltm = localtime(&now);
+   cout << "Starting K_T = "  << current_params.K_perp << " and K_phi = " << current_params.Phi_K << " at " << 1 + ltm->tm_hour << ":" << 1 + ltm->tm_min << ":" << 1 + ltm->tm_sec << endl;
+//"generating the 1d slices of the correlation function along q_out, q_side, and q_long direction... " << endl;
 		  
    for(int i = 0; i < qnpts; i++)
    {
-      cout << "calculating q_mu = " << q_out[i] << endl;
-      double values[3];
+//if (output_to_screen)
+	now = time(0);
+	ltm = localtime(&now);
+      cout << "\tcalculating q_mu = " << q_out[i] << " at " << 1 + ltm->tm_hour << ":" << 1 + ltm->tm_min << ":" << 1 + ltm->tm_sec << endl;
+      double values[3], values_num[3], values_den[3];
       for (int ops = 0; ops < 3; ops++)
+	{
          values[ops] = 0.0;
+         values_num[ops] = 0.0;
+         values_den[ops] = 0.0;
+	}
       for (int l = 0; l < 3; l++)
       {
          switch (l)
@@ -405,40 +467,47 @@ double spectra = integrate(&corr_fcn_integrand_re, &inits, lower_limits_vec, upp
             }
          }
 
-         integ1 = integrate(&corr_fcn_integrand_re, &inits, lower_limits_vec, upper_limits_vec, integration_intervals_vec);
-         integ2 = integrate(&corr_fcn_integrand_im, &inits, lower_limits_vec, upper_limits_vec, integration_intervals_vec);
-         integ1 = integ1/hbarC/hbarC/hbarC/spectra;
-         integ2 = integ2/hbarC/hbarC/hbarC/spectra;
+         integ1 = integrate(&corr_fcn_integrand_re, &current_params, lower_limits_vec, upper_limits_vec, integration_intervals_vec)/hbarC/hbarC/hbarC;
+         integ2 = integrate(&corr_fcn_integrand_im, &current_params, lower_limits_vec, upper_limits_vec, integration_intervals_vec)/hbarC/hbarC/hbarC;
+	 values_num[l] = integ1*integ1+integ2*integ2;
+	 values_den[l] = spectra;
+         integ1 = integ1/spectra;
+         integ2 = integ2/spectra;
 //cerr << integ1 << endl;
 //cerr << integ2 << endl;
 //cerr << spectra << endl;
-         double localvalue = integ1*integ1+integ2*integ2;
-         values[l] = localvalue;
+         values[l] = integ1*integ1+integ2*integ2;
       }
       Correl_1D_out[i]  = values[0];
       Correl_1D_side[i] = values[1];
       Correl_1D_long[i] = values[2];
+      Correl_1D_out_den[i]  = values_den[0];
+      Correl_1D_side_den[i] = values_den[1];
+      Correl_1D_long_den[i] = values_den[2];
+      Correl_1D_out_num[i]  = values_num[0];
+      Correl_1D_side_num[i] = values_num[1];
+      Correl_1D_long_num[i] = values_num[2];
       Correl_1D_out_err[i] = error;
       Correl_1D_side_err[i] = error;
       Correl_1D_long_err[i] = error;
-cout << "RESULTS: " << scientific << setprecision(7) << setw(15)
-                   << q_out[i] << "  " << Correl_1D_out[i] << "  " << Correl_1D_out_err[i] << "  "
-                   << q_side[i] << "  " << Correl_1D_side[i] << "  " << Correl_1D_side_err[i] << "  "
-                   << q_long[i] << "  " << Correl_1D_long[i] << "  " << Correl_1D_long_err[i] 
-                   << endl;
+//cout << "RESULTS: " << scientific << setprecision(7) << setw(15)
+//                   << q_out[i] << "  " << Correl_1D_out[i] << "  " << Correl_1D_out_err[i] << "  "
+//                   << q_side[i] << "  " << Correl_1D_side[i] << "  " << Correl_1D_side_err[i] << "  "
+//                   << q_long[i] << "  " << Correl_1D_long[i] << "  " << Correl_1D_long_err[i] 
+//                   << endl;
    }
    return(0);
 }
 
 int Cal_correlationfunction_3D_from_toyS()
 {
-cout << "K_T = "  << inits.K_perp << "\t" << " and K_phi = " << inits.Phi_K << endl;
+cout << "K_T = "  << current_params.K_perp << "\t" << " and K_phi = " << current_params.Phi_K << endl;
 double integ1 = 0., integ2 = 0., sum = 0., error = 1.e-4;
 
 my_q_out = 0.;
 my_q_side = 0.;
 my_q_long = 0.;
-double spectra = integrate(&corr_fcn_integrand_re, &inits, lower_limits_vec, upper_limits_vec, integration_intervals_vec)/hbarC/hbarC/hbarC;
+double spectra = integrate(&corr_fcn_integrand_re, &current_params, lower_limits_vec, upper_limits_vec, integration_intervals_vec)/hbarC/hbarC/hbarC;
 
    cout << "generating correlation function in 3D... " << endl;
    for(int i = 0; i < qnpts; i++)  // q_out loop
@@ -455,8 +524,8 @@ double spectra = integrate(&corr_fcn_integrand_re, &inits, lower_limits_vec, upp
             //double local_q_long = q_long[k];
             double my_q_long = q_long[k];
 
-            integ1 = integrate(&corr_fcn_integrand_re, &inits, lower_limits_vec, upper_limits_vec, integration_intervals_vec);
-            integ2 = integrate(&corr_fcn_integrand_im, &inits, lower_limits_vec, upper_limits_vec, integration_intervals_vec);
+            integ1 = integrate(&corr_fcn_integrand_re, &current_params, lower_limits_vec, upper_limits_vec, integration_intervals_vec);
+            integ2 = integrate(&corr_fcn_integrand_im, &current_params, lower_limits_vec, upper_limits_vec, integration_intervals_vec);
             integ1 = integ1/hbarC/hbarC/hbarC/spectra;
             integ2 = integ2/hbarC/hbarC/hbarC/spectra;
             sum = integ1*integ1+integ2*integ2;
@@ -483,6 +552,12 @@ void initialize_corr_fcns()
    Correl_1D_out = new double [qnpts];
    Correl_1D_side = new double [qnpts];
    Correl_1D_long = new double [qnpts];
+   Correl_1D_out_den = new double [qnpts];
+   Correl_1D_side_den = new double [qnpts];
+   Correl_1D_long_den = new double [qnpts];
+   Correl_1D_out_num = new double [qnpts];
+   Correl_1D_side_num = new double [qnpts];
+   Correl_1D_long_num = new double [qnpts];
    Correl_1D_out_err = new double [qnpts];
    Correl_1D_side_err = new double [qnpts];
    Correl_1D_long_err = new double [qnpts];
@@ -491,6 +566,12 @@ void initialize_corr_fcns()
       Correl_1D_out[i] = 0.0;
       Correl_1D_side[i] = 0.0;
       Correl_1D_long[i] = 0.0;
+      Correl_1D_out_den[i] = 0.0;
+      Correl_1D_side_den[i] = 0.0;
+      Correl_1D_long_den[i] = 0.0;
+      Correl_1D_out_num[i] = 0.0;
+      Correl_1D_side_num[i] = 0.0;
+      Correl_1D_long_num[i] = 0.0;
       Correl_1D_out_err[i] = 0.0;
       Correl_1D_side_err[i] = 0.0;
       Correl_1D_long_err[i] = 0.0;
@@ -522,7 +603,7 @@ void Output_Correlationfunction_1D()
 if (output_to_file)
    {
    ostringstream oCorrelfun_1D_stream;
-   oCorrelfun_1D_stream << path << "/correlfunct1D" << "_" << particle_name << "_kt_" << inits.K_perp << "_phi_" << inits.Phi_K << ".dat";
+   oCorrelfun_1D_stream << path << "/correlfunct1D" << "_" << particle_name << "_kt_" << current_params.K_perp << "_phi_" << current_params.Phi_K << "_eps2bar_" << current_params.eps_2_bar << ".dat";
 if (fexists( oCorrelfun_1D_stream.str().c_str() ) )
 {
 	int fileindex = 2;
@@ -530,7 +611,7 @@ if (fexists( oCorrelfun_1D_stream.str().c_str() ) )
 	{
 		oCorrelfun_1D_stream.str("");
 		oCorrelfun_1D_stream.clear();
-		oCorrelfun_1D_stream << path << "/correlfunct1D" << "_" << particle_name << "_kt_" << inits.K_perp << "_phi_" << inits.Phi_K << "_" << fileindex << ".dat";
+		oCorrelfun_1D_stream << path << "/correlfunct1D" << "_" << particle_name << "_kt_" << current_params.K_perp << "_phi_" << current_params.Phi_K << "_" << fileindex << "_eps2bar_" << current_params.eps_2_bar << ".dat";
 		fileindex++;
 	} while (fexists( oCorrelfun_1D_stream.str().c_str() ));
 }
@@ -539,8 +620,11 @@ if (fexists( oCorrelfun_1D_stream.str().c_str() ) )
    for(int i=0; i < qnpts; i++)
      oCorrelfun_1D << scientific << setprecision(7) << setw(15)
                    << q_out[i] << "  " << Correl_1D_out[i] << "  " << Correl_1D_out_err[i] << "  "
+		   << Correl_1D_out_den[i] << "  " << Correl_1D_out_num[i] << "  "
                    << q_side[i] << "  " << Correl_1D_side[i] << "  " << Correl_1D_side_err[i] << "  "
-                   << q_long[i] << "  " << Correl_1D_long[i] << "  " << Correl_1D_long_err[i] 
+		   << Correl_1D_side_den[i] << "  " << Correl_1D_side_num[i] << "  "
+                   << q_long[i] << "  " << Correl_1D_long[i] << "  " << Correl_1D_long_err[i] << "  "
+		   << Correl_1D_long_den[i] << "  " << Correl_1D_long_num[i]
                    << endl;
    }
 if (output_to_screen)
@@ -560,7 +644,7 @@ void Output_Correlationfunction_3D()
 if (output_to_file)
    {
    ostringstream oCorrelfun_3D_stream;
-   oCorrelfun_3D_stream << path << "/correlfunct3D" << "_" << particle_name << "_kt_" << inits.K_perp << "_phi_" << inits.Phi_K << ".dat";
+   oCorrelfun_3D_stream << path << "/correlfunct3D" << "_" << particle_name << "_kt_" << current_params.K_perp << "_phi_" << current_params.Phi_K << ".dat";
    ofstream oCorrelfun_3D;
    oCorrelfun_3D.open(oCorrelfun_3D_stream.str().c_str());
    for(int i=0; i < qnpts; i++)
@@ -606,12 +690,12 @@ double corr_fcn_integrand_re(vector<double>* xpts, void * params_ptr)
 	double qy = my_q_side*cosK_phi + my_q_out*sinK_phi;
 	double qz = my_q_long;
 
-	//double tpt = taupt*cosh(etapt);
+	double tpt = taupt*cosh(etapt);
 	double xpt = rpt*cos(phipt);
 	double ypt = rpt*sin(phipt);
-	//double zpt = taupt*sinh(etapt);
-	double tpt = 0.;  //just using this for check
-	double zpt = 0.;  //just using this for check
+	double zpt = taupt*sinh(etapt);
+	//double tpt = 0.;  //just using this for check
+	//double zpt = 0.;  //just using this for check
 	double ss = S_function(rpt, phipt, etapt, taupt, params_ptr);
 	double arg = (tpt*qt - (qx*xpt + qy*ypt + qz*zpt))/hbarC;
 
@@ -658,12 +742,12 @@ double corr_fcn_integrand_im(vector<double>* xpts, void * params_ptr)
 	double qy = my_q_side*cosK_phi + my_q_out*sinK_phi;
 	double qz = my_q_long;
 
-	//double tpt = taupt*cosh(etapt);
+	double tpt = taupt*cosh(etapt);
 	double xpt = rpt*cos(phipt);
 	double ypt = rpt*sin(phipt);
-	//double zpt = taupt*sinh(etapt);
-	double tpt = 0.;  //just using this for check
-	double zpt = 0.;  //just using this for check
+	double zpt = taupt*sinh(etapt);
+	//double tpt = 0.;  //just using this for check
+	//double zpt = 0.;  //just using this for check
 	double ss = S_function(rpt, phipt, etapt, taupt, params_ptr);
 	double arg = (tpt*qt - (qx*xpt + qy*ypt + qz*zpt))/hbarC;
 

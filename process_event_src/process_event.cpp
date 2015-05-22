@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-bool get_plane_angle_only = false;
+bool get_plane_angle_only = true;
    //instantiate doHBT class
    doHBT Source_function;
 
@@ -148,7 +148,7 @@ if (get_plane_angle_only)
 	finalize_PRfile(currentworkingdirectory);
 	output.close();
 	
-	exit(1);
+	return(0);
 }
 
    output << "Calculating HBT radii via source variances method..." << endl;
