@@ -139,6 +139,8 @@ if (get_plane_angle_only)
 {
 	output << "Getting plane angle only to save time..." << endl;
 	Source_function.Determine_plane_angle(FOsurf_ptr);
+	Source_function.Get_EdNd3p_cfs(FOsurf_ptr, false);	//false means don't calculate plane angle again
+	Source_function.Output_ev_EdNd3p_cfs(folderindex);
 	Source_function.Output_ev_plane_psi(folderindex);
 	Source_function.Output_ev_plane_psis(folderindex);
 	Source_function.Output_dN_dypTdpTdphi(folderindex);
@@ -153,7 +155,9 @@ if (get_plane_angle_only)
 
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);
-   Source_function.quick_Analyze_sourcefunction_vars();
+   //Source_function.quick_Analyze_sourcefunction_vars();
+   Source_function.Get_EdNd3p_cfs(FOsurf_ptr, false);		//false means don't calculate plane angle again
+   Source_function.Output_ev_EdNd3p_cfs(folderindex);
    Source_function.Output_ev_plane_psis(folderindex);
    Source_function.Output_dN_dypTdpTdphi(folderindex);
    Source_function.Output_dN_dypTdpT(folderindex);

@@ -11,10 +11,10 @@
 #include<gsl/gsl_randist.h>
 
 #include "../src/Stopwatch.h"
-#include "../src/parameters.h"
-#include "../src/readindata.h"
+#include "../src/SV_parameters.h"
+#include "../src/SV_readindata.h"
 #include "../src/sourcevariances.h"
-#include "../src/generate_processing_record.h"
+#include "../src/SV_generate_processing_record.h"
 #include "../src/plumberglib.h"
 #include "compute_source_variances.h"
 

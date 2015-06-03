@@ -39,7 +39,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
    double plane_psi = 0.0;
    if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
    //cerr << "Determine nth-order plane angles..." << endl;
-   Determine_plane_angle(current_FOsurf_ptr);
+   Determine_plane_angle(current_FOsurf_ptr);	//uses only thermal pions...
    int iorder = USE_PLANE_PSI_ORDER;
    if (USE_PLANE_PSI_ORDER)
    {

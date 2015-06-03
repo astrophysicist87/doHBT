@@ -72,8 +72,18 @@ void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
          Calculate_R2_outlong(iKT, iKphi);
       }
       R2_Fourier_transform(iKT, plane_psi);
+	Svars_Fourier_transform(iKT, global_plane_psi);
    }
    return;
+}
+
+void doHBT::dummy_function(int i /*= -1*/, int j /*= -1*/)
+{
+	if (i < 0 && j < 0) cout << "You ran with the defaults!" << endl;
+	else if (i < 0 && j >= 0) cout << "You changed the first parameter!" << endl;
+	else if (i >= 0 && j < 0) cout << "You changed the second parameter!" << endl;
+	else if (i >= 0 && j >= 0) cout << "You changed both parameters!" << endl;
+	return;
 }
 
 void doHBT::quick_Analyze_sourcefunction()
@@ -333,15 +343,19 @@ void doHBT::Determine_plane_angle(FO_surf* FOsurf_ptr)
    return;
 }
 
-void doHBT::Get_EdNd3p_cfs(FO_surf* FOsurf_ptr)
+void doHBT::Get_EdNd3p_cfs(FO_surf* FOsurf_ptr, bool determine_plane_angle /* = true*/)
 {
-	if (VERBOSE > 0) *global_out_stream_ptr << "Fourier-expanding single-particle spectra..." << endl;
-	Determine_plane_angle(FOsurf_ptr);
+	if (determine_plane_angle)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "Fourier-expanding single-particle spectra..." << endl;
+		Determine_plane_angle(FOsurf_ptr);
+	}
 
 	if (VERBOSE > 0) *global_out_stream_ptr << "Obtaining Fourier coefficients..." << endl;
 	for(int ipt=0; ipt<n_SP_pT; ipt++)
 	{
-		double n = dN_dypTdpT[ipt]/(2.*M_PI);
+		//double n = dN_dypTdpT[ipt]/(2.*M_PI);
+		double n = dN_dypTdpT[ipt];	//already dividing by 2*pi above, so no need to do it again
 		EdNd3p_cfs[ipt][0] = n;
 		EdNd3p_phases[ipt][0] = 0.0;
 		for(int iorder=1; iorder<n_order; iorder++)
@@ -854,11 +868,11 @@ void doHBT::Get_HBTradii_from_azimuthally_averaged_Cavg_random(int ibin)
 	if (VERBOSE > 2) *global_out_stream_ptr << "Reading in results from event = " << ith_event << endl;
 	Set_path(global_runfolder + "/" + global_resultsfolder_stem + "-" + patch::to_string(ith_event));
 	Readin_azimuthally_averaged_results(ith_event);
-	Update_CavgSource_function(-1);
+	Update_azavgCavgSource_function(-1);
   }
 
   //with running sums all accumulated, divide by number of events in sub-ensemble
-  Calculate_CavgSource_function(-1);
+  Calculate_azavgCavgSource_function(-1);
 
   //effective averages calculated, use to extract corresponding radii
   Analyze_azimuthally_averaged_CAVG_sourcefunction();

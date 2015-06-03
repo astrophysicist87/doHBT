@@ -5,7 +5,7 @@ SRCDIR= \
 
 SRCS= \
 compute_source_variances.cpp \
-$(SRCDIR)/readindata.cpp \
+$(SRCDIR)/SV_readindata.cpp \
 $(SRCDIR)/sourcevariances.cpp \
 $(SRCDIR)/sourcevariances_admin.cpp \
 $(SRCDIR)/sourcevariances_resonance.cpp \
@@ -14,14 +14,14 @@ $(SRCDIR)/gauss_quadrature.cpp
 
 HDRS= \
 compute_source_variances.h \
-$(SRCDIR)/parameters.h \
-$(SRCDIR)/readindata.h \
+$(SRCDIR)/SV_parameters.h \
+$(SRCDIR)/SV_readindata.h \
 $(SRCDIR)/sourcevariances.h \
 $(SRCDIR)/Arsenal.h \
 $(SRCDIR)/Stopwatch.h \
 $(SRCDIR)/gauss_quadrature.h \
 $(SRCDIR)/structs.h \
-$(SRCDIR)/generate_processing_record.h \
+$(SRCDIR)/SV_generate_processing_record.h \
 $(SRCDIR)/plumberglib.h
 
 MAKEFILE=make_source_variances
@@ -42,13 +42,13 @@ LIBS= -L/sw/lib -I/sw/include
 $(COMMAND): $(OBJS) $(HDRS) $(MAKEFILE) 
 	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS) -pg
                  
-compute_source_variances.o : compute_source_variances.cpp compute_source_variances.h $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/sourcevariances.h $(SRCDIR)/generate_processing_record.h $(SRCDIR)/plumberglib.h
+compute_source_variances.o : compute_source_variances.cpp compute_source_variances.h $(SRCDIR)/SV_parameters.h $(SRCDIR)/SV_readindata.h $(SRCDIR)/sourcevariances.h $(SRCDIR)/SV_generate_processing_record.h $(SRCDIR)/plumberglib.h
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c compute_source_variances.cpp -o compute_source_variances.o
  
-readindata.o : $(SRCDIR)/parameters.h $(SRCDIR)/readindata.h $(SRCDIR)/readindata.cpp
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/readindata.cpp -o readindata.o
+SV_readindata.o : $(SRCDIR)/SV_parameters.h $(SRCDIR)/SV_readindata.h $(SRCDIR)/SV_readindata.cpp
+	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/SV_readindata.cpp -o SV_readindata.o
 
-sourcevariances.o : $(SRCDIR)/sourcevariances.h $(SRCDIR)/parameters.h $(SRCDIR)/sourcevariances.cpp $(SRCDIR)/sourcevariances_admin.cpp $(SRCDIR)/sourcevariances_resonance.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
+sourcevariances.o : $(SRCDIR)/sourcevariances.h $(SRCDIR)/SV_parameters.h $(SRCDIR)/sourcevariances.cpp $(SRCDIR)/sourcevariances_admin.cpp $(SRCDIR)/sourcevariances_resonance.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
 	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/sourcevariances.cpp -o sourcevariances.o
 
 Arsenal.o : $(SRCDIR)/Arsenal.cpp $(SRCDIR)/Arsenal.h

@@ -217,7 +217,7 @@ class doHBT
       ~doHBT();
 
       void Determine_plane_angle(FO_surf* FOsurf_ptr);
-      void Get_EdNd3p_cfs(FO_surf* FOsurf_ptr);
+      void Get_EdNd3p_cfs(FO_surf* FOsurf_ptr, bool determine_plane_angle = true);
       void Get_azimuthally_averaged_multiplicities();
       void Get_azimuthally_averaged_EBE_HBTradii();
       void Determine_avgplane_angle();
@@ -239,14 +239,14 @@ class doHBT
       double Average_Emission_Function_on_FOsurface(FO_surf* FOsurf_ptr, int FOcell, int iKT, int iKphi);
       void Average_sourcefunction_on_FOsurface(FO_surf* FOsurf_ptr, int iKphi);
       void Output_avgEmission_Function_on_FOsurface(int folderindex);
-      void Update_avgSource_function(int iKT, int iKphi);
-      void Update_CavgSource_function(int iKT, int iKphi);
-      void Calculate_avgSource_function(int, int);
-      void Calculate_CavgSource_function(int, int);
-      void Update_avgSource_function(int iKT);		//the azimuthally independent versions
-      void Update_CavgSource_function(int iKT);		//the azimuthally independent versions
-      void Calculate_avgSource_function(int);		//the azimuthally independent versions
-      void Calculate_CavgSource_function(int);		//the azimuthally independent versions
+      void Update_avgSource_function(int iKT = -1, int iKphi = -1);
+      void Update_CavgSource_function(int iKT = -1, int iKphi = -1);
+      void Calculate_avgSource_function(int i = -1, int j = -1);
+      void Calculate_CavgSource_function(int i = -1, int j = -1);
+      //void Update_avgSource_function(int iKT = -1);		//the azimuthally independent versions
+      void Update_azavgCavgSource_function(int iKT = -1);		//the azimuthally independent versions
+      //void Calculate_avgSource_function(int i = -1);		//the azimuthally independent versions
+      void Calculate_azavgCavgSource_function(int i = -1);		//the azimuthally independent versions
       bool fexists(const char *filename);
 
       void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
@@ -368,6 +368,7 @@ class doHBT
       void Set_use_delta_f(bool usrdef_usedeltaf);
       void Set_particle_mass(double usrdef_particle_mass);
       void debugger();
+      void dummy_function(int i = -1, int j = -1);
 
       //parameters that the user is free to define
       double plumberg_test_variable;

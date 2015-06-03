@@ -29,7 +29,7 @@
 
 using namespace std;
 
-void doHBT::Update_avgSource_function(int i = -1, int j = -1)
+void doHBT::Update_avgSource_function(int i /*= -1*/, int j /*= -1*/)
 {
 //N.B. - avgs. only contains sums here, have not actually been averaged yet
    if (i < 0 || j < 0)
@@ -76,7 +76,7 @@ void doHBT::Update_avgSource_function(int i = -1, int j = -1)
 }
 
 
-void doHBT::Update_CavgSource_function(int i = -1)
+void doHBT::Update_azavgCavgSource_function(int i /*= -1*/)
 {
 //N.B. - avgs. only contains sums here, have not actually been averaged yet
    if (i < 0)
@@ -106,7 +106,7 @@ void doHBT::Update_CavgSource_function(int i = -1)
 }
 
 
-void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
+void doHBT::Update_CavgSource_function(int i /*= -1*/, int j /*= -1*/)
 {
 //N.B. - avgs. only contains sums here, have not actually been averaged yet
    if (i < 0 || j < 0)
@@ -136,7 +136,7 @@ void doHBT::Update_CavgSource_function(int i = -1, int j = -1)
    return;
 }
 
-void doHBT::Calculate_avgSource_function(int i = -1, int j = -1)
+void doHBT::Calculate_avgSource_function(int i /*= -1*/, int j /*= -1*/)
 {
 //N.B. - avgs. only contains sums, doing averaging here
    if (i < 0 || j < 0)
@@ -182,7 +182,7 @@ void doHBT::Calculate_avgSource_function(int i = -1, int j = -1)
    return;
 }
 
-void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
+void doHBT::Calculate_CavgSource_function(int i /*= -1*/, int j /*= -1*/)
 {
 //N.B. - avgs. only contains sums, doing averaging here
    if (i < 0 || j < 0)
@@ -212,7 +212,7 @@ void doHBT::Calculate_CavgSource_function(int i = -1, int j = -1)
    return;
 }
 
-void doHBT::Calculate_CavgSource_function(int i = -1)
+void doHBT::Calculate_azavgCavgSource_function(int i /*= -1*/)
 {
 //N.B. - avgs. only contains sums, doing averaging here
    if (i < 0)

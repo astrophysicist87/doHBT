@@ -41,40 +41,12 @@ const double SP_pT_min = 0.0;
 const double SP_pT_max = 3.0;
 //const double SP_pT_max = 5.0;
 
-//parameters for interpolation grid
-//  - Cartesian
-const int n_interp1_px_pts = 51;
-const int n_interp1_py_pts = 51;
-const double interp1_px_min = 0.01;
-const double interp1_py_min = -0.05;
-const double interp1_px_max = 0.21;
-const double interp1_py_max = 0.05;
-//const double interp1_px_min = -0.1;
-//const double interp1_py_min = -0.1;
-//const double interp1_px_max = 0.1;
-//const double interp1_py_max = 0.1;
-const double Del1_x = (interp1_px_max - interp1_px_min) / (double)(n_interp1_px_pts-1);
-const double Del1_y = (interp1_py_max - interp1_py_min) / (double)(n_interp1_py_pts-1);
-//  - polar
-const int n_interp2_pT_pts = 31;
-const int n_interp2_pphi_pts = 24;
-const double interp2_pT_min = 0.01;
-const double interp2_pphi_min = 0.0;
-const double interp2_pT_max = 3.0;
-const double interp2_pphi_max = 2.*M_PI;
-//const double interp2_px_min = -0.1;
-//const double interp2_py_min = -0.1;
-//const double interp2_px_max = 0.1;
-//const double interp2_py_max = 0.1;
-const double Del2_pT = (interp2_pT_max - interp2_pT_min) / (double)(n_interp2_pT_pts-1);
-const double Del2_pphi = (interp2_pphi_max - interp2_pphi_min) / (double)(n_interp2_pphi_pts-1);
-
 //correlation function info
 const int corrfuncdim = 1;
 const bool lambdaflag = true;
 
 //pair momentum info
-const int n_localp_T = 21;
+const int n_localp_T = 5;
 const double localp_T_min = 0.0;
 const double localp_T_max = 2.0;
 const int n_localp_phi = 51;

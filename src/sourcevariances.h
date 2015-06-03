@@ -18,8 +18,8 @@
 #include <gsl/gsl_blas.h>     // gsl linear algebra stuff
 #include <gsl/gsl_multifit_nlin.h>  // gsl multidimensional fitting
 
-#include "readindata.h"
-#include "parameters.h"
+#include "SV_readindata.h"
+#include "SV_parameters.h"
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
