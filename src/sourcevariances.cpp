@@ -20,81 +20,89 @@
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
-#define USE_PLANE_PSI_ORDER 0		// specifies whether to do HBT relative to flow-plane angle,
-					// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle
-					// at given order
-//#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
-					// 0 - false
-#define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
-#define ASSUME_ETA_SYMMETRIC 1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
-					// 0 means just integrate over given range of eta_s without worrying about symmetry
-
 using namespace std;
+
+double place_in_range(double phi, double min, double max)
+{
+	while (phi < min || phi > max)
+	{
+		if (phi < min) phi += twopi;
+		else phi -= twopi;
+	}
+
+	return (phi);
+}
 
 void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
 	time_t rawtime;
   	struct tm * timeinfo;
 
-   double plane_psi = 0.0;
-   if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
-   //cerr << "Determine nth-order plane angles..." << endl;
-   Determine_plane_angle(current_FOsurf_ptr);	//uses only thermal pions...
-   int iorder = USE_PLANE_PSI_ORDER;
-   if (USE_PLANE_PSI_ORDER)
-   {
-      if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
-      if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
-      plane_psi = plane_angle[iorder];
-   }
-   else
-   {
-      if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
-      //cerr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
-   }
-   global_plane_psi = plane_psi;
+	double plane_psi = 0.0;
+	if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
+	//cerr << "Determine nth-order plane angles..." << endl;
+	Determine_plane_angle(current_FOsurf_ptr);	//uses only thermal pions...
+	int iorder = USE_PLANE_PSI_ORDER;
+	if (USE_PLANE_PSI_ORDER)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
+		plane_psi = plane_angle[iorder];
+	}
+	else
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
+		//cerr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
+	}
+	global_plane_psi = plane_psi;
 
-
-
-
-
-  for (int ir = 0; ir <= 0; ir++)	//loop over direct pions and resonances
-  {
-	if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Setting spacetime moments" << endl;
-	//cerr << "Setting spacetime moments" << endl;
-	Set_dN_dypTdpTdphi_moments(FOsurf_ptr, ir);
-	Determine_plane_angle_check(FOsurf_ptr);
-   // begin HBT calculations here...
-   for(int iKT = 0; iKT < n_localp_T; iKT++)
-   {
-      if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
-      if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV ..." << endl;
-      double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
-      beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
-      for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-      {
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Calculating K_phi = " << K_phi[iKphi] << " ..." << endl;
-      		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t ~ Calculating resonance = " << ir << endl;
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Reset emission data" << endl;
-		//Reset_EmissionData();
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Loading info for this resonance..." << endl;
-		Load_resonance_info(ir, K_T[iKT], K_phi[iKphi]);
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Loaded resonance info" << endl;
-		//ir == 0 corresponds to just thermal pions
-		//otherwise, gives irth resonance contribution
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Getting phase-space integrated spacetime moments" << endl;
-		if (ir > 0)	//don't need to do any resonance integrals for thermal pions!
-			Do_resonance_integrals(current_FOsurf_ptr, iKT, iKphi, ir);
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Finished calculations for reso_idx = " << ir << endl
-			<< "\t\t --> just updating the contributions from this resonance to each source integral now..." << endl;
-		Update_source_variances(iKT, iKphi, ir);
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Finished!  Getting R^2_s..." << endl;
-		Calculate_R2_side(iKT, iKphi);
-		if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Moving on!" << endl;
-	return;
-      }
-   }
-  }
+	for (int ir = 0; ir <= n_resonance; ir++)	//loop over direct pions and resonances
+	{
+		time (&rawtime);
+		timeinfo = localtime (&rawtime);
+		if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Setting spacetime moments at " << asctime(timeinfo);
+		//cerr << "Setting spacetime moments" << endl;
+		Set_dN_dypTdpTdphi_moments(FOsurf_ptr, ir);
+		Determine_plane_angle_check(FOsurf_ptr);
+		// begin HBT calculations here...
+		for(int iKT = 0; iKT < n_localp_T; iKT++)
+		{
+			if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
+			time (&rawtime);
+			timeinfo = localtime (&rawtime);
+			if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV at " << asctime(timeinfo);
+			double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+			beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+			for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+			{
+				if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Calculating K_phi = " << K_phi[iKphi] << " ..." << endl;
+		      		if (VERBOSE > 1) *global_out_stream_ptr << "\t\t ~ Calculating resonance = " << ir << endl;
+				if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Reset emission data" << endl;
+				//Reset_EmissionData();
+				if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Loading info for this resonance..." << endl;
+				Load_resonance_info(ir, K_T[iKT], K_phi[iKphi]);
+				if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Loaded resonance info" << endl;
+				//ir == 0 corresponds to just thermal pions
+				//otherwise, gives irth resonance contribution
+				if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Getting phase-space integrated spacetime moments" << endl;
+				if (ir > 0)	//don't need to do any resonance integrals for thermal pions!
+					Do_resonance_integrals(current_FOsurf_ptr, iKT, iKphi, ir);
+				if (VERBOSE > 1) *global_out_stream_ptr << "\t\t   * Finished calculations for reso_idx = " << ir << endl
+					<< "\t\t --> just updating the contributions from this resonance to each source integral now..." << endl;
+				Update_source_variances(iKT, iKphi, ir);
+			}
+		}
+	}
+	for(int iKT = 0; iKT < n_localp_T; iKT++)
+	{
+		if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
+		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+		{
+			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Finished!  Getting R^2_s..." << endl;
+			Calculate_R2_side(iKT, iKphi);
+			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Moving on!" << endl;
+		}
+	}
 
    return;
 }
@@ -166,8 +174,10 @@ if (reso_idx > 0) mass = current_resonance_mass;
 		double mT = sqrt(mass*mass + SPinterp2_pT[ipt]*SPinterp2_pT[ipt]);
 		SPinterp2_p0[ipt][i] = mT*local_cosh;
 		SPinterp2_pz[ipt][i] = mT*local_sinh;
+		//cerr << SPinterp2_p0[ipt][i] << "    " << SPinterp2_pz[ipt][i] << "    " << SPinterp2_pT[ipt] << endl;
        }
    }
+//if (1) exit(1);
 	if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
 		Cal_dN_dypTdpTdphi_with_weights_cartesian(FOsurf_ptr, reso_idx);
 	else if (INTERPOLATION_FORMAT == 2)	//using polar grid for interpolation (pT, pphi)
@@ -186,7 +196,7 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_
 //assume reso_idx >= 1
 //double mu = 0.0;
 
-   for(int isurf=0; isurf<FO_length ; isurf++)
+   for(int isurf=0; isurf<FO_length; isurf++)
    {
       FO_surf* surf = &FOsurf_ptr[isurf];
       double mu = surf->particle_mu[particle_id];
@@ -287,6 +297,12 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_
 
 void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int reso_idx)
 {
+	//time_t rawtime;
+  	//struct tm * timeinfo;
+	//time (&rawtime);
+	//timeinfo = localtime (&rawtime);
+	//if (VERBOSE > 0) *global_out_stream_ptr << "***Checkpoint #1 at " << asctime(timeinfo);
+double z0, z1, z2, z3;
 //CURRENTLY USING WRONG DEFINITIONS OF SIGN AND DEGEN
 //NEED TO FIX BEFORE VERSION IS STABLE
    double sign = particle_sign;
@@ -297,97 +313,134 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 //these are constants along the FO surface,
 //so don't waste time updating them for each cell
 Tdec = (&FOsurf_ptr[0])->Tdec;
+double one_by_Tdec = 1./Tdec;
 Pdec = (&FOsurf_ptr[0])->Pdec;
 Edec = (&FOsurf_ptr[0])->Edec;
 //cerr << "DEBUG: " << Tdec << "  " << Pdec << "  " << Edec << endl;
-double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+double deltaf_prefactor = 0.;
+if (use_delta_f) deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+
+//declare variables used below here to see if this speeds up code:
+double mu, tau, vx, vy, da0, da1, da2;
+double pi00, pi01, pi02, pi11, pi12, pi22, pi33;
+double temp_r, temp_phi, sin_temp_phi, cos_temp_phi, gammaT;
+
+double pT, sin_pphi, cos_pphi, sin_phi_m_pphi, cos_phi_m_pphi;
+double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
+	symmetry_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+      FO_surf* surf;
 
    for(int isurf=0; isurf<FO_length ; isurf++)
    {
-      FO_surf* surf = &FOsurf_ptr[isurf];
-      double mu = surf->particle_mu[particle_id];
-      double tau = surf->tau;
-      double vx = surf->vx;
-      double vy = surf->vy;
-      double da0 = surf->da0;
-      double da1 = surf->da1;
-      double da2 = surf->da2;
-      double pi00 = surf->pi00;
-      double pi01 = surf->pi01;
-      double pi02 = surf->pi02;
-      double pi11 = surf->pi11;
-      double pi12 = surf->pi12;
-      double pi22 = surf->pi22;
-      double pi33 = surf->pi33;
-	double temp_r = surf->r;
-	double temp_phi = surf->phi;
-	double sin_temp_phi = sin(temp_phi);
-	double cos_temp_phi = cos(temp_phi);
-      double gammaT = surf->gammaT;
+      surf = &FOsurf_ptr[isurf];
+	mu = surf->particle_mu[particle_id];
+	tau = surf->tau;
+	vx = surf->vx;
+	vy = surf->vy;
+	da0 = surf->da0;
+	da1 = surf->da1;
+	da2 = surf->da2;
+	pi00 = surf->pi00;
+	pi01 = surf->pi01;
+	pi02 = surf->pi02;
+	pi11 = surf->pi11;
+	pi12 = surf->pi12;
+	pi22 = surf->pi22;
+	pi33 = surf->pi33;
+	temp_r = surf->r;
+	sin_temp_phi = surf->sin_phi;
+	cos_temp_phi = surf->cos_phi;
+	gammaT = surf->gammaT;
+//trying this to optimize
+	//mu = surf_particle_mu[particle_id][isurf];
+	//tau = surf_geometry_pts[0][isurf];
+	//vx = surf_flow[0][isurf];
+	//vy = surf_flow[1][isurf];
+	//da0 = surf_damu[0][isurf];
+	//da1 = surf_damu[0][isurf];
+	//da2 = surf_damu[0][isurf];
+	//pi00 = surf_pimunu[0][isurf];
+	//pi01 = surf_pimunu[1][isurf];
+	//pi02 = surf_pimunu[2][isurf];
+	//pi11 = surf_pimunu[3][isurf];
+	//pi12 = surf_pimunu[4][isurf];
+	//pi22 = surf_pimunu[5][isurf];
+	//pi33 = surf_pimunu[6][isurf];
+	//temp_r = surf_geometry_pts[1][isurf];
+	//temp_phi = surf_geometry_pts[2][isurf];
+	//sin_temp_phi = surf_geometry_pts[5][isurf];
+	//cos_temp_phi = surf_geometry_pts[6][isurf];
+	//gammaT = surf_flow[2][isurf];
+
       
       for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
       {
-	double pT = SPinterp2_pT[ipt];
+	pT = SPinterp2_pT[ipt];
       for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
       {
-	double sin_pphi = sin_SPinterp2_pphi[iphi];
-	double cos_pphi = cos_SPinterp2_pphi[iphi];
-	double px = pT*cos_pphi;
-	double py = pT*sin_pphi;
-	//double pphi = atan2(py, px);
+	sin_pphi = sin_SPinterp2_pphi[iphi];
+	cos_pphi = cos_SPinterp2_pphi[iphi];
+	px = pT*cos_pphi;
+	py = pT*sin_pphi;
+	//pphi = atan2(py, px);
 	//if (pphi < 0.) pphi += 2.*M_PI;
-	double sin_phi_m_pphi = sin_temp_phi * cos_pphi - cos_temp_phi * sin_pphi;
-	double cos_phi_m_pphi = cos_temp_phi * cos_pphi + sin_temp_phi * sin_pphi;
-	zvec[1] = temp_r * cos_phi_m_pphi;
-	zvec[2] = temp_r * sin_phi_m_pphi;
+	sin_phi_m_pphi = sin_temp_phi * cos_pphi - cos_temp_phi * sin_pphi;
+	cos_phi_m_pphi = cos_temp_phi * cos_pphi + sin_temp_phi * sin_pphi;
+	//zvec[1] = temp_r * cos_phi_m_pphi;
+	//zvec[2] = temp_r * sin_phi_m_pphi;
+	z1 = temp_r * cos_phi_m_pphi;
+	z2 = temp_r * sin_phi_m_pphi;
       for(int ieta=0; ieta < eta_s_npts; ieta++)
       {
-         double p0 = SPinterp2_p0[ipt][ieta];
-         double pz = SPinterp2_pz[ipt][ieta];
-         double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
-         double f0 = 1./(exp(expon)+sign);
-         //if(expon > 20) f0 = 0.0e0;
-         //else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+         p0 = SPinterp2_p0[ipt][ieta];
+         pz = SPinterp2_pz[ipt][ieta];
+	//now get distribution function, emission function, etc.
+	f0 = 1./(exp((gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec)+sign);	//thermal equilibrium distributions
+	
+	//viscous corrections
+	deltaf = 0.;
+	if (use_delta_f)
+		deltaf = deltaf_prefactor*(1. - sign*f0)*(p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
 
-         //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-         double pdsigma = p0*da0 + px*da1 + py*da2;
+	//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+	S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
+	//ignore points where delta f is large or emission function goes negative from pdsigma
+	if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol)) S_p = 0.0;
 
-         //viscous corrections
-         double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
-         double deltaf = 0.;
-	 if (use_delta_f)
-	 {
-		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
-	 }
-
-         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
-	double symmetry_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
-	//ignore points where delta f is large
-	 if (1. + deltaf < 0.0) S_p = 0.0;
-        if (flagneg == 1 && S_p < tol)
-        {//neglect points where emission function goes negative from pdsigma
-           S_p = 0.0e0;
-        }
-         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
-	zvec[0] = tau*ch_eta_s[ieta];
-	zvec[3] = tau*sh_eta_s[ieta];
-	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-		dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] += S_p_withweight*weight_function(zvec, wfi);
+         S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
+	//S_p_withweight = 1.;
+	//zvec[0] = tau*ch_eta_s[ieta];
+	//zvec[3] = tau*sh_eta_s[ieta];
+	z0 = tau*ch_eta_s[ieta];
+	z3 = tau*sh_eta_s[ieta];
+	//for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+	//for (int wfi = 0; wfi < 0; wfi++)
+	//	dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] += S_p_withweight*weight_function(zvec, wfi);
+		dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += S_p_withweight;
+		dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += S_p_withweight*z2;
+		dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += S_p_withweight*z2*z2;
       }
       }
       }
    }
+	//time (&rawtime);
+	//timeinfo = localtime (&rawtime);
+	//if (VERBOSE > 0) *global_out_stream_ptr << "***Checkpoint #2 at " << asctime(timeinfo);
+double temp;
 //set log of dN_dypTdpTdphi_moments...
 	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
 	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
 	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
 		//ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = log(dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi]);
-		double temp = dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi];
+		temp = dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi];
 		ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = log(abs(temp));
 		sign_of_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = sgn(temp);
 	}
+	//time (&rawtime);
+	//timeinfo = localtime (&rawtime);
+	//if (VERBOSE > 0) *global_out_stream_ptr << "***Checkpoint #3 at " << asctime(timeinfo);
    return;
 }
 
@@ -689,7 +742,7 @@ void SourceVariances::Do_resonance_integrals(FO_surf* FOsurf_ptr, int iKT, int i
 	//current_K_phi = K_phi_local;
 	double Kx = K_T[iKT]*cos(K_phi[iKphi]);
 	double Ky = K_T[iKT]*sin(K_phi[iKphi]);
-	set_surfpts();
+	//set_surfpts();
 	int idx = 0;
 	if (abs(m3) <= 1.e-6)
 		n_body = 2;
@@ -804,108 +857,203 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		br = current_resonance_total_br;
 		m2 = current_resonance_decay_masses[0];
 		m3 = current_resonance_decay_masses[1];
+	if (abs(m3) <= 1.e-6)
+		n_body = 2;
+	else
+		n_body = 3;
 		mT = sqrt(mass*mass + K_T_local*K_T_local);
 		pT = K_T_local;
 		current_K_phi = K_phi_local;
 		cos_cKphi = cos(K_phi_local);
 		sin_cKphi = sin(K_phi_local);
 
-		//VEC_tau_factor = new double [n_tau_pts];
-		//for (int itau = 0; itau < n_tau_pts; itau++)
-		//	VEC_tau_factor[itau] = tau_wts[reso_idx-1][itau]*Gamma*exp(-Gamma*tau_pts[reso_idx-1][itau]);
-
-		//set up vectors of points to speed-up integrals...
-		VEC_pstar = new double [n_s_pts];
-		VEC_Estar = new double [n_s_pts];
-		VEC_DeltaY = new double [n_s_pts];
-		VEC_g_s = new double [n_s_pts];
-		VEC_s_factor = new double [n_s_pts];
-		VEC_v_factor = new double * [n_s_pts];
-		VEC_zeta_factor = new double ** [n_s_pts];
-		VEC_Yp = new double [n_s_pts];
-		VEC_Ym = new double [n_s_pts];
-		VEC_P_Y = new double * [n_s_pts];
-		VEC_MTbar = new double * [n_s_pts];
-		VEC_DeltaMT = new double * [n_s_pts];
-		VEC_MTp = new double * [n_s_pts];
-		VEC_MTm = new double * [n_s_pts];
-		VEC_MT = new double ** [n_s_pts];
-		VEC_PPhi_tilde = new double ** [n_s_pts];
-		VEC_Pp = new double *** [n_s_pts];
-		//cerr << "Entering loops now..." << endl;
-		for (int is = 0; is < n_s_pts; is++)
+		if (n_body == 2)
 		{
-			//cerr << "In s loop# = " << is << endl;
-			double s_loc = s_pts[reso_idx-1][is];
+			//set up vectors of points to speed-up integrals...
+			//cerr << "Entering loops now..." << endl;
+			double s_loc = m2*m2;
 			double g_s_loc = g(s_loc);
-			VEC_g_s[is] = g_s_loc;
-			VEC_s_factor[is] = s_wts[reso_idx-1][is]*g_s_loc;
+			VEC_n2_g_s = g_s_loc;
 			double pstar_loc = sqrt(((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc)/(2.0*Mres));
-			VEC_pstar[is] = pstar_loc;
+			VEC_n2_pstar = pstar_loc;
+			VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);
 			double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
-			VEC_Estar[is] = Estar_loc;
+			VEC_n2_Estar = Estar_loc;
 			double psBmT = pstar_loc / mT;
 			double DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
-			VEC_DeltaY[is] = DeltaY_loc;
-			//VEC_PPhi_tilde[is] = new double ** [eta_s_npts];
-			//VEC_Pp[is] = new double *** [eta_s_npts];
-			/*DEBUG*///cout << Mres << "     " << mass << "     "
-			/*DEBUG*///	<< ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc)/(2.0*Mres)
-			/*DEBUG*///	<< "     " << s_loc << "     " << pstar_loc << endl;
+			VEC_n2_DeltaY = DeltaY_loc;
 			p_y = 0.0;
-			VEC_v_factor[is] = new double [n_v_pts];
-			VEC_zeta_factor[is] = new double * [n_v_pts];
-			VEC_Yp[is] = p_y + DeltaY_loc;
-			VEC_Ym[is] = p_y - DeltaY_loc;
-			VEC_P_Y[is] = new double [n_v_pts];
-			VEC_MTbar[is] = new double [n_v_pts];
-			VEC_DeltaMT[is] = new double [n_v_pts];
-			VEC_MTp[is] = new double [n_v_pts];
-			VEC_MTm[is] = new double [n_v_pts];
-			VEC_MT[is] = new double * [n_v_pts];
-			VEC_PPhi_tilde[is] = new double * [n_v_pts];
-			VEC_Pp[is] = new double ** [n_v_pts];
+			VEC_n2_v_factor = new double [n_v_pts];
+			VEC_n2_zeta_factor = new double * [n_v_pts];
+			VEC_n2_Yp = p_y + DeltaY_loc;
+			VEC_n2_Ym = p_y - DeltaY_loc;
+			VEC_n2_P_Y = new double [n_v_pts];
+			VEC_n2_MTbar = new double [n_v_pts];
+			VEC_n2_DeltaMT = new double [n_v_pts];
+			VEC_n2_MTp = new double [n_v_pts];
+			VEC_n2_MTm = new double [n_v_pts];
+			VEC_n2_MT = new double * [n_v_pts];
+			VEC_n2_PPhi_tilde = new double * [n_v_pts];
+			VEC_n2_PPhi_tildeFLIP = new double * [n_v_pts];
+			VEC_n2_PT = new double * [n_v_pts];
+			VEC_n2_Pp = new double ** [n_v_pts];
+			//VEC_n2_PpT = new double * [n_v_pts];
+			//VEC_n2_Ppphi = new double * [n_v_pts];
 			for(int iv = 0; iv < n_v_pts; iv++)
 			{
 				//cerr << "In v loop# = " << iv << endl;
 				double v_loc = v_pts[iv];
 				double P_Y_loc = p_y + v_loc*DeltaY_loc;
-				VEC_P_Y[is][iv] = P_Y_loc;
+				VEC_n2_P_Y[iv] = P_Y_loc;
 				double mT_ch_P_Y_p_y = mT*cosh(v_loc*DeltaY_loc);
 				double x2 = mT_ch_P_Y_p_y*mT_ch_P_Y_p_y - pT*pT;
-				VEC_v_factor[is][iv] = v_wts[iv]*DeltaY_loc/x2;
+				VEC_n2_v_factor[iv] = v_wts[iv]*DeltaY_loc/x2;
 				double MTbar_loc = Estar_loc*Mres*mT_ch_P_Y_p_y/x2;
-				VEC_MTbar[is][iv] = MTbar_loc;
+				VEC_n2_MTbar[iv] = MTbar_loc;
 				double DeltaMT_loc = Mres*pT*sqrt(Estar_loc*Estar_loc - x2)/x2;
-				VEC_DeltaMT[is][iv] = DeltaMT_loc;
-				VEC_MTp[is][iv] = MTbar_loc + DeltaMT_loc;
-				VEC_MTm[is][iv] = MTbar_loc - DeltaMT_loc;
-				VEC_MT[is][iv] = new double [n_zeta_pts];
-				VEC_PPhi_tilde[is][iv] = new double [n_zeta_pts];
-				VEC_Pp[is][iv] = new double * [n_zeta_pts];
-				VEC_zeta_factor[is][iv] = new double [n_zeta_pts];
+				VEC_n2_DeltaMT[iv] = DeltaMT_loc;
+				VEC_n2_MTp[iv] = MTbar_loc + DeltaMT_loc;
+				VEC_n2_MTm[iv] = MTbar_loc - DeltaMT_loc;
+				VEC_n2_MT[iv] = new double [n_zeta_pts];
+				VEC_n2_PPhi_tilde[iv] = new double [n_zeta_pts];
+				VEC_n2_PPhi_tildeFLIP[iv] = new double [n_zeta_pts];
+				VEC_n2_PT[iv] = new double [n_zeta_pts];
+				VEC_n2_Pp[iv] = new double * [n_zeta_pts];
+				//VEC_n2_PpT[iv] = new double [n_zeta_pts];
+				//VEC_n2_Ppphi[iv] = new double [n_zeta_pts];
+				VEC_n2_zeta_factor[iv] = new double [n_zeta_pts];
 				for(int izeta = 0; izeta < n_zeta_pts; izeta++)
 				{
 					double zeta_loc = zeta_pts[izeta];
 					double MT_loc = MTbar_loc + cos(zeta_loc)*DeltaMT_loc;
-					VEC_MT[is][iv][izeta] = MT_loc;
-					VEC_zeta_factor[is][iv][izeta] = zeta_wts[izeta]*MT_loc;
+					VEC_n2_MT[iv][izeta] = MT_loc;
+					VEC_n2_zeta_factor[iv][izeta] = zeta_wts[izeta]*MT_loc;
 					double PT_loc = sqrt(MT_loc*MT_loc - Mres*Mres);
-					double PPhi_tilde_loc = acos( (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) );
-					VEC_PPhi_tilde[is][iv][izeta] = PPhi_tilde_loc;
+					double PPhi_tilde_loc = place_in_range( acos( (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) ), interp2_pphi_min, interp2_pphi_max);
+					VEC_n2_PPhi_tilde[iv][izeta] = PPhi_tilde_loc;
+					VEC_n2_PPhi_tildeFLIP[iv][izeta] = place_in_range( PPhi_tilde_loc + M_PI, interp2_pphi_min, interp2_pphi_max);
+					VEC_n2_PT[iv][izeta] = PT_loc;
 					/*DEBUG*///cout << mT << "     " << pT << "     " << cosh(P_Y_loc-p_y) << "     "
 					/*DEBUG*///		<< MT_loc << "     " << PT_loc << "     " << mT*MT_loc*cosh(P_Y_loc-p_y) << "     "
 					/*DEBUG*///		<< Estar_loc*Mres << "     " << (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres) << "     "
 					/*DEBUG*///		<< (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) << endl;
-					VEC_Pp[is][iv][izeta] = new double [4];
-					VEC_Pp[is][iv][izeta][0] = MT_loc * cosh(P_Y_loc);
-					VEC_Pp[is][iv][izeta][1] = PT_loc * cos(PPhi_tilde_loc);
-					VEC_Pp[is][iv][izeta][2] = PT_loc * sin(PPhi_tilde_loc);	//flip sign of this component to get VEC_Pm
-					VEC_Pp[is][iv][izeta][3] = MT_loc * sinh(P_Y_loc);
-					/*DEBUG*///cout << VEC_Pp[is][iv][izeta][0] << "     "
-					/*DEBUG*///		<< VEC_Pp[is][iv][izeta][1] << "     "
-					/*DEBUG*///		<< VEC_Pp[is][iv][izeta][2] << "     "
-					/*DEBUG*///		<< VEC_Pp[is][iv][izeta][3] << endl;
+					VEC_n2_Pp[iv][izeta] = new double [4];
+					VEC_n2_Pp[iv][izeta][0] = MT_loc * cosh(P_Y_loc);
+					VEC_n2_Pp[iv][izeta][1] = PT_loc * cos(PPhi_tilde_loc);
+					VEC_n2_Pp[iv][izeta][2] = PT_loc * sin(PPhi_tilde_loc);		//flip sign of this component to get VEC_n2_Pm
+					//VEC_n2_PpT[iv][izeta] = PT_loc;
+					//VEC_n2_Ppphi[iv][izeta] = PPhi_tilde_loc;			//add pi to this component to get VEC_n2_Pm
+					VEC_n2_Pp[iv][izeta][3] = MT_loc * sinh(P_Y_loc);
+					/*DEBUG*///cout << VEC_n2_Pp[iv][izeta][0] << "     "
+					/*DEBUG*///		<< VEC_n2_Pp[iv][izeta][1] << "     "
+					/*DEBUG*///		<< VEC_n2_Pp[iv][izeta][2] << "     "
+					/*DEBUG*///		<< VEC_n2_Pp[iv][izeta][3] << endl;
+				}
+			}
+		}
+		else
+		{
+			//set up vectors of points to speed-up integrals...
+			VEC_pstar = new double [n_s_pts];
+			VEC_Estar = new double [n_s_pts];
+			VEC_DeltaY = new double [n_s_pts];
+			VEC_g_s = new double [n_s_pts];
+			VEC_s_factor = new double [n_s_pts];
+			VEC_v_factor = new double * [n_s_pts];
+			VEC_zeta_factor = new double ** [n_s_pts];
+			VEC_Yp = new double [n_s_pts];
+			VEC_Ym = new double [n_s_pts];
+			VEC_P_Y = new double * [n_s_pts];
+			VEC_MTbar = new double * [n_s_pts];
+			VEC_DeltaMT = new double * [n_s_pts];
+			VEC_MTp = new double * [n_s_pts];
+			VEC_MTm = new double * [n_s_pts];
+			VEC_MT = new double ** [n_s_pts];
+			VEC_PPhi_tilde = new double ** [n_s_pts];
+			VEC_PPhi_tildeFLIP = new double ** [n_s_pts];
+			VEC_PT = new double ** [n_s_pts];
+			VEC_Pp = new double *** [n_s_pts];
+			//cerr << "Entering loops now..." << endl;
+			for (int is = 0; is < n_s_pts; is++)
+			{
+				//cerr << "In s loop# = " << is << endl;
+				double s_loc = s_pts[reso_idx-1][is];
+				double g_s_loc = g(s_loc);
+				VEC_g_s[is] = g_s_loc;
+				VEC_s_factor[is] = s_wts[reso_idx-1][is]*g_s_loc;
+				double pstar_loc = sqrt(((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc)/(2.0*Mres));
+				VEC_pstar[is] = pstar_loc;
+				double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
+				VEC_Estar[is] = Estar_loc;
+				double psBmT = pstar_loc / mT;
+				double DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
+				VEC_DeltaY[is] = DeltaY_loc;
+				//VEC_PPhi_tilde[is] = new double ** [eta_s_npts];
+				//VEC_Pp[is] = new double *** [eta_s_npts];
+				/*DEBUG*///cout << Mres << "     " << mass << "     "
+				/*DEBUG*///	<< ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc)/(2.0*Mres)
+				/*DEBUG*///	<< "     " << s_loc << "     " << pstar_loc << endl;
+				p_y = 0.0;
+				VEC_v_factor[is] = new double [n_v_pts];
+				VEC_zeta_factor[is] = new double * [n_v_pts];
+				VEC_Yp[is] = p_y + DeltaY_loc;
+				VEC_Ym[is] = p_y - DeltaY_loc;
+				VEC_P_Y[is] = new double [n_v_pts];
+				VEC_MTbar[is] = new double [n_v_pts];
+				VEC_DeltaMT[is] = new double [n_v_pts];
+				VEC_MTp[is] = new double [n_v_pts];
+				VEC_MTm[is] = new double [n_v_pts];
+				VEC_MT[is] = new double * [n_v_pts];
+				VEC_PPhi_tilde[is] = new double * [n_v_pts];
+				VEC_PPhi_tildeFLIP[is] = new double * [n_v_pts];
+				VEC_PT[is] = new double * [n_v_pts];
+				VEC_Pp[is] = new double ** [n_v_pts];
+				for(int iv = 0; iv < n_v_pts; iv++)
+				{
+					//cerr << "In v loop# = " << iv << endl;
+					double v_loc = v_pts[iv];
+					double P_Y_loc = p_y + v_loc*DeltaY_loc;
+					VEC_P_Y[is][iv] = P_Y_loc;
+					double mT_ch_P_Y_p_y = mT*cosh(v_loc*DeltaY_loc);
+					double x2 = mT_ch_P_Y_p_y*mT_ch_P_Y_p_y - pT*pT;
+					VEC_v_factor[is][iv] = v_wts[iv]*DeltaY_loc/x2;
+					double MTbar_loc = Estar_loc*Mres*mT_ch_P_Y_p_y/x2;
+					VEC_MTbar[is][iv] = MTbar_loc;
+					double DeltaMT_loc = Mres*pT*sqrt(Estar_loc*Estar_loc - x2)/x2;
+					VEC_DeltaMT[is][iv] = DeltaMT_loc;
+					VEC_MTp[is][iv] = MTbar_loc + DeltaMT_loc;
+					VEC_MTm[is][iv] = MTbar_loc - DeltaMT_loc;
+					VEC_MT[is][iv] = new double [n_zeta_pts];
+					VEC_PPhi_tilde[is][iv] = new double [n_zeta_pts];
+					VEC_PPhi_tildeFLIP[is][iv] = new double [n_zeta_pts];
+					VEC_PT[is][iv] = new double [n_zeta_pts];
+					VEC_Pp[is][iv] = new double * [n_zeta_pts];
+					VEC_zeta_factor[is][iv] = new double [n_zeta_pts];
+					for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+					{
+						double zeta_loc = zeta_pts[izeta];
+						double MT_loc = MTbar_loc + cos(zeta_loc)*DeltaMT_loc;
+						VEC_MT[is][iv][izeta] = MT_loc;
+						VEC_zeta_factor[is][iv][izeta] = zeta_wts[izeta]*MT_loc;
+						double PT_loc = sqrt(MT_loc*MT_loc - Mres*Mres);
+						double PPhi_tilde_loc = place_in_range( acos( (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) ), interp2_pphi_min, interp2_pphi_max);
+						VEC_PPhi_tilde[is][iv][izeta] = PPhi_tilde_loc;
+						VEC_PPhi_tildeFLIP[is][iv][izeta] = place_in_range( PPhi_tilde_loc + M_PI, interp2_pphi_min, interp2_pphi_max);
+						VEC_PT[is][iv][izeta] = PT_loc;
+						/*DEBUG*///cout << mT << "     " << pT << "     " << cosh(P_Y_loc-p_y) << "     "
+						/*DEBUG*///		<< MT_loc << "     " << PT_loc << "     " << mT*MT_loc*cosh(P_Y_loc-p_y) << "     "
+						/*DEBUG*///		<< Estar_loc*Mres << "     " << (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres) << "     "
+						/*DEBUG*///		<< (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) << endl;
+						VEC_Pp[is][iv][izeta] = new double [4];
+						VEC_Pp[is][iv][izeta][0] = MT_loc * cosh(P_Y_loc);
+						VEC_Pp[is][iv][izeta][1] = PT_loc * cos(PPhi_tilde_loc);
+						VEC_Pp[is][iv][izeta][2] = PT_loc * sin(PPhi_tilde_loc);	//flip sign of this component to get VEC_Pm
+						VEC_Pp[is][iv][izeta][3] = MT_loc * sinh(P_Y_loc);
+						/*DEBUG*///cout << VEC_Pp[is][iv][izeta][0] << "     "
+						/*DEBUG*///		<< VEC_Pp[is][iv][izeta][1] << "     "
+						/*DEBUG*///		<< VEC_Pp[is][iv][izeta][2] << "     "
+						/*DEBUG*///		<< VEC_Pp[is][iv][izeta][3] << endl;
+					}
 				}
 			}
 		}
@@ -1013,57 +1161,39 @@ cout  << endl << endl << endl;
 
 double SourceVariances::weight_function(double zvec[], int weight_function_index)
 {
-	double result = 0.0;
 	switch(weight_function_index)
 	{
 		case 0:
-			result = 1.;					//<1>
-			break;
+			return (1.);					//<1>
 		case 1:
-			result = zvec[2];				//<x_s>
-			break;
+			return (zvec[2]);				//<x_s>
 		case 2:
-			result = zvec[2]*zvec[2];			//<x^2_s>
-			break;
+			return (zvec[2]*zvec[2]);			//<x^2_s>
 		case 3:
-			result = zvec[1];				//<x_o>
-			break;
+			return (zvec[1]);				//<x_o>
 		case 4:
-			result = zvec[1]*zvec[1];			//<x^2_o>
-			break;
+			return (zvec[1]*zvec[1]);			//<x^2_o>
 		case 5:
-			result = zvec[3];				//<x_l>
-			break;
+			return (zvec[3]);				//<x_l>
 		case 6:
-			result = zvec[3]*zvec[3];			//<x^2_l>
-			break;
+			return (zvec[3]*zvec[3]);			//<x^2_l>
 		case 7:
-			result = zvec[0];				//<t>
-			break;
+			return (zvec[0]);				//<t>
 		case 8:
-			result = zvec[0]*zvec[0];			//<t^2>
-			break;
+			return (zvec[0]*zvec[0]);			//<t^2>
 		case 9:
-			result = zvec[2]*zvec[1];			//<x_s x_o>
-			break;
+			return (zvec[2]*zvec[1]);			//<x_s x_o>
 		case 10:
-			result = zvec[2]*zvec[3];			//<x_s x_l>
-			break;
+			return (zvec[2]*zvec[3]);			//<x_s x_l>
 		case 11:
-			result = zvec[2]*zvec[0];			//<x_s t>
-			break;
+			return (zvec[2]*zvec[0]);			//<x_s t>
 		case 12:
-			result = zvec[1]*zvec[3];			//<x_o x_l>
-			break;
+			return (zvec[1]*zvec[3]);			//<x_o x_l>
 		case 13:
-			result = zvec[1]*zvec[0];			//<x_o t>
-			break;
+			return (zvec[1]*zvec[0]);			//<x_o t>
 		case 14:
-			result = zvec[3]*zvec[0];			//<x_l t>
-			break;
+			return (zvec[3]*zvec[0]);			//<x_l t>
 	}
-
-	return result;
 }
 
 
@@ -1153,6 +1283,24 @@ void SourceVariances::Calculate_R2_side(int iKT, int iKphi)
    R2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
    cerr << "R^2_s(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_side[iKT][iKphi] << endl;
    return;
+}
+
+//**********************************************************************************************
+bool SourceVariances::particles_are_the_same(int idx1, int idx2)
+{
+    if (all_particles[idx1].sign!=all_particles[idx2].sign) return false;
+    if (abs(all_particles[idx1].mass-all_particles[idx2].mass) / (all_particles[idx2].mass+1e-30) > PARTICLE_DIFF_TOLERANCE) return false;
+    for (long l=0; l<FO_length; l++)
+    {
+        double chem1 = current_FOsurf_ptr[l].particle_mu[idx1], chem2 = current_FOsurf_ptr[l].particle_mu[idx2];
+        if (abs(chem1-chem2)/(chem2+1e-30) > PARTICLE_DIFF_TOLERANCE)
+        {
+          return false;
+        }
+
+    }
+
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

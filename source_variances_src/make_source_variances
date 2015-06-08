@@ -9,6 +9,7 @@ $(SRCDIR)/SV_readindata.cpp \
 $(SRCDIR)/sourcevariances.cpp \
 $(SRCDIR)/sourcevariances_admin.cpp \
 $(SRCDIR)/sourcevariances_resonance.cpp \
+$(SRCDIR)/sourcevariances_extension.cpp \
 $(SRCDIR)/Arsenal.cpp \
 $(SRCDIR)/gauss_quadrature.cpp
 
@@ -32,30 +33,32 @@ OBJS= $(addsuffix .o, $(basename $(SRCS)))
 
 CC= g++
 CFLAGS=  -g -pg
+#CFLAGS= 
 WARNFLAGS= -ansi -pedantic -Wall -W \
    -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align \
    -Wwrite-strings -fshort-enums -fno-common 
-LDFLAGS= -lgsl -lgslcblas 
+#LDFLAGS= -lgsl -lgslcblas -lgcov -coverage ^^ -fprofile-arcs -ftest-coverage
+LDFLAGS= -lgsl -lgslcblas
 LIBS= -L/sw/lib -I/sw/include
 
  
 $(COMMAND): $(OBJS) $(HDRS) $(MAKEFILE) 
-	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS) -pg
+	$(CC) -o $(COMMAND) $(OBJS) $(LDFLAGS) $(LIBS) $(CFLAGS)
                  
-compute_source_variances.o : compute_source_variances.cpp compute_source_variances.h $(SRCDIR)/SV_parameters.h $(SRCDIR)/SV_readindata.h $(SRCDIR)/sourcevariances.h $(SRCDIR)/SV_generate_processing_record.h $(SRCDIR)/plumberglib.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c compute_source_variances.cpp -o compute_source_variances.o
+#compute_source_variances.o : compute_source_variances.cpp compute_source_variances.h $(SRCDIR)/SV_parameters.h $(SRCDIR)/SV_readindata.h $(SRCDIR)/sourcevariances.h $(SRCDIR)/SV_generate_processing_record.h $(SRCDIR)/plumberglib.h
+#	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c compute_source_variances.cpp -o compute_source_variances.o
  
-SV_readindata.o : $(SRCDIR)/SV_parameters.h $(SRCDIR)/SV_readindata.h $(SRCDIR)/SV_readindata.cpp
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/SV_readindata.cpp -o SV_readindata.o
+#SV_readindata.o : $(SRCDIR)/SV_parameters.h $(SRCDIR)/SV_readindata.h $(SRCDIR)/SV_readindata.cpp
+#	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/SV_readindata.cpp -o SV_readindata.o
 
-sourcevariances.o : $(SRCDIR)/sourcevariances.h $(SRCDIR)/SV_parameters.h $(SRCDIR)/sourcevariances.cpp $(SRCDIR)/sourcevariances_admin.cpp $(SRCDIR)/sourcevariances_resonance.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/sourcevariances.cpp -o sourcevariances.o
+#sourcevariances.o : $(SRCDIR)/sourcevariances.h $(SRCDIR)/SV_parameters.h $(SRCDIR)/sourcevariances.cpp $(SRCDIR)/sourcevariances_admin.cpp $(SRCDIR)/sourcevariances_resonance.cpp $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/plumberglib.h
+#	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/sourcevariances.cpp -o sourcevariances.o
 
-Arsenal.o : $(SRCDIR)/Arsenal.cpp $(SRCDIR)/Arsenal.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/Arsenal.cpp -o Arsenal.o
+#Arsenal.o : $(SRCDIR)/Arsenal.cpp $(SRCDIR)/Arsenal.h
+#	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/Arsenal.cpp -o Arsenal.o
 
-gauss_quadrature.o : $(SRCDIR)/gauss_quadrature.cpp $(SRCDIR)/gauss_quadrature.h
-	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/gauss_quadrature.cpp -o gauss_quadrature.o
+#gauss_quadrature.o : $(SRCDIR)/gauss_quadrature.cpp $(SRCDIR)/gauss_quadrature.h
+#	$(CC) $(CFLAGS) $(WARNFLAGS) $(LIBS) -c $(SRCDIR)/gauss_quadrature.cpp -o gauss_quadrature.o
 
 clean:
 	rm -f $(OBJS)

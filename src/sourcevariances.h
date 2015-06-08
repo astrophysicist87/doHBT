@@ -57,6 +57,7 @@ class SourceVariances
 		double particle_sign;   //+/- 1 for Fermi/Bose statistics for baryon/meson
 		double particle_gspin;  //particle degeneracy 
 		double particle_mu;
+		particle_info * all_particles;
 
 		int n_zeta_pts;
 		int n_v_pts;
@@ -115,9 +116,7 @@ class SourceVariances
 		//FO surface info that is constant - to save time
 		double Tdec, Edec, Pdec, muRES, signRES, gRES;
 		double S_prefactor;
-		double * surf_tau_pts;
-		double * surf_x_pts;
-		double * surf_y_pts;
+		double ** surf_damu, ** surf_pimunu, ** surf_Bn_muS_muB, ** surf_geometry_pts, ** surf_particle_mu, ** surf_flow;
 	
 		//single particle spectra for plane angle determination
 		//int n_order;
@@ -162,6 +161,26 @@ class SourceVariances
 		double** s_wts;
 
 		//some arrays to save unnecessary multiple calculations for resonances
+		//use these for n_body = 2
+		double VEC_n2_pstar;
+		double VEC_n2_Estar;
+		double VEC_n2_DeltaY;
+		double VEC_n2_Yp;
+		double VEC_n2_Ym;
+		double * VEC_n2_P_Y;
+		double * VEC_n2_MTbar;
+		double * VEC_n2_DeltaMT;
+		double * VEC_n2_MTp;
+		double * VEC_n2_MTm;
+		double ** VEC_n2_MT;
+		double ** VEC_n2_PPhi_tilde, ** VEC_n2_PPhi_tildeFLIP, ** VEC_n2_PT;
+		double *** VEC_n2_Pp;
+		//double ** VEC_n2_PpT, ** VEC_n2_Ppphi;
+		double VEC_n2_s_factor;
+		double * VEC_n2_v_factor;
+		double ** VEC_n2_zeta_factor;
+		double VEC_n2_g_s;
+		//use these for n_body = 3
 		double * VEC_pstar;
 		double * VEC_Estar;
 		double * VEC_DeltaY;
@@ -173,12 +192,13 @@ class SourceVariances
 		double ** VEC_MTp;
 		double ** VEC_MTm;
 		double *** VEC_MT;
-		double *** VEC_PPhi_tilde;
+		double *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT;
 		double **** VEC_Pp;
+		//double *** VEC_PpT, *** VEC_Ppphi;
 		double * VEC_s_factor;
 		double ** VEC_v_factor;
 		double *** VEC_zeta_factor;
-		double * VEC_tau_factor;
+		//double * VEC_tau_factor;
 		double * VEC_g_s;
 		
 		//array to hold momenta to be integrated over in resonance calculations
@@ -209,10 +229,12 @@ class SourceVariances
 		string no_df_stem;
 		int n_resonance;
 		int n_body;
-	
+
+		//some private methods		
+		bool particles_are_the_same(int idx1, int idx2);
 
 	public:
-		SourceVariances(particle_info* particle);
+		SourceVariances(particle_info* particle, particle_info* all_particles_in);
 		~SourceVariances();
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr);
@@ -228,6 +250,8 @@ class SourceVariances
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int reso_idx);
+		void Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FO_surf* FOsurf_ptr, int reso_idx);
+		double loop_over_FO_surface(FO_surf* FOsurf_ptr, double p0, double px, double py, double pz, double mu);
 		void Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py);
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
@@ -267,7 +291,7 @@ class SourceVariances
 		double v_integ(int);
 		double zeta_integ(int);
 		void set_to_zero(double * array, int arraylength);
-		void set_surfpts();
+		//void set_surfarrays();
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);

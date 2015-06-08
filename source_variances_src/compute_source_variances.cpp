@@ -91,6 +91,14 @@ int main(int argc, char *argv[])
    output << "read in data finished!" << endl;
    output << "Used " << sw.takeTime() << " sec." << endl;
 
+//	for(int i=0; i<FO_length; i++)
+//	{
+//		for(int j=0; j<Nparticle; j++)
+//			cerr << FOsurf_ptr[i].particle_mu[j] << "    ";
+//		cerr << endl;
+//	}
+//	if (1) exit(1);
+
    //HBT calculations begin ...
    int particle_idx=1;  //for pion+
    output << "Calculating "<< particle[particle_idx].name << endl;
@@ -103,11 +111,11 @@ int main(int argc, char *argv[])
         return 0;
      }
 
-   SourceVariances Source_function(&particle[particle_idx]);
+   SourceVariances Source_function(&particle[particle_idx], particle);
    Source_function.Set_path(currentworkingdirectory);
    Source_function.Set_use_delta_f(true);
 
-   Source_function.Update_sourcefunction(&particle[particle_idx],FO_length, particle_idx);
+   Source_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
 
    Source_function.Set_ofstream(output);
    output << "Calculating HBT radii via source variances method..." << endl;

@@ -21,15 +21,16 @@
 
 using namespace std;
 
-SourceVariances::SourceVariances(particle_info* particle)
+SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in)
 {
-	//particle information
+	//particle information (both final-state particle used in HBT and all decay resonances)
 	particle_name = particle->name;
 	particle_mass = particle->mass;
 	particle_sign = particle->sign;
 	particle_gspin = particle->gspin;
 	//particle_id = particle_idx;
 	S_prefactor = 1.0/(8.0*(M_PI*M_PI*M_PI))/hbarC/hbarC/hbarC;
+	all_particles = all_particles_in;
 
 	//just need this for various dummy momentum calculations
 	P_eval = new double [4];
@@ -47,7 +48,7 @@ SourceVariances::SourceVariances(particle_info* particle)
    //default: use delta_f in calculations
    use_delta_f = true;
    no_df_stem = "";
-   n_resonance = 0;
+   n_resonance = 1;
    Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
 //cerr << "made it inside!" << endl;
 	//n_weighting_functions = 15;
@@ -553,6 +554,59 @@ void SourceVariances::Set_particle_mass(double usrdef_particle_mass)
 void SourceVariances::Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr)
 {
 	current_FOsurf_ptr = FOsurf_ptr;
+	
+	//double ** surf_damu, ** surf_pimunu, ** surf_Bn_muS_muB, ** surf_geometry_pts, ** surf_particle_mu;
+	surf_damu = new double * [3];
+	surf_pimunu = new double * [8];  //all pimunu's and bulkPi coeff --> latter probably zero
+	surf_Bn_muS_muB = new double * [3];
+	surf_geometry_pts = new double * [7];
+	surf_particle_mu = new double * [Maxparticle];
+	surf_flow = new double * [3];
+	for (int i = 0; i < 3; i++)
+	{
+		surf_damu[i] = new double [FO_length];
+		surf_Bn_muS_muB[i] = new double [FO_length];
+		surf_flow[i] = new double [FO_length];
+	}
+	for (int i = 0; i < 7; i++)
+		surf_geometry_pts[i] = new double [FO_length];
+	for (int i = 0; i < 8; i++)
+		surf_pimunu[i] = new double [FO_length];
+	for (int i = 0; i < Maxparticle; i++)
+		surf_particle_mu[i] = new double [FO_length];
+	
+	for (int isurf = 0; isurf < FO_length; isurf++)
+	{
+		FO_surf* surf = &FOsurf_ptr[isurf];
+		
+		surf_particle_mu[particle_id][isurf] = surf->particle_mu[particle_id];
+		
+		surf_damu[0][isurf] = surf->da0;
+		surf_damu[1][isurf] = surf->da1;
+		surf_damu[2][isurf] = surf->da2;
+		
+		surf_pimunu[0][isurf] = surf->pi00;
+		surf_pimunu[1][isurf] = surf->pi01;
+		surf_pimunu[2][isurf] = surf->pi02;
+		surf_pimunu[3][isurf] = surf->pi11;
+		surf_pimunu[4][isurf] = surf->pi12;
+		surf_pimunu[5][isurf] = surf->pi22;
+		surf_pimunu[6][isurf] = surf->pi33;
+		surf_pimunu[7][isurf] = surf->bulkPi;
+		
+		surf_geometry_pts[0][isurf] = surf->tau;
+		surf_geometry_pts[1][isurf] = surf->r;
+		surf_geometry_pts[2][isurf] = surf->phi;
+		surf_geometry_pts[3][isurf] = surf->xpt;
+		surf_geometry_pts[4][isurf] = surf->ypt;
+		surf_geometry_pts[5][isurf] = surf->sin_phi;
+		surf_geometry_pts[6][isurf] = surf->cos_phi;
+		
+		surf_flow[0][isurf] = surf->vx;
+		surf_flow[1][isurf] = surf->vy;
+		surf_flow[2][isurf] = surf->gammaT;
+	}
+	
 	return;
 }
 
