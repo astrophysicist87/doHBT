@@ -272,24 +272,9 @@ class SourceVariances
 		void Set_use_delta_f(bool usrdef_usedeltaf);
 		void Set_particle_mass(double usrdef_particle_mass);
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
-		void set_pstar(double s);
-		void set_Estar();
-		void set_DeltaY();
-		void set_Ypm();
-		void set_MTbar();
-		void set_DeltaMT();
-		void set_MTpm();
-		void set_MT(double zeta);
-		void set_P_Y(double v);
-		void set_PPhi_vars();
-		void set_Ppm();
 		double get_Q();
 		double g(double s);
-		//double do_all_integrals(int, int);
 		void do_all_integrals(int iKT, int iKphi, int reso_idx);
-		double s_integ(int);
-		double v_integ(int);
-		double zeta_integ(int);
 		void set_to_zero(double * array, int arraylength);
 		//void set_surfarrays();
 

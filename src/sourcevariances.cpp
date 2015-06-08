@@ -39,12 +39,12 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
   	struct tm * timeinfo;
 
 	double plane_psi = 0.0;
-	if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
-	//cerr << "Determine nth-order plane angles..." << endl;
-	Determine_plane_angle(current_FOsurf_ptr);	//uses only thermal pions...
 	int iorder = USE_PLANE_PSI_ORDER;
 	if (USE_PLANE_PSI_ORDER)
 	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
+		//cerr << "Determine nth-order plane angles..." << endl;
+		Determine_plane_angle(current_FOsurf_ptr);	//uses only thermal pions...
 		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
 		if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
 		plane_psi = plane_angle[iorder];
@@ -396,7 +396,10 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
          p0 = SPinterp2_p0[ipt][ieta];
          pz = SPinterp2_pz[ipt][ieta];
 	//now get distribution function, emission function, etc.
-	f0 = 1./(exp((gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec)+sign);	//thermal equilibrium distributions
+	//double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
+	//if (expon > 20.) continue;
+	//f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
+	f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
 	
 	//viscous corrections
 	deltaf = 0.;
@@ -408,7 +411,7 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
 	//ignore points where delta f is large or emission function goes negative from pdsigma
 	if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol)) S_p = 0.0;
 
-         S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
+	S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
 	//S_p_withweight = 1.;
 	//zvec[0] = tau*ch_eta_s[ieta];
 	//zvec[3] = tau*sh_eta_s[ieta];
@@ -417,9 +420,9 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
 	//for (int wfi = 0; wfi < n_weighting_functions; wfi++)
 	//for (int wfi = 0; wfi < 0; wfi++)
 	//	dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] += S_p_withweight*weight_function(zvec, wfi);
-		dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += S_p_withweight;
-		dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += S_p_withweight*z2;
-		dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += S_p_withweight*z2*z2;
+	dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += S_p_withweight;
+	dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += S_p_withweight*z2;
+	dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += S_p_withweight*z2*z2;
       }
       }
       }
