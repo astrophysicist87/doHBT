@@ -57,6 +57,7 @@ typedef struct
   int sign;       //Bose-Einstein or Dirac-Fermi statistics
 }particle_info;
 
+void set_to_zero(double * array, int arraylength);
 void read_hydropar(hydropara* hp, string localpath);
 int get_filelength(string filepath);
 void read_decdat(int length, FO_surf* surf_ptr, string localpath, bool include_bulk_pi = false);
@@ -64,5 +65,14 @@ void read_surfdat(int length, FO_surf* surf_ptr, string localpath);
 void read_decdat_mu(int FO_length, int N_stable, double** particle_mu, string localpath);
 int read_resonance(particle_info* particle);
 void calculate_particle_mu(int IEOS, int Nparticle, FO_surf* FOsurf_ptr, int FO_length, particle_info* particle, double** particle_mu);
+void compute_total_contribution_percentages(int stable_particle_idx, int Nparticle, particle_info* particle, double * all_particle_thermal, double * percentages, double * effective_widths);
+void estimate_resonance_thermal(int Nparticle, particle_info* particle, FO_surf* FOsurf_ptr, double * all_particle_thermal);
+double b_j_to_i(particle_info * all_particles, int Nparticle, int j, int i);
+int count_targets(int * decay_channel_particles, particle_info * i);
+int count_stable(particle_info * all_particles, int Nparticle, int * decay_channel_particles);
+bool is_stable(particle_info * all_particles, int Nparticle, int monval);
+int set_stable_particle_monval();
+int lookup_particle_id_from_monval(particle_info * all_particles, int Nparticle, int monval);
+void print_particle_stability(particle_info * all_particles, int Nparticle);
 
 #endif

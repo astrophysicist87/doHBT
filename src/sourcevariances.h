@@ -76,6 +76,15 @@ class SourceVariances
 		double current_resonance_total_br;
 		double* current_resonance_decay_masses;
 		double* P_eval;
+
+		//*************************************************************
+		//freeze-out surface interpolation arrays (prefix: "FOI_"), etc...
+		int FOI_np0pts, FOI_npTpts, FOI_npphipts, FOI_npzpts, FOI_nmupts; 
+		int FOI_netaspts, FOI_nMpts; 
+		double * FOI_p0, * FOI_pT, * FOI_pphi, * FOI_sin_pphi, * FOI_cos_pphi;
+		double * FOI_pz, * FOI_mu, * FOI_eta_s, * FOI_M;
+		double ****** FOI_source_variances;
+		//*************************************************************
 		
 		//array to temporarily hold results of resonance SV integrations
 		int n_weighting_functions;  //number of source variances to consider
@@ -234,7 +243,7 @@ class SourceVariances
 		bool particles_are_the_same(int idx1, int idx2);
 
 	public:
-		SourceVariances(particle_info* particle, particle_info* all_particles_in);
+		SourceVariances(particle_info* particle, particle_info* all_particles_in, FO_surf* FOsurf_ptr);
 		~SourceVariances();
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr);
@@ -252,6 +261,9 @@ class SourceVariances
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FO_surf* FOsurf_ptr, int reso_idx);
 		double loop_over_FO_surface(FO_surf* FOsurf_ptr, double p0, double px, double py, double pz, double mu);
+		void interpolate_FO_loop(FO_surf* FOsurf_ptr);
+		void set_FOinterp_gridpoints();
+		void fill_out_FOinterp_grid(FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py);
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);

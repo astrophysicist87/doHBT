@@ -6,6 +6,7 @@
 #include<iomanip>
 #include<vector>
 #include<stdio.h>
+#include<time.h>
 
 #include<gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
@@ -21,7 +22,7 @@
 
 using namespace std;
 
-SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in)
+SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, FO_surf* FOsurf_ptr)
 {
 	//particle information (both final-state particle used in HBT and all decay resonances)
 	particle_name = particle->name;
@@ -48,11 +49,11 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
    //default: use delta_f in calculations
    use_delta_f = true;
    no_df_stem = "";
-   n_resonance = 1;
+   //n_resonance = 1;
    Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
 //cerr << "made it inside!" << endl;
-	//n_weighting_functions = 15;
-	n_weighting_functions = 3;  //just doing R^2_s to start
+	//n_weighting_functions = 15;	//AKA, number of SV's
+	n_weighting_functions = 3;	//just doing R^2_s to start
 	zvec = new double [4];
 
 	ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
@@ -255,8 +256,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		//logspace(SPinterp2_pT, interp2_pT_min, interp2_pT_max, n_interp2_pT_pts);
 		scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 0.25, n_interp2_pT_pts);
 		//gauss_quadrature(n_interp2_pT_pts, 1, 0.0, 0.0, interp2_pT_min, interp2_pT_max, SPinterp2_pT, dummywts3);
-		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
-			cerr << SPinterp2_pT[ipt] << endl;
+		//for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+		//	cerr << SPinterp2_pT[ipt] << endl;
 		//gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, 2.*M_PI, 1.0, SPinterp2_pphi, dummywts4);
 		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
 		{
@@ -348,29 +349,19 @@ for(int i=0; i<n_localp_T; i++)
 	}
 }
 
-//cerr << "this part was sketchy though..." << endl;
-//set-up array to hold resonance momenta ( P^+ only; get P^- by taking P^-_y = -P^+_y )
-/*	Pplus = new momentum_data*** [n_resonance];
-	for (int ir = 0; ir < n_resonance; ir++)
-	{
-		Pplus[ir] = new momentum_data** [n_localp_T];
-		for (int iKT = 0; iKT < n_localp_T; iKT++)
-		{
-			Pplus[ir][iKT] = new momentum_data* [n_localp_phi];
-			for (int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-			{
-				Pplus[ir][iKT][iKphi] = new momentum_data [eta_s_npts];
-				for (int ieta = 0; ieta < eta_s_npts; ieta++)
-				{
-					Pplus[ir][iKT][iKphi][ieta].P0 = 0.0;
-					Pplus[ir][iKT][iKphi][ieta].Po = 0.0;
-					Pplus[ir][iKT][iKphi][ieta].Ps = 0.0;
-					Pplus[ir][iKT][iKphi][ieta].Pl = 0.0;
-				}
-			}
-		}
-	}*/
-//cerr << "...but we apparently made it through!" << endl;
+//**************************************************************************************************
+time_t rawtime;
+struct tm * timeinfo;
+time (&rawtime);
+timeinfo = localtime (&rawtime);
+cout << "***Checkpoint #1 at " << asctime(timeinfo);
+FOI_np0pts = 11, FOI_npTpts = 11, FOI_npphipts = 24, FOI_npzpts = 11, FOI_nmupts = 11; 
+interpolate_FO_loop(FOsurf_ptr);
+time (&rawtime);
+timeinfo = localtime (&rawtime);
+cout << "***Checkpoint #2 at " << asctime(timeinfo);
+if (1) exit(1);
+//**************************************************************************************************
 		
 
    return;

@@ -181,7 +181,7 @@ if (reso_idx > 0) mass = current_resonance_mass;
 	if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
 		Cal_dN_dypTdpTdphi_with_weights_cartesian(FOsurf_ptr, reso_idx);
 	else if (INTERPOLATION_FORMAT == 2)	//using polar grid for interpolation (pT, pphi)
-		Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, reso_idx);
+		Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FOsurf_ptr, reso_idx);
 
    return;
 }
@@ -383,12 +383,8 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
 	cos_pphi = cos_SPinterp2_pphi[iphi];
 	px = pT*cos_pphi;
 	py = pT*sin_pphi;
-	//pphi = atan2(py, px);
-	//if (pphi < 0.) pphi += 2.*M_PI;
 	sin_phi_m_pphi = sin_temp_phi * cos_pphi - cos_temp_phi * sin_pphi;
 	cos_phi_m_pphi = cos_temp_phi * cos_pphi + sin_temp_phi * sin_pphi;
-	//zvec[1] = temp_r * cos_phi_m_pphi;
-	//zvec[2] = temp_r * sin_phi_m_pphi;
 	z1 = temp_r * cos_phi_m_pphi;
 	z2 = temp_r * sin_phi_m_pphi;
       for(int ieta=0; ieta < eta_s_npts; ieta++)
@@ -396,10 +392,10 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
          p0 = SPinterp2_p0[ipt][ieta];
          pz = SPinterp2_pz[ipt][ieta];
 	//now get distribution function, emission function, etc.
-	//double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
-	//if (expon > 20.) continue;
-	//f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
-	f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
+	double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
+	if (expon > 20.) continue;
+	f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
+	//f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
 	
 	//viscous corrections
 	deltaf = 0.;
@@ -412,17 +408,23 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
 	if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol)) S_p = 0.0;
 
 	S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
-	//S_p_withweight = 1.;
-	//zvec[0] = tau*ch_eta_s[ieta];
-	//zvec[3] = tau*sh_eta_s[ieta];
 	z0 = tau*ch_eta_s[ieta];
 	z3 = tau*sh_eta_s[ieta];
-	//for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-	//for (int wfi = 0; wfi < 0; wfi++)
-	//	dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] += S_p_withweight*weight_function(zvec, wfi);
-	dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += S_p_withweight;
-	dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += S_p_withweight*z2;
-	dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += S_p_withweight*z2*z2;
+	dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += S_p_withweight;			//<1>
+	dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += S_p_withweight*z2;			//<x_s>
+	dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += S_p_withweight*z2*z2;			//<x^2_s>
+	dN_dypTdpTdphi_moments[reso_idx][3][ipt][iphi] += S_p_withweight*z1;			//<x_o>
+	dN_dypTdpTdphi_moments[reso_idx][4][ipt][iphi] += S_p_withweight*z1*z1;			//<x^2_o>
+	dN_dypTdpTdphi_moments[reso_idx][5][ipt][iphi] += S_p_withweight*z3;			//<x_l>
+	dN_dypTdpTdphi_moments[reso_idx][6][ipt][iphi] += S_p_withweight*z3*z3;			//<x^2_l>
+	dN_dypTdpTdphi_moments[reso_idx][7][ipt][iphi] += S_p_withweight*z0;			//<t>
+	dN_dypTdpTdphi_moments[reso_idx][8][ipt][iphi] += S_p_withweight*z0*z0;			//<t^2>
+	dN_dypTdpTdphi_moments[reso_idx][9][ipt][iphi] += S_p_withweight*z2*z1;			//<x_s x_o>
+	dN_dypTdpTdphi_moments[reso_idx][10][ipt][iphi] += S_p_withweight*z2*z3;		//<x_s x_l>
+	dN_dypTdpTdphi_moments[reso_idx][11][ipt][iphi] += S_p_withweight*z2*z0;		//<x_s t>
+	dN_dypTdpTdphi_moments[reso_idx][12][ipt][iphi] += S_p_withweight*z1*z3;		//<x_o x_l>
+	dN_dypTdpTdphi_moments[reso_idx][13][ipt][iphi] += S_p_withweight*z1*z0;		//<x_o t>
+	dN_dypTdpTdphi_moments[reso_idx][14][ipt][iphi] += S_p_withweight*z3*z0;		//<x_l t>
       }
       }
       }
@@ -1284,7 +1286,7 @@ void SourceVariances::Calculate_R2_side(int iKT, int iKphi)
    double term2 = xs_S[iKT][iKphi];
 
    R2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   cerr << "R^2_s(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_side[iKT][iKphi] << endl;
+   //cerr << "R^2_s(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_side[iKT][iKphi] << endl;
    return;
 }
 

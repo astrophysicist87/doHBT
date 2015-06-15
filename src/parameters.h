@@ -66,7 +66,7 @@ const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RES
 const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
 const double tol = 1e-15;  //tolarence
-const int flagneg = 1;     //neglect all points that are negative
+const int flagneg = 0;     //neglect all points that are negative
 
 const int MCint_calls = 5000;  //# of calls for monte carlo integration
 

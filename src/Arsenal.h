@@ -7,6 +7,7 @@ unsigned long int random_seed();
 int sgn(double val);
 void logspace(double * x, double a, double b, int n);
 void linspace(double * x, double a, double b, int n);
+void stratify_npts(double a, double b, int n1, int npts, double * x);
 void scalepoints(double * x, double a, double b, double scale, int n);
 
 //miscellaneous functions needed for interpolation routines

@@ -11,12 +11,12 @@
 #include<gsl/gsl_randist.h>
 
 #include "../src/Stopwatch.h"
-#include "../src/SV_parameters.h"
-#include "../src/SV_readindata.h"
-#include "../src/sourcevariances.h"
-#include "../src/SV_generate_processing_record.h"
+#include "../src/parameters.h"
+#include "../src/readindata.h"
+#include "../src/doHBT.h"
+#include "../src/generate_processing_record.h"
 #include "../src/plumberglib.h"
-#include "compute_source_variances.h"
+#include "resonance_estimates.h"
 
 using namespace std;
 
@@ -27,9 +27,7 @@ int main(int argc, char *argv[])
    sw_total.tic();
    sw.tic();
 
-   bool generatedcorrfuncs = false;
    string currentworkingdirectory = get_selfpath();
-   int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
 
    ostringstream filename_stream;
@@ -74,6 +72,7 @@ int main(int argc, char *argv[])
    //read particle resonance decay table
    particle_info *particle = new particle_info [Maxparticle];
    int Nparticle=read_resonance(particle);
+   //print_particle_stability(particle, Nparticle);
    output <<"read in total " << Nparticle << " particles!" << endl;
    if(N_stableparticle >0)
    {
@@ -90,45 +89,28 @@ int main(int argc, char *argv[])
    sw.toc();
    output << "read in data finished!" << endl;
    output << "Used " << sw.takeTime() << " sec." << endl;
-
-//	for(int i=0; i<FO_length; i++)
-//	{
-//		for(int j=0; j<Nparticle; j++)
-//			cerr << FOsurf_ptr[i].particle_mu[j] << "    ";
-//		cerr << endl;
-//	}
-//	if (1) exit(1);
-
-   //HBT calculations begin ...
-   int particle_idx=1;  //for pion+
-   output << "Calculating "<< particle[particle_idx].name << endl;
    
-   double localy = 0.0e0;
    sw.tic();
-     if(fabs(localy) > 1e-16)
-     {
-        output << "not support y not equals 0 yet! Bye bye!" << endl;
-        return 0;
-     }
-
-   SourceVariances Source_function(&particle[particle_idx], particle, FOsurf_ptr);
-   Source_function.Set_current_FOsurf_ptr(FOsurf_ptr);
-   Source_function.Set_path(currentworkingdirectory);
-   Source_function.Set_use_delta_f(true);
-
-   Source_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
-
-   Source_function.Set_ofstream(output);
-   output << "Calculating HBT radii via source variances method..." << endl;
-   //Source_function.Set_current_FOsurf_ptr(FOsurf_ptr);
-   //Source_function.Analyze_sourcefunction_check(FOsurf_ptr);		//with previous function, this argument is redundant
-   Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
-   Source_function.Output_SVdN_dypTdpTdphi(folderindex);
-   Source_function.Output_SVdN_dypTdpT(folderindex);
-   output << "Finished calculating HBT radii via source variances method" << endl;
-
-
-
+	for (int ipi = 0; ipi < 100; ipi++)
+		cout << ipi << "   " << particle[ipi].name << endl;
+	//int particle_idx = 1;  //for pion+
+	//int particle_idx = 4;  //for kaon+
+	int particle_idx = 17;  //for proton
+	double * all_particle_thermal = new double [Nparticle];
+	double * percentages = new double [Nparticle];
+	double * effective_widths = new double [Nparticle];
+	estimate_resonance_thermal(Nparticle, particle, FOsurf_ptr[0].Tdec, all_particle_thermal);
+	output << "Finished estimating thermal spectra of resonances" << endl;
+	output << "Getting all relative contributions..." << endl;
+	compute_total_contribution_percentages(particle_idx, Nparticle, particle, all_particle_thermal, percentages, effective_widths);
+	output << "Finished computing total contribution percentages." << endl;
+   ostringstream output_filename_stream;
+   output_filename_stream << currentworkingdirectory << "/" << particle[particle_idx].name << "_output.dat";
+   ofstream finaloutput(output_filename_stream.str().c_str(), ios::app);
+	for (int i = 0; i < Nparticle; i++)
+		finaloutput << particle[i].name << "   " << percentages[i] << "   " << all_particle_thermal[i]
+			<< "   " << effective_widths[i] << "   " << effective_widths[i] * all_particle_thermal[i] << endl;
+		//output << particle[i].name << ": " << percentages[i] << "%" << endl;
    sw.toc();
    output << "Finished in " << sw.takeTime() << " sec." << endl;
    sw_total.toc();
@@ -137,8 +119,6 @@ int main(int argc, char *argv[])
    output << "/**********End of processing output**********/" << endl;
 
    output.close();
-
-   checkforfiles_PRfile(currentworkingdirectory, folderindex, generatedcorrfuncs);
 
    finalize_PRfile(currentworkingdirectory);
 

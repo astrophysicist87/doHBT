@@ -61,6 +61,30 @@ void linspace(double * x, double a, double b, int n)
 	return;
 }
 
+void stratify_npts(double a, double b, int n1, int npts, double * x)
+{
+	// take a and b to be positive
+	// region 1 is "inner" stratum, region 2 is "outer" stratum
+	// a - scale of inner stratum
+	// b - scale of outer stratum
+	if (n1%2==0) exit(1);
+	if (a < 0.0) a *= -1.;
+	if (b < 0.0) b *= -1.;
+	int m = npts - n1;
+	
+	double Delta_x_1 = 2.*a / double(n1-1);
+	double Delta_x_2 = 2.*(b-a) / (double)m;
+	
+	for (int i = 0; i < (m/2); i++)
+	{
+		x[i] = -b + (double)i * Delta_x_2;
+		x[npts - i - 1] = b - (double)i * Delta_x_2;
+	}
+	for (int i = 0; i < n1; i++)
+		x[i+(m/2)] = -a + (double)i * Delta_x_1;
+
+	return;
+}
 
 void scalepoints(double * x, double a, double b, double scale, int n)
 {
