@@ -29,6 +29,30 @@
 
 using namespace std;
 
+//need to define some variables for quick evaluation of S_direct
+double Sdir_Y = 0.0, Sdir_R = 5., Sdir_Deltau = 1., Sdir_Deleta = 1.2;
+double Sdir_eta0 = 0.0, Sdir_tau0 = 5., Sdir_etaf = 0.0, Sdir_T = 0.15;
+double Sdir_prefactor, Sdir_rt, Sdir_H, Sdir_etat, Sdir_ch_Y_m_eta, Sdir_expon;
+double Sdir_term1, Sdir_term2, Sdir_term3;
+
+double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi)
+{
+	//Sdir_prefactor = (2.*Sdir_Jr + 1.)/(twopi*twopi*twopi);
+	Sdir_rt = r/Sdir_R;
+	Sdir_term1 = 0.5*Sdir_rt*Sdir_rt;
+	//Sdir_term2 = 0.5*(eta-Sdir_eta0)*(eta-Sdir_eta0)/(Sdir_Deleta*Sdir_Deleta);
+	//Sdir_term3 = 0.5*(tau-Sdir_tau0)*(tau-Sdir_tau0)/(Sdir_Deltau*Sdir_Deltau);
+	Sdir_term2 = 0.0;
+	Sdir_term3 = 0.0;
+	//Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 ) / (M_PI * Sdir_Deltau);
+	Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 );
+	Sdir_ch_Y_m_eta = cosh(Sdir_Y - eta);
+	Sdir_expon = -(MT/Sdir_T)*Sdir_ch_Y_m_eta*cosh(Sdir_etaf*Sdir_rt)
+			+ (PT/Sdir_T)*sinh(Sdir_etaf*Sdir_rt)*cos_phi_m_Phi;
+	return (MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon));
+}
+
+
 void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
    double plane_psi = 0.0;
@@ -644,6 +668,7 @@ cout  << endl << endl << endl;
 	double symmetry_factor = 1.0;
 	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
          double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta direction
+	//***==>SYMMETRY FACTOR ALREADY ACCOUNTED FOR IN UPDATE_SOURCE_VARIANCE(...)
 //cout << "(ipt, iphi, ieta) = (" << ipt << ", " << iphi << ", " << ieta << "): " << "dN_dypTdpTdphi[ipt][iphi] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
          dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
       }

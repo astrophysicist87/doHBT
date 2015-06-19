@@ -91,11 +91,11 @@ int main(int argc, char *argv[])
    output << "Used " << sw.takeTime() << " sec." << endl;
    
    sw.tic();
-	for (int ipi = 0; ipi < 100; ipi++)
-		cout << ipi << "   " << particle[ipi].name << endl;
-	//int particle_idx = 1;  //for pion+
+	//for (int ipi = 0; ipi < 100; ipi++)
+	//	cout << ipi << "   " << particle[ipi].name << endl;
+	int particle_idx = 1;  //for pion+
 	//int particle_idx = 4;  //for kaon+
-	int particle_idx = 17;  //for proton
+	//int particle_idx = 17;  //for proton
 	double * all_particle_thermal = new double [Nparticle];
 	double * percentages = new double [Nparticle];
 	double * effective_widths = new double [Nparticle];
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 	output << "Finished computing total contribution percentages." << endl;
    ostringstream output_filename_stream;
    output_filename_stream << currentworkingdirectory << "/" << particle[particle_idx].name << "_output.dat";
-   ofstream finaloutput(output_filename_stream.str().c_str(), ios::app);
+   ofstream finaloutput(output_filename_stream.str().c_str());
 	for (int i = 0; i < Nparticle; i++)
 		finaloutput << particle[i].name << "   " << percentages[i] << "   " << all_particle_thermal[i]
 			<< "   " << effective_widths[i] << "   " << effective_widths[i] * all_particle_thermal[i] << endl;

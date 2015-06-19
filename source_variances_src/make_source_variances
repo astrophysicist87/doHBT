@@ -10,6 +10,7 @@ $(SRCDIR)/sourcevariances.cpp \
 $(SRCDIR)/sourcevariances_admin.cpp \
 $(SRCDIR)/sourcevariances_resonance.cpp \
 $(SRCDIR)/sourcevariances_extension.cpp \
+$(SRCDIR)/sourcevariances_IO.cpp \
 $(SRCDIR)/Arsenal.cpp \
 $(SRCDIR)/gauss_quadrature.cpp
 
@@ -23,7 +24,8 @@ $(SRCDIR)/Stopwatch.h \
 $(SRCDIR)/gauss_quadrature.h \
 $(SRCDIR)/structs.h \
 $(SRCDIR)/SV_generate_processing_record.h \
-$(SRCDIR)/plumberglib.h
+$(SRCDIR)/plumberglib.h \
+$(SRCDIR)/sorter.h
 
 MAKEFILE=make_source_variances
 

@@ -316,7 +316,8 @@ Nstable_particle = set_stable_particle_monval();
             if(particle[j].monval == stable_particle_monval[i])
             {
                particle[j].stable = 1;
-               for(int k=0; k<FO_length; k++)
+               //for(int k=0; k<FO_length; k++)
+               for(int k=0; k<1; k++)
                    FOsurf_ptr[k].particle_mu[j] = particle_mu[i][k];
                break;
             }
@@ -333,7 +334,8 @@ Nstable_particle = set_stable_particle_monval();
                   {
                      if(particle[i].decays_part[j][k] == particle[l].monval)	//once you've found it,
                      {
-                        for(int m=0; m<FO_length; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
+                        //for(int m=0; m<FO_length; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
+			for(int m=0; m<1; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
                           FOsurf_ptr[m].particle_mu[i] += particle[i].decays_branchratio[j]*FOsurf_ptr[m].particle_mu[l];
                         break;							//note that the pdg list is organized in such a way as to force unstable particles to decay *only* into
 										//other preceding particles in the file.  particle_mu[i] is therefore only updated by chemical potentials
@@ -347,6 +349,8 @@ Nstable_particle = set_stable_particle_monval();
          }
       }
    //}
+	for(int i = 0; i < Nparticle; i++)
+		particle[i].mu = FOsurf_ptr[0].particle_mu[i];
    return;
 }
 
@@ -366,7 +370,7 @@ void estimate_resonance_thermal(int Nparticle, particle_info* particle, double T
 			continue;
 		}
 		double pm = -particle[j].sign;
-		all_particle_fugacities[j] = exp(one_by_Tconv * FOsurf_ptr[0].particle_mu[j]);
+		all_particle_fugacities[j] = exp(one_by_Tconv * particle[j].mu);
 		for (int k = 1; k <= 10; k++)
 			all_particle_thermal[j] += double(pow(pm, k+1))*pow(all_particle_fugacities[j], (double)k)*gsl_sf_bessel_Kn(2, double(k)*mj*one_by_Tconv)/double(k);
 		all_particle_thermal[j] *= gj*mj*mj/(2.*M_PI*M_PI);
@@ -378,7 +382,7 @@ void estimate_resonance_thermal(int Nparticle, particle_info* particle, double T
 		output_stream << "check_mu_and_yield.dat";
 		ofstream output(output_stream.str().c_str());
 		for (int j = 0; j < Nparticle; j++)
-			output << particle[j].name << "   " << FOsurf_ptr[0].particle_mu[j] << "   " << all_particle_thermal[j] << endl;
+			output << particle[j].name << "   " << particle[j].mu << "   " << all_particle_thermal[j] << endl;
 		output.close();
 	}
 	//**********************************************************************

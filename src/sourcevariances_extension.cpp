@@ -20,8 +20,8 @@
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
-#define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
-#define ASSUME_ETA_SYMMETRIC 1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
+//#define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
+//#define ASSUME_ETA_SYMMETRIC 1	// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
 					// 0 means just integrate over given range of eta_s without worrying about symmetry
 
 using namespace std;

@@ -22,7 +22,7 @@
 
 using namespace std;
 
-SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, FO_surf* FOsurf_ptr)
+SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances)
 {
 	//particle information (both final-state particle used in HBT and all decay resonances)
 	particle_name = particle->name;
@@ -38,9 +38,9 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	Pp = new double [4];
 	Pm = new double [4];
 
-	n_zeta_pts = 10;
-	n_v_pts = 10;
-	n_s_pts = 10;
+	n_zeta_pts = 15;
+	n_v_pts = 15;
+	n_s_pts = 15;
 	v_min = -1.;
 	v_max = 1.;
 	zeta_min = 0.;
@@ -49,43 +49,106 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
    //default: use delta_f in calculations
    use_delta_f = true;
    no_df_stem = "";
-   //n_resonance = 1;
+	current_FOsurf_ptr = FOsurf_ptr;
    Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
 //cerr << "made it inside!" << endl;
-	//n_weighting_functions = 15;	//AKA, number of SV's
-	n_weighting_functions = 3;	//just doing R^2_s to start
+	n_weighting_functions = 15;	//AKA, number of SV's
+	//n_weighting_functions = 3;	//just doing R^2_s to start
 	zvec = new double [4];
 
-	ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
-	tempresonancefile >> n_resonance;
-	resonances.resonance_mass = new double [n_resonance];
-	resonances.resonance_Gamma = new double [n_resonance];
-	resonances.resonance_total_br = new double [n_resonance];
-	resonances.resonance_decay_masses = new double* [n_resonance];
+//****************************************************************************************************
+//OLD CODE FOR READING IN SELECTED RESONANCES...
 	current_resonance_mass = 0.0;
+	current_resonance_mu = 0.0;
 	current_resonance_Gamma = 0.0;
 	current_resonance_total_br = 0.0;
 	current_resonance_decay_masses = new double [2];
 	current_resonance_decay_masses[0] = 0.0;
 	current_resonance_decay_masses[1] = 0.0;
-	for (int ir=0; ir<n_resonance; ir++)
+	if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
 	{
-		resonances.resonance_decay_masses[ir] = new double [2];
-		resonances.resonance_decay_masses[ir][0] = 0.0;
-		resonances.resonance_decay_masses[ir][1] = 0.0;
-	}
-	while (!tempresonancefile.eof())
-	{
+		ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
+		tempresonancefile >> n_resonance;
+		resonances.resonance_mass = new double [n_resonance];
+		resonances.resonance_Gamma = new double [n_resonance];
+		resonances.resonance_total_br = new double [n_resonance];
+		resonances.resonance_mu = new double [n_resonance];
+		resonances.resonance_gspin = new double [n_resonance];
+		resonances.resonance_sign = new int [n_resonance];
+		resonances.resonance_decay_masses = new double* [n_resonance];
+		for (int ir=0; ir<n_resonance; ir++)
+		{
+			resonances.resonance_decay_masses[ir] = new double [2];
+			resonances.resonance_decay_masses[ir][0] = 0.0;
+			resonances.resonance_decay_masses[ir][1] = 0.0;
+			resonances.resonance_mu[ir] = 0.0;
+			resonances.resonance_gspin[ir] = 1.0;	//actual g's have been absorbed into definitions of br
+			resonances.resonance_sign[ir] = 1;	//not quite right
+		}
 		int row_index = 0;
 		tempresonancefile >> row_index;
-		//note that we have to convert given table values to GeV
-		tempresonancefile >> resonances.resonance_mass[row_index-1];
-		tempresonancefile >> resonances.resonance_decay_masses[row_index-1][0];
-		tempresonancefile >> resonances.resonance_decay_masses[row_index-1][1];
-		tempresonancefile >> resonances.resonance_Gamma[row_index-1];
-		tempresonancefile >> resonances.resonance_total_br[row_index-1];
+		while (!tempresonancefile.eof() && row_index != 0)
+		{
+			//note that we have to convert given table values to GeV
+			tempresonancefile >> resonances.resonance_mass[row_index-1];
+			tempresonancefile >> resonances.resonance_decay_masses[row_index-1][0];
+			tempresonancefile >> resonances.resonance_decay_masses[row_index-1][1];
+			tempresonancefile >> resonances.resonance_Gamma[row_index-1];
+			tempresonancefile >> resonances.resonance_total_br[row_index-1];
+			tempresonancefile >> resonances.resonance_sign[row_index-1];
+			if (DEBUG)
+				cerr << "Made it through row_index = " << row_index << endl;
+			tempresonancefile >> row_index;
+		}
+		tempresonancefile.close();
 	}
-	tempresonancefile.close();
+	else
+	{
+		cerr << "Reading in important resonances not yet supported!  exiting..." << endl;
+		exit(1);
+		
+		//n_resonance is actually total number of decay channels which can generate pions
+		//from chosen resonances
+		n_resonance = get_number_of_decay_channels(chosen_resonances, all_particles);
+		resonances.resonance_mass = new double [n_resonance];
+		resonances.resonance_Gamma = new double [n_resonance];
+		resonances.resonance_total_br = new double [n_resonance];
+		resonances.resonance_mu = new double [n_resonance];
+		resonances.resonance_gspin = new double [n_resonance];
+		resonances.resonance_sign = new int [n_resonance];
+		resonances.resonance_decay_masses = new double* [n_resonance];
+		int temp_idx = 0;
+		for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
+		{
+			particle_info particle_temp = particle[chosen_resonances[icr]];
+			for (int idecay = 0; idecay < particle_temp.decays; idecay++)
+			{
+				resonances.resonance_decay_masses[temp_idx] = new double [2];
+				for (int ii = 0; ii < 2; ii++)
+					resonances.resonance_decay_masses[temp_idx][ii] = 0.0;
+				resonances.resonance_mu[temp_idx] = particle_temp.mu;
+				resonances.resonance_gspin[temp_idx] = particle_temp.gspin;
+				resonances.resonance_sign[temp_idx] = particle_temp.sign;
+				resonances.resonance_mass[temp_idx] = particle_temp.mass;
+				resonances.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
+				resonances.resonance_Gamma[temp_idx] = particle_temp.width;
+				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
+				
+				//set daughter particles masses for each decay channel
+				//currently assuming no more than nbody = 3
+				int decay_part_idx = 0;
+				while (particle_temp.decays_part[idecay][decay_part_idx] != 0)
+				{
+					int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][decay_part_idx]);
+					resonances.resonance_decay_masses[temp_idx][decay_part_idx] = particle[itemp].mass;
+					decay_part_idx++;
+				}
+
+				temp_idx++;
+			}
+		}
+	}
+	
 //cerr << "finished reading and processing resonances file..." << endl;
 	integrated_spacetime_moments = new double *** [n_resonance+1];
 	//dN_dypTdpTdphi_moments = new double *** [n_resonance];
@@ -156,10 +219,13 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	zeta_wts = new double [n_zeta_pts];
 	for (int ir=0; ir<n_resonance; ir++)
 	{
-		resonances.resonance_mass[ir] *= MeVToGeV;
-		resonances.resonance_decay_masses[ir][0] *= MeVToGeV;
-		resonances.resonance_decay_masses[ir][1] *= MeVToGeV;
-		resonances.resonance_Gamma[ir] *= MeVToGeV;
+		if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
+		{
+			resonances.resonance_mass[ir] *= MeVToGeV;
+			resonances.resonance_decay_masses[ir][0] *= MeVToGeV;
+			resonances.resonance_decay_masses[ir][1] *= MeVToGeV;
+			resonances.resonance_Gamma[ir] *= MeVToGeV;
+		}
 		s_pts[ir] = new double [n_s_pts];
 		s_wts[ir] = new double [n_s_pts];
 	}
@@ -323,44 +389,96 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		sh_eta_s[ieta] = sinh(eta_s[ieta]);
 	}
 
-   S_func = new double* [n_localp_T];
-   xs_S = new double* [n_localp_T];
-   xs2_S = new double* [n_localp_T];
+	S_func = new double* [n_localp_T];
+	xs_S = new double* [n_localp_T];
+	xs2_S = new double* [n_localp_T];
+	xo_S = new double* [n_localp_T];
+	xo2_S = new double* [n_localp_T];
+	xl_S = new double* [n_localp_T];
+	xl2_S = new double* [n_localp_T];
+	t_S = new double* [n_localp_T];
+	t2_S = new double* [n_localp_T];
+	xo_xs_S = new double* [n_localp_T];
+	xl_xs_S = new double* [n_localp_T];
+	xs_t_S = new double* [n_localp_T];
+	xo_xl_S = new double* [n_localp_T];
+	xo_t_S = new double* [n_localp_T];
+	xl_t_S = new double* [n_localp_T];
 
    R2_side = new double* [n_localp_T];
+   R2_out = new double* [n_localp_T];
+   R2_long = new double* [n_localp_T];
+   R2_outside = new double* [n_localp_T];
+   R2_sidelong = new double* [n_localp_T];
+   R2_outlong = new double* [n_localp_T];
 
    for(int i=0; i<n_localp_T; i++)
    {
-      S_func[i] = new double [n_localp_phi];
-      xs_S[i] = new double [n_localp_phi];
-      xs2_S[i] = new double [n_localp_phi];
-      R2_side[i] = new double [n_localp_phi];
+	S_func[i] = new double [n_localp_phi];
+	xs_S[i] = new double [n_localp_phi];
+	xs2_S[i] = new double [n_localp_phi];
+	xo_S[i] = new double [n_localp_phi];
+	xo2_S[i] = new double [n_localp_phi];
+	xl_S[i] = new double [n_localp_phi];
+	xl2_S[i] = new double [n_localp_phi];
+	t_S[i] = new double [n_localp_phi];
+	t2_S[i] = new double [n_localp_phi];
+	xo_xs_S[i] = new double [n_localp_phi];
+	xl_xs_S[i] = new double [n_localp_phi];
+	xs_t_S[i] = new double [n_localp_phi];
+	xo_xl_S[i] = new double [n_localp_phi];
+	xo_t_S[i] = new double [n_localp_phi];
+	xl_t_S[i] = new double [n_localp_phi];
+	
+	R2_side[i] = new double [n_localp_phi];
+	R2_out[i] = new double [n_localp_phi];
+	R2_long[i] = new double [n_localp_phi];
+	R2_outside[i] = new double [n_localp_phi];
+	R2_sidelong[i] = new double [n_localp_phi];
+	R2_outlong[i] = new double [n_localp_phi];
    }
 
 //initialize all source variances and HBT radii/coeffs
 for(int i=0; i<n_localp_T; i++)
+for(int j=0; j<n_localp_phi; j++)
 {
-	for(int j=0; j<n_localp_phi; j++)
-	{
-		S_func[i][j] = 0.;
-		xs_S[i][j] = 0.;
-		xs2_S[i][j] = 0.;
-		R2_side[i][j] = 0.;
-	}
+	S_func[i][j] = 0.;
+	xs_S[i][j] = 0.;
+	xs2_S[i][j] = 0.;
+	xo_S[i][j] = 0.;
+	xo2_S[i][j] = 0.;
+	xl_S[i][j] = 0.;
+	xl2_S[i][j] = 0.;
+	t_S[i][j] = 0.;
+	t2_S[i][j] = 0.;
+	xo_xs_S[i][j] = 0.;
+	xl_xs_S[i][j] = 0.;
+	xs_t_S[i][j] = 0.;
+	xo_xl_S[i][j] = 0.;
+	xo_t_S[i][j] = 0.;
+	xl_t_S[i][j] = 0.;
+	
+	R2_side[i][j] = 0.;
+	R2_out[i][j] = 0.;
+	R2_long[i][j] = 0.;
+	R2_outside[i][j] = 0.;
+	R2_sidelong[i][j] = 0.;
+	R2_outlong[i][j] = 0.;
 }
 
 //**************************************************************************************************
-time_t rawtime;
-struct tm * timeinfo;
-time (&rawtime);
-timeinfo = localtime (&rawtime);
-cout << "***Checkpoint #1 at " << asctime(timeinfo);
-FOI_np0pts = 11, FOI_npTpts = 11, FOI_npphipts = 24, FOI_npzpts = 11, FOI_nmupts = 11; 
-interpolate_FO_loop(FOsurf_ptr);
-time (&rawtime);
-timeinfo = localtime (&rawtime);
-cout << "***Checkpoint #2 at " << asctime(timeinfo);
-if (1) exit(1);
+//time_t rawtime;
+//struct tm * timeinfo;
+//time (&rawtime);
+//timeinfo = localtime (&rawtime);
+//cout << "***Checkpoint #1 at " << asctime(timeinfo);
+//FOI_np0pts = 11, FOI_npTpts = 11, FOI_npphipts = 24, FOI_npzpts = 11, FOI_nmupts = 11;
+//FOI_netaspts = eta_s_npts, FOI_npTpts = n_interp2_pT_pts, FOI_npphipts = n_interp2_pphi_pts, FOI_nMpts = 11, FOI_nmupts = 11; 
+//interpolate_FO_loop(FOsurf_ptr);
+//time (&rawtime);
+//timeinfo = localtime (&rawtime);
+//cout << "***Checkpoint #2 at " << asctime(timeinfo);
+//if (1) exit(1);
 //**************************************************************************************************
 		
 

@@ -43,11 +43,15 @@ double SourceVariances::get_Q()
 
 double SourceVariances::g(double s)
 {
-	//assume n_body == 3...
-	double pre_f = (Mres*br)/(2.*M_PI*s);
-	double num = sqrt( (s - (m2+m3)*(m2+m3)) * (s - (m2-m3)*(m2-m3)) );
-	double den = Qfunc;
-	double g_res = pre_f * num / den;
+	double g_res = br/(4.*M_PI);
+	if (n_body == 3)
+	{
+		double pre_f = (Mres*br)/(2.*M_PI*s);
+		double num = sqrt( (s - (m2+m3)*(m2+m3)) * (s - (m2-m3)*(m2-m3)) );
+		double den = Qfunc;
+		double g_res = pre_f * num / den;
+	}
+	//haven't treated (rare) case of n_body == 4 just yet...
 
 	return g_res;
 }
@@ -100,16 +104,18 @@ void SourceVariances::do_all_integrals(int iKT, int iKphi, int reso_idx)
 				{
 					if (tempidx != 1)
 					{
-						PK2 *= -1.;						//takes Pp --> Pm
+						//PK2 *= -1.;						//takes Pp --> Pm
 						PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 					}
 					//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 					//just interpolate table of single particle spectra...
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-						Csum_vec[iweight] += interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx-1][iweight], PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING, true);
+						Csum_vec[iweight] += interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx-1][iweight],
+									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 				}
 				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 					zetasum_vec[iweight] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[iweight];
+				//cerr << "BIG DEBUG (reso_idx = " << reso_idx << "): " << Csum_vec[0] << endl;
 			}
 			for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 				vsum_vec[iweight] += VEC_n2_v_factor[iv]*zetasum_vec[iweight];
@@ -148,13 +154,14 @@ void SourceVariances::do_all_integrals(int iKT, int iKphi, int reso_idx)
 					{
 						if (tempidx != 1)
 						{
-							PK2 *= -1.;						//takes Pp --> Pm
+							//PK2 *= -1.;						//takes Pp --> Pm
 							PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 						}
 						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 						//just interpolate table of single particle spectra...
 						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							Csum_vec[iweight] += interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx-1][iweight], PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING, true);
+							Csum_vec[iweight] += interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx-1][iweight],
+										PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					}
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 						zetasum_vec[iweight] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[iweight];

@@ -66,7 +66,7 @@ void read_decdat_mu(int FO_length, int N_stable, double** particle_mu, string lo
 int read_resonance(particle_info* particle);
 void calculate_particle_mu(int IEOS, int Nparticle, FO_surf* FOsurf_ptr, int FO_length, particle_info* particle, double** particle_mu);
 void compute_total_contribution_percentages(int stable_particle_idx, int Nparticle, particle_info* particle, double * all_particle_thermal, double * percentages, double * effective_widths);
-void estimate_resonance_thermal(int Nparticle, particle_info* particle, FO_surf* FOsurf_ptr, double * all_particle_thermal);
+void estimate_resonance_thermal(int Nparticle, particle_info* particle, double Temperature, double * all_particle_thermal);
 double b_j_to_i(particle_info * all_particles, int Nparticle, int j, int i);
 int count_targets(int * decay_channel_particles, particle_info * i);
 int count_stable(particle_info * all_particles, int Nparticle, int * decay_channel_particles);

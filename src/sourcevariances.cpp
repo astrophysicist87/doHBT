@@ -22,6 +22,30 @@
 
 using namespace std;
 
+//need to define some variables for quick evaluation of S_direct
+double Sdir_Y = 0.0, Sdir_R = 5., Sdir_Deltau = 1., Sdir_Deleta = 1.2;
+double Sdir_eta0 = 0.0, Sdir_tau0 = 5., Sdir_etaf = 0.0, Sdir_T = 0.15;
+double Sdir_prefactor, Sdir_rt, Sdir_H, Sdir_etat, Sdir_ch_Y_m_eta, Sdir_expon;
+double Sdir_term1, Sdir_term2, Sdir_term3;
+
+double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi)
+{
+	//Sdir_prefactor = (2.*Sdir_Jr + 1.)/(twopi*twopi*twopi);
+	Sdir_rt = r/Sdir_R;
+	Sdir_term1 = 0.5*Sdir_rt*Sdir_rt;
+	Sdir_term2 = 0.5*(eta-Sdir_eta0)*(eta-Sdir_eta0)/(Sdir_Deleta*Sdir_Deleta);
+	Sdir_term3 = 0.5*(tau-Sdir_tau0)*(tau-Sdir_tau0)/(Sdir_Deltau*Sdir_Deltau);
+	//Sdir_term2 = 0.0;
+	//Sdir_term3 = 0.0;
+	//Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 ) / (M_PI * Sdir_Deltau);
+	Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 );
+	Sdir_ch_Y_m_eta = cosh(Sdir_Y - eta);
+	Sdir_expon = -(MT/Sdir_T)*Sdir_ch_Y_m_eta*cosh(Sdir_etaf*Sdir_rt)
+			+ (PT/Sdir_T)*sinh(Sdir_etaf*Sdir_rt)*cos_phi_m_Phi;
+	return (MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon));
+	//return((r > Sdir_R) ? 0. : 1.);
+}
+
 double place_in_range(double phi, double min, double max)
 {
 	while (phi < min || phi > max)
@@ -56,8 +80,10 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	}
 	global_plane_psi = plane_psi;
 
+	//for (int ir = 0; ir <= 0; ir++)			//loop over direct pions only
 	for (int ir = 0; ir <= n_resonance; ir++)	//loop over direct pions and resonances
 	{
+		if (ir > 2) continue;
 		time (&rawtime);
 		timeinfo = localtime (&rawtime);
 		if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Setting spacetime moments at " << asctime(timeinfo);
@@ -67,7 +93,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 		// begin HBT calculations here...
 		for(int iKT = 0; iKT < n_localp_T; iKT++)
 		{
-			if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
+			//if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
 			time (&rawtime);
 			timeinfo = localtime (&rawtime);
 			if (VERBOSE > 0) *global_out_stream_ptr << "   - Calculating K_T = " << K_T[iKT] << " GeV at " << asctime(timeinfo);
@@ -95,11 +121,18 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	}
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
-		if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
+		//if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
+		double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+		beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
 		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 		{
-			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Finished!  Getting R^2_s..." << endl;
+			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Finished!  Getting R^2_ij..." << endl;
 			Calculate_R2_side(iKT, iKphi);
+			Calculate_R2_out(iKT, iKphi);
+			Calculate_R2_long(iKT, iKphi);
+			Calculate_R2_outside(iKT, iKphi);
+			Calculate_R2_sidelong(iKT, iKphi);
+			Calculate_R2_outlong(iKT, iKphi);
 			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Moving on!" << endl;
 		}
 	}
@@ -181,7 +214,8 @@ if (reso_idx > 0) mass = current_resonance_mass;
 	if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
 		Cal_dN_dypTdpTdphi_with_weights_cartesian(FOsurf_ptr, reso_idx);
 	else if (INTERPOLATION_FORMAT == 2)	//using polar grid for interpolation (pT, pphi)
-		Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FOsurf_ptr, reso_idx);
+		Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, reso_idx);
+		//Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FOsurf_ptr, reso_idx);
 
    return;
 }
@@ -303,10 +337,17 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	//timeinfo = localtime (&rawtime);
 	//if (VERBOSE > 0) *global_out_stream_ptr << "***Checkpoint #1 at " << asctime(timeinfo);
 double z0, z1, z2, z3;
-//CURRENTLY USING WRONG DEFINITIONS OF SIGN AND DEGEN
-//NEED TO FIX BEFORE VERSION IS STABLE
-   double sign = particle_sign;
-   double degen = particle_gspin;
+double sign, degen;
+if (reso_idx == 0)
+{
+	sign = particle_sign;
+	degen = particle_gspin;
+}
+else
+{
+	sign = resonances.resonance_sign[reso_idx - 1];
+	degen = resonances.resonance_gspin[reso_idx - 1];
+}
    double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 //assume reso_idx >= 1
 //double mu = 0.0;
@@ -321,20 +362,28 @@ double deltaf_prefactor = 0.;
 if (use_delta_f) deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
 
 //declare variables used below here to see if this speeds up code:
-double mu, tau, vx, vy, da0, da1, da2;
+double mu, tau, vx, vy, da0, da1, da2, localmass;
 double pi00, pi01, pi02, pi11, pi12, pi22, pi33;
-double temp_r, temp_phi, sin_temp_phi, cos_temp_phi, gammaT;
+double temp_r, temp_phi, xpt, ypt, zpt, tpt, sin_temp_phi, cos_temp_phi, gammaT, expon;
 
-double pT, sin_pphi, cos_pphi, sin_phi_m_pphi, cos_phi_m_pphi;
-double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
-	symmetry_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+double pT, pphi, sin_pphi, cos_pphi, sin_phi_m_pphi, cos_phi_m_pphi;
+double px, py, p0, pz, f0, deltaf, S_p, S_p_withweight;
       FO_surf* surf;
+   double eta_odd_factor = 1.0, eta_even_factor = 1.0;
+   if (ASSUME_ETA_SYMMETRIC)
+   {
+	eta_odd_factor = 0.0;
+	eta_even_factor = 2.0;
+   }
+//if (!CHECKING_RESONANCE_CALC)
+	mu = FOsurf_ptr[0].particle_mu[particle_id];
+//else
+//	mu = 0.0;
 
    for(int isurf=0; isurf<FO_length ; isurf++)
    {
       surf = &FOsurf_ptr[isurf];
-	mu = surf->particle_mu[particle_id];
+	//mu = surf->particle_mu[particle_id];
 	tau = surf->tau;
 	vx = surf->vx;
 	vy = surf->vy;
@@ -349,6 +398,9 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
 	pi22 = surf->pi22;
 	pi33 = surf->pi33;
 	temp_r = surf->r;
+	temp_phi = surf->phi;
+	xpt = surf->xpt;
+	ypt = surf->ypt;
 	sin_temp_phi = surf->sin_phi;
 	cos_temp_phi = surf->cos_phi;
 	gammaT = surf->gammaT;
@@ -381,6 +433,8 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
       {
 	sin_pphi = sin_SPinterp2_pphi[iphi];
 	cos_pphi = cos_SPinterp2_pphi[iphi];
+	pphi = SPinterp2_pphi[iphi];
+	//cout << "made it to pT = " << pT << " and pphi = " << pphi << endl;
 	px = pT*cos_pphi;
 	py = pT*sin_pphi;
 	sin_phi_m_pphi = sin_temp_phi * cos_pphi - cos_temp_phi * sin_pphi;
@@ -391,40 +445,60 @@ double px, py, p0, pz, f0, deltaf, S_p, symmetry_factor, S_p_withweight;
       {
          p0 = SPinterp2_p0[ipt][ieta];
          pz = SPinterp2_pz[ipt][ieta];
+	
+	zpt = tau*sh_eta_s[ieta];
+	tpt = tau*ch_eta_s[ieta];
+	
 	//now get distribution function, emission function, etc.
-	double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
-	if (expon > 20.) continue;
-	f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
-	//f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
+	if (TRUNCATE_COOPER_FRYE)
+	{
+		expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
+		if (expon > 20.) continue;
+		f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
+	}
+	else
+		f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
 	
 	//viscous corrections
 	deltaf = 0.;
 	if (use_delta_f)
 		deltaf = deltaf_prefactor*(1. - sign*f0)*(p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
+	//if (!CHECKING_RESONANCE_CALC)
+	//{
+		//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+		S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
+		//ignore points where delta f is large or emission function goes negative from pdsigma
+		if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol)) S_p = 0.0;
+	//}
+	//else
+	//{
+		//S_p = prefactor * S_direct(temp_r, eta_s[ieta], tau, sqrt(pT*pT + localmass*localmass), pT, cos_phi_m_pphi);
+		//if (fabs(pphi - M_PI) < 1.e-3 && fabs(pT - 0.1) < 1.e-6)
+		//	cerr << temp_r << "   " << temp_phi << "   " << eta_s[ieta] << "   " << tau
+		//		<< "   " << xpt << "   " << ypt << "   " << zpt
+		//		<< "   " << tpt << "   " << S_p*tau << endl;
+		//if ((1. + deltaf < 0.0) || ((p0*da0 + px*da1 + py*da2) < 0.0) || (flagneg == 1 && S_p < tol))
+		//	S_p = 0.0;
+	//}
 
-	//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-	S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
-	//ignore points where delta f is large or emission function goes negative from pdsigma
-	if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol)) S_p = 0.0;
-
-	S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
+	S_p_withweight = S_p*tau*eta_s_weight[ieta]; //eta_even_factor accounts for the assumed reflection symmetry along eta direction
 	z0 = tau*ch_eta_s[ieta];
 	z3 = tau*sh_eta_s[ieta];
-	dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += S_p_withweight;			//<1>
-	dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += S_p_withweight*z2;			//<x_s>
-	dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += S_p_withweight*z2*z2;			//<x^2_s>
-	dN_dypTdpTdphi_moments[reso_idx][3][ipt][iphi] += S_p_withweight*z1;			//<x_o>
-	dN_dypTdpTdphi_moments[reso_idx][4][ipt][iphi] += S_p_withweight*z1*z1;			//<x^2_o>
-	dN_dypTdpTdphi_moments[reso_idx][5][ipt][iphi] += S_p_withweight*z3;			//<x_l>
-	dN_dypTdpTdphi_moments[reso_idx][6][ipt][iphi] += S_p_withweight*z3*z3;			//<x^2_l>
-	dN_dypTdpTdphi_moments[reso_idx][7][ipt][iphi] += S_p_withweight*z0;			//<t>
-	dN_dypTdpTdphi_moments[reso_idx][8][ipt][iphi] += S_p_withweight*z0*z0;			//<t^2>
-	dN_dypTdpTdphi_moments[reso_idx][9][ipt][iphi] += S_p_withweight*z2*z1;			//<x_s x_o>
-	dN_dypTdpTdphi_moments[reso_idx][10][ipt][iphi] += S_p_withweight*z2*z3;		//<x_s x_l>
-	dN_dypTdpTdphi_moments[reso_idx][11][ipt][iphi] += S_p_withweight*z2*z0;		//<x_s t>
-	dN_dypTdpTdphi_moments[reso_idx][12][ipt][iphi] += S_p_withweight*z1*z3;		//<x_o x_l>
-	dN_dypTdpTdphi_moments[reso_idx][13][ipt][iphi] += S_p_withweight*z1*z0;		//<x_o t>
-	dN_dypTdpTdphi_moments[reso_idx][14][ipt][iphi] += S_p_withweight*z3*z0;		//<x_l t>
+	dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += eta_even_factor*S_p_withweight;			//<1>
+	dN_dypTdpTdphi_moments[reso_idx][1][ipt][iphi] += eta_even_factor*S_p_withweight*z2;			//<x_s>
+	dN_dypTdpTdphi_moments[reso_idx][2][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
+	dN_dypTdpTdphi_moments[reso_idx][3][ipt][iphi] += eta_even_factor*S_p_withweight*z1;			//<x_o>
+	dN_dypTdpTdphi_moments[reso_idx][4][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z1;			//<x^2_o>
+	dN_dypTdpTdphi_moments[reso_idx][5][ipt][iphi] += eta_odd_factor*S_p_withweight*z3;			//<x_l>
+	dN_dypTdpTdphi_moments[reso_idx][6][ipt][iphi] += eta_even_factor*S_p_withweight*z3*z3;			//<x^2_l>
+	dN_dypTdpTdphi_moments[reso_idx][7][ipt][iphi] += eta_even_factor*S_p_withweight*z0;			//<t>
+	dN_dypTdpTdphi_moments[reso_idx][8][ipt][iphi] += eta_even_factor*S_p_withweight*z0*z0;			//<t^2>
+	dN_dypTdpTdphi_moments[reso_idx][9][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z1;			//<x_s x_o>
+	dN_dypTdpTdphi_moments[reso_idx][10][ipt][iphi] += eta_odd_factor*S_p_withweight*z2*z3;			//<x_s x_l>
+	dN_dypTdpTdphi_moments[reso_idx][11][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z0;		//<x_s t>
+	dN_dypTdpTdphi_moments[reso_idx][12][ipt][iphi] += eta_odd_factor*S_p_withweight*z1*z3;			//<x_o x_l>
+	dN_dypTdpTdphi_moments[reso_idx][13][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z0;		//<x_o t>
+	dN_dypTdpTdphi_moments[reso_idx][14][ipt][iphi] += eta_odd_factor*S_p_withweight*z3*z0;			//<x_l t>
       }
       }
       }
@@ -458,8 +532,10 @@ void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_
 	{
 		double px = SP_px[ipt][iphi];
 		double py = SP_py[ipt][iphi];
-		//dN_dypTdpTdphi[ipt][iphi] = exp(interpolate2D(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[0][0], px, py, n_interp1_px_pts, n_interp1_py_pts, 1, UNIFORM_SPACING));
-		dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[0][0], px, py, n_interp1_px_pts, n_interp1_py_pts, 1, UNIFORM_SPACING);
+		//dN_dypTdpTdphi[ipt][iphi] = exp(interpolate2D(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[0][0],
+		//					px, py, n_interp1_px_pts, n_interp1_py_pts, INTERPOLATION_KIND, UNIFORM_SPACING));
+		dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[0][0],
+							px, py, n_interp1_px_pts, n_interp1_py_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 		//dN_dypTdpTdphi[ipt][iphi] = exp(interpBiPolyDirect(SPinterp1_px, SPinterp1_py, ln_dN_dypTdpTdphi_moments[0][0], px, py, n_interp1_px_pts, n_interp1_py_pts));
 		//dN_dypTdpTdphi[ipt][iphi] = exp(interpBiLinearDirect(SPinterp1_px, SPinterp1_py, ln_dN_dypTdpTdphi_moments[0][0], px, py, n_interp1_px_pts, n_interp1_py_pts));
 		//dN_dypTdpTdphi[ipt][iphi] = exp(interpBiCubicDirect(SPinterp1_px, SPinterp1_py, ln_dN_dypTdpTdphi_moments[0][0], px, py, n_interp1_px_pts, n_interp1_py_pts));
@@ -487,15 +563,17 @@ void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, d
 	{
 		double pT = SP_pT[ipt];
 		double pphi = SP_pphi[iphi];
-		dN_dypTdpTdphi[ipt][iphi] = exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][0], pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING));
-		//dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0], pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING);
+		//dN_dypTdpTdphi[ipt][iphi] = exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][0],
+		//					pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING));
+		dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
+							pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 		//double temp_xs_S = sign_of_dN_dypTdpTdphi_moments[0][2][ipt][iphi]*exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][1], pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING));
 		//double temp_xs_S_alt = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1], pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING);
 		//double temp_x2s_S = sign_of_dN_dypTdpTdphi_moments[0][2][ipt][iphi]*exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][2], pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING));
 		//double temp_x2s_S_alt = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2], pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING);
-		cout << pT << "  " << pphi << "  " << pT*cos(pphi) << "  " << pT*sin(pphi) << "  " << dN_dypTdpTdphi[ipt][iphi] << endl;
+		//cout << pT << "  " << pphi << "  " << pT*cos(pphi) << "  " << pT*sin(pphi) << "  " << dN_dypTdpTdphi[ipt][iphi] << endl;
 	}
-	cout << endl;
+	//cout << endl;
 	}
 	//cout << endl;
 	//cout << "Starting gridded values: " << endl;
@@ -737,44 +815,11 @@ void SourceVariances::Determine_plane_angle_check(FO_surf* FOsurf_ptr)
 //void SourceVariances::Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, int reso_idx)
 void SourceVariances::Do_resonance_integrals(FO_surf* FOsurf_ptr, int iKT, int iKphi, int reso_idx)
 {
-	//Mres = current_resonance_mass;
-	//mass = particle_mass;
-	//Gamma = current_resonance_Gamma;
-	//br = current_resonance_total_br;
-	//m2 = current_resonance_decay_masses[0];
-	//m3 = current_resonance_decay_masses[1];
-	//mT = sqrt(mass*mass + K_T_local*K_T_local);
-	//current_K_phi = K_phi_local;
-	double Kx = K_T[iKT]*cos(K_phi[iKphi]);
-	double Ky = K_T[iKT]*sin(K_phi[iKphi]);
-	//set_surfpts();
-	int idx = 0;
 	if (abs(m3) <= 1.e-6)
 		n_body = 2;
 	else
 		n_body = 3;
-	//NO ETA_S LOOP --> ALREADY DID IT IN COMPUTING DN_DYPTDPTDPHI_WITH_WEIGHTS
-	//for(int i=0; i<eta_s_npts; i++)
-	//for(int i=0; i<1; i++)
-	//{
-		//double local_eta_s = eta_s[i];
-		//double local_eta_s_wt = eta_s_weight[i];
-		//p_y = local_eta_s;
-		//ch_p_y = ch_eta_s[i];
-		//sh_p_y = sh_eta_s[i];
-		//double ch_localetas = cosh(local_eta_s);
-		//double sh_localetas = sinh(local_eta_s);
-		//double ch_localetas = ch_eta_s[i];
-		//double sh_localetas = sh_eta_s[i];
-
-		//double K0 = mT*(ch_K_y*ch_localetas - sh_K_y*sh_localetas);
-		//double Kz = mT*(sh_K_y*ch_localetas - ch_K_y*sh_localetas);
-
-		//for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		//	source_variances_array[iweight] += local_eta_s_wt*Mres*do_all_integrals(iweight, i);
 	do_all_integrals(iKT, iKphi, reso_idx);
-	//}
-//exit(1);
 
 	return;
 }
@@ -841,6 +886,15 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		muRES = particle_mu;
 		signRES = particle_sign;
 		gRES = particle_gspin;
+		
+		/*if (DEBUG)
+		{
+			cerr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+				<< "  --> muRES = " << muRES << endl
+				<< "  --> signRES = " << signRES << endl
+				<< "  --> gRES = " << gRES << endl;
+		}*/
+		
 		return;
 	}
 	else
@@ -851,10 +905,10 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx-1][0];
 		current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
 
-		muRES = 0.0;
+		muRES = resonances.resonance_mu[reso_idx-1];
 		//signRES and gRES need to be set for each resonance!
-		signRES = particle_sign;
-		gRES = particle_gspin;
+		signRES = resonances.resonance_sign[reso_idx-1];
+		gRES = resonances.resonance_gspin[reso_idx-1];
 
 		Mres = current_resonance_mass;
 		mass = particle_mass;
@@ -862,10 +916,23 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		br = current_resonance_total_br;
 		m2 = current_resonance_decay_masses[0];
 		m3 = current_resonance_decay_masses[1];
-	if (abs(m3) <= 1.e-6)
-		n_body = 2;
-	else
-		n_body = 3;
+		/*if (DEBUG)
+		{
+			cerr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+				<< "  --> muRES = " << muRES << endl
+				<< "  --> signRES = " << signRES << endl
+				<< "  --> gRES = " << gRES << endl
+				<< "  --> Mres = " << Mres << endl
+				<< "  --> mass = " << mass << endl
+				<< "  --> Gamma = " << Gamma << endl
+				<< "  --> br = " << br << endl
+				<< "  --> m2 = " << m2 << endl
+				<< "  --> m3 = " << m3 << endl << endl;
+		}*/
+		if (abs(m3) <= 1.e-6)
+			n_body = 2;
+		else
+			n_body = 3;
 		mT = sqrt(mass*mass + K_T_local*K_T_local);
 		pT = K_T_local;
 		current_K_phi = K_phi_local;
@@ -877,11 +944,12 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 			//set up vectors of points to speed-up integrals...
 			//cerr << "Entering loops now..." << endl;
 			double s_loc = m2*m2;
-			double g_s_loc = g(s_loc);
+			double g_s_loc = g(s_loc);	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
 			VEC_n2_g_s = g_s_loc;
 			double pstar_loc = sqrt(((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc)/(2.0*Mres));
 			VEC_n2_pstar = pstar_loc;
-			VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);
+			//VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);
+			VEC_n2_s_factor = VEC_n2_g_s/VEC_n2_pstar;
 			double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
 			VEC_n2_Estar = Estar_loc;
 			double psBmT = pstar_loc / mT;
@@ -958,6 +1026,7 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		}
 		else
 		{
+			Qfunc = get_Q();
 			//set up vectors of points to speed-up integrals...
 			VEC_pstar = new double [n_s_pts];
 			VEC_Estar = new double [n_s_pts];
@@ -1262,10 +1331,38 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 		//S_func[iKT][iKphi] = exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][0], KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING));
 		//xs_S[iKT][iKphi] = exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][1], KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING));
 		//xs2_S[iKT][iKphi] = exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][2], KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING));
-		S_func[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0], KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING);
-		xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1], KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING);
-		xs2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2], KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, 1, UNIFORM_SPACING);
-		//cerr << "DEBUG: " << S_func[iKT][iKphi] << "  " << xs_S[iKT][iKphi] << "  " << xs2_S[iKT][iKphi] << endl;
+		S_func[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xs2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xo_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][3],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xo2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][4],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xl_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][5],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xl2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][6],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
+		t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][7],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		t2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][8],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
+		xo_xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][9],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xl_xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][10],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xs_t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][11],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xo_xl_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][12],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xo_t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][13],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		xl_t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][14],
+							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+		if (DEBUG)		
+			cerr << "DEBUG: reso_idx = " << reso_idx << "  " << S_func[iKT][iKphi] << "  " << xs_S[iKT][iKphi] << "  " << xs2_S[iKT][iKphi] << endl;
 	}
 	else
 	{
@@ -1274,9 +1371,25 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 		S_func[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][0][iKT][iKphi];
 		xs_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][1][iKT][iKphi];
 		xs2_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][2][iKT][iKphi];
+		xo_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][3][iKT][iKphi];
+		xo2_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][4][iKT][iKphi];
+		xl_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][5][iKT][iKphi];
+		xl2_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][6][iKT][iKphi];
+		t_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][7][iKT][iKphi];
+		t2_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][8][iKT][iKphi];
+		xo_xs_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][9][iKT][iKphi];
+		xl_xs_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][10][iKT][iKphi];
+		xs_t_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][11][iKT][iKphi];
+		xo_xl_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][12][iKT][iKphi];
+		xo_t_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][13][iKT][iKphi];
+		xl_t_S[iKT][iKphi] += integrated_spacetime_moments[reso_idx-1][14][iKT][iKphi];
+		if (DEBUG)		
+			cerr << "DEBUG: reso_idx = " << reso_idx << "  " << integrated_spacetime_moments[reso_idx-1][0][iKT][iKphi]
+				<< "  " << integrated_spacetime_moments[reso_idx-1][1][iKT][iKphi]
+				<< "  " << integrated_spacetime_moments[reso_idx-1][2][iKT][iKphi] << endl;
 	}
 
-return;
+	return;
 }
 
 void SourceVariances::Calculate_R2_side(int iKT, int iKphi)
@@ -1286,7 +1399,71 @@ void SourceVariances::Calculate_R2_side(int iKT, int iKphi)
    double term2 = xs_S[iKT][iKphi];
 
    R2_side[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
-   //cerr << "R^2_s(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_side[iKT][iKphi] << endl;
+   if (DEBUG)
+	cerr << "DEBUG: R^2_s(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_side[iKT][iKphi] << endl;
+   return;
+}
+
+void SourceVariances::Calculate_R2_out(int iKT, int iKphi)
+{
+   double norm = S_func[iKT][iKphi];
+   double term1 = xo2_S[iKT][iKphi] - 2.*beta_perp*xo_t_S[iKT][iKphi] + beta_perp*beta_perp*t2_S[iKT][iKphi];
+   double term2 = xo_S[iKT][iKphi] - beta_perp*t_S[iKT][iKphi];
+
+   R2_out[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
+   if (DEBUG)
+	cerr << "DEBUG: R^2_o(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_out[iKT][iKphi] << endl;
+   return;
+}
+
+void SourceVariances::Calculate_R2_outside(int iKT, int iKphi)
+{
+   double norm = S_func[iKT][iKphi];
+   double term1 = xo_xs_S[iKT][iKphi] - beta_perp*xs_t_S[iKT][iKphi];
+   double term2 = xo_S[iKT][iKphi] - beta_perp*t_S[iKT][iKphi];
+   double term3 = xs_S[iKT][iKphi];
+
+   R2_outside[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
+   if (DEBUG)
+	cerr << "DEBUG: R^2_os(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_outside[iKT][iKphi] << endl;
+   return;
+}
+
+void SourceVariances::Calculate_R2_long(int iKT, int iKphi)
+{
+   double norm = S_func[iKT][iKphi];
+   double term1 = xl2_S[iKT][iKphi] - 2.*beta_l*xl_t_S[iKT][iKphi] + beta_l*beta_l*t2_S[iKT][iKphi];
+   double term2 = xl_S[iKT][iKphi] - beta_l*t_S[iKT][iKphi];
+
+   R2_long[iKT][iKphi] = term1/norm - term2*term2/(norm*norm);
+   if (DEBUG)
+	cerr << "DEBUG: R^2_l(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_long[iKT][iKphi] << endl;
+   return;
+}
+
+void SourceVariances::Calculate_R2_outlong(int iKT, int iKphi)
+{
+   double norm = S_func[iKT][iKphi];
+   double term1 = xo_xl_S[iKT][iKphi] - beta_perp*xl_t_S[iKT][iKphi] - beta_l*xo_t_S[iKT][iKphi] + beta_perp*beta_l*t2_S[iKT][iKphi];
+   double term2 = xo_S[iKT][iKphi] - beta_perp*t_S[iKT][iKphi];
+   double term3 = xl_S[iKT][iKphi] - beta_l*t_S[iKT][iKphi];
+
+   R2_outlong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
+   if (DEBUG)
+	cerr << "DEBUG: R^2_ol(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_outlong[iKT][iKphi] << endl;
+   return;
+}
+
+void SourceVariances::Calculate_R2_sidelong(int iKT, int iKphi)
+{
+   double norm = S_func[iKT][iKphi];
+   double term1 = xl_xs_S[iKT][iKphi] - beta_l*xs_t_S[iKT][iKphi];
+   double term2 = xs_S[iKT][iKphi];
+   double term3 = xl_S[iKT][iKphi] - beta_l*t_S[iKT][iKphi];
+
+   R2_sidelong[iKT][iKphi] = term1/norm - term2*term3/(norm*norm);
+   if (DEBUG)
+	cerr << "DEBUG: R^2_sl(KT = " << K_T[iKT] << ", Kphi = " << K_phi[iKphi] << ") = " << R2_sidelong[iKT][iKphi] << endl;
    return;
 }
 
@@ -1306,39 +1483,6 @@ bool SourceVariances::particles_are_the_same(int idx1, int idx2)
     }
 
     return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-void SourceVariances::Output_SVdN_dypTdpTdphi(int folderindex)
-{
-	ostringstream filename_stream_dN_dypTdpTdphi;
-	filename_stream_dN_dypTdpTdphi << global_path << "/SV_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_dN_dypTdpTdphi(filename_stream_dN_dypTdpTdphi.str().c_str());
-
-	for(int iphi=0; iphi<n_SP_pphi; iphi++)
-	for(int ipt=0; ipt<n_SP_pT; ipt++)
-		output_dN_dypTdpTdphi << SP_pT[ipt] << "   " << SP_pphi[iphi] << "   " << dN_dypTdpTdphi[ipt][iphi] << endl;
-
-	output_dN_dypTdpTdphi.close();
-
-	return;
-}
-
-void SourceVariances::Output_SVdN_dypTdpT(int folderindex)
-{
-	ostringstream filename_stream_dN_dypTdpT;
-	filename_stream_dN_dypTdpT << global_path << "/SV_dN_dypTdpT_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_dN_dypTdpT(filename_stream_dN_dypTdpT.str().c_str());
-
-	for(int ipt=0; ipt<n_SP_pT; ipt++)
-		output_dN_dypTdpT << SP_pT[ipt] << "   " << dN_dypTdpT[ipt] << endl;
-
-	output_dN_dypTdpT.close();
-
-	return;
 }
 
 //End of file

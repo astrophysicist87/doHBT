@@ -33,18 +33,29 @@ typedef struct
    double data;
 }Emissionfunction_data;
 
-/*typedef struct
-{
-   double P0, Po, Ps, Pl;
-}momentum_data;*/
-
 typedef struct
 {
+   int* nbody;
+   int* resonance_sign;
    double* resonance_mass;
+   double* resonance_mu;
+   double* resonance_gspin;
    double* resonance_Gamma;
    double* resonance_total_br;
    double** resonance_decay_masses;
 }resonance_info;
+
+struct Correlationfunction1D_data
+{
+  size_t data_length;
+  double *q;
+  double *y;
+  double *sigma;
+};
+
+int Fittarget_correlfun1D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr);
+int Fittarget_correlfun1D_df (const gsl_vector *xvec_ptr, void *params_ptr,  gsl_matrix *Jacobian_ptr);
+int Fittarget_correlfun1D_fdf (const gsl_vector* xvec_ptr, void *params_ptr, gsl_vector* f_ptr, gsl_matrix* Jacobian_ptr);
 
 
 class SourceVariances
@@ -71,6 +82,7 @@ class SourceVariances
 		//array to hold resonance info
 		resonance_info resonances;
 		int current_resonance_idx;
+		double current_resonance_mu;
 		double current_resonance_mass;
 		double current_resonance_Gamma;
 		double current_resonance_total_br;
@@ -221,13 +233,26 @@ class SourceVariances
 		
 		double spectra;
 		
+		double* q_out;
+		double* q_side;
+		double* q_long;
+		
+		//store correlation functions
+		double* Correl_1D_out;
+		double* Correl_1D_out_err;
+		double* Correl_1D_side;
+		double* Correl_1D_side_err;
+		double* Correl_1D_long;
+		double* Correl_1D_long_err;
+
 		//source variances
 		double **S_func;
-		double **xs_S;
-		double **xs2_S;
+		double **xs_S, **xo_S, **xl_S, **t_S;
+		double **xs2_S, **xo2_S, **xl2_S, **t2_S;
+		double **xo_xs_S, **xl_xs_S, **xs_t_S, **xo_xl_S, **xo_t_S, **xl_t_S;
 		
 		//HBT radii coefficients
-		double **R2_side;
+		double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -243,7 +268,7 @@ class SourceVariances
 		bool particles_are_the_same(int idx1, int idx2);
 
 	public:
-		SourceVariances(particle_info* particle, particle_info* all_particles_in, FO_surf* FOsurf_ptr);
+		SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances);
 		~SourceVariances();
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr);
@@ -275,6 +300,11 @@ class SourceVariances
 
 		void Get_source_variances(int, int);
 		void Calculate_R2_side(int, int);
+		void Calculate_R2_out(int, int);
+		void Calculate_R2_long(int, int);
+		void Calculate_R2_outside(int, int);
+		void Calculate_R2_sidelong(int, int);
+		void Calculate_R2_outlong(int, int);
 
 		//miscellaneous
 		void Set_ofstream(ofstream& myout);
@@ -293,6 +323,8 @@ class SourceVariances
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);
 		void Output_SVdN_dypTdpT(int folderindex);
+		void Output_results(int folderindex);
+		void Readin_results(int folderindex);
 
 		//parameters that the user is free to define
 		double plumberg_test_variable;

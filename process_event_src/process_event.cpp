@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
    sw.tic();
 
    bool generatedcorrfuncs = false;
-bool get_plane_angle_only = true;
+bool get_plane_angle_only = false;
    //instantiate doHBT class
    doHBT Source_function;
 
