@@ -20,13 +20,6 @@
 #include "Arsenal.h"
 #include "gauss_quadrature.h"
 
-#define USE_PLANE_PSI_ORDER 0		// specifies whether to do HBT relative to flow-plane angle,
-					// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle
-					// at given order
-//#define use_delta_f 0			// indicates whether to use delta_f corrections to distribution function
-					// 0 - false
-#define VERBOSE 2			// specifies level of output - 0 is lowest (no output)
-
 using namespace std;
 
 //need to define some variables for quick evaluation of S_direct
@@ -34,24 +27,26 @@ double Sdir_Y = 0.0, Sdir_R = 5., Sdir_Deltau = 1., Sdir_Deleta = 1.2;
 double Sdir_eta0 = 0.0, Sdir_tau0 = 5., Sdir_etaf = 0.0, Sdir_T = 0.15;
 double Sdir_prefactor, Sdir_rt, Sdir_H, Sdir_etat, Sdir_ch_Y_m_eta, Sdir_expon;
 double Sdir_term1, Sdir_term2, Sdir_term3;
+double S_prefactor = 1.0/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 
 double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi)
 {
-	//Sdir_prefactor = (2.*Sdir_Jr + 1.)/(twopi*twopi*twopi);
+	//Sdir_prefactor = (2.*Sdir_Jr + 1.)/(twopi*twopi*twopi*hbarC3);
+	//Sdir_prefactor = 1./(twopi*twopi*twopi*hbarC3);
 	Sdir_rt = r/Sdir_R;
 	Sdir_term1 = 0.5*Sdir_rt*Sdir_rt;
-	//Sdir_term2 = 0.5*(eta-Sdir_eta0)*(eta-Sdir_eta0)/(Sdir_Deleta*Sdir_Deleta);
-	//Sdir_term3 = 0.5*(tau-Sdir_tau0)*(tau-Sdir_tau0)/(Sdir_Deltau*Sdir_Deltau);
-	Sdir_term2 = 0.0;
-	Sdir_term3 = 0.0;
-	//Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 ) / (M_PI * Sdir_Deltau);
-	Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 );
+	Sdir_term2 = 0.5*(eta-Sdir_eta0)*(eta-Sdir_eta0)/(Sdir_Deleta*Sdir_Deleta);
+	Sdir_term3 = 0.5*(tau-Sdir_tau0)*(tau-Sdir_tau0)/(Sdir_Deltau*Sdir_Deltau);
+	//Sdir_term2 = 0.0;
+	//Sdir_term3 = 0.0;
+	Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 ) / (M_PI * Sdir_Deltau);
+	//Sdir_H = exp( - Sdir_term1 - Sdir_term2 - Sdir_term3 );
 	Sdir_ch_Y_m_eta = cosh(Sdir_Y - eta);
 	Sdir_expon = -(MT/Sdir_T)*Sdir_ch_Y_m_eta*cosh(Sdir_etaf*Sdir_rt)
 			+ (PT/Sdir_T)*sinh(Sdir_etaf*Sdir_rt)*cos_phi_m_Phi;
 	return (MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon));
+	//return((r > Sdir_R) ? 0. : 1.);
 }
-
 
 void doHBT::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
@@ -408,8 +403,6 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
   for(int i=0; i<eta_s_npts; i++)
   {
       double local_eta_s = eta_s[i];
-      //double ch_localetas = cosh(local_eta_s);
-      //double sh_localetas = sinh(local_eta_s);
       double ch_localetas = ch_eta_s[i];
       double sh_localetas = sh_eta_s[i];
 
@@ -420,7 +413,20 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
 	{
 	  //Now that the data is loaded, cycle through it to find the freeze out surface and the emission function.
 	  double S_p = 0.0e0;
-        S_p = Emissionfunction(p0, px, py, pz, &FOsurf_ptr[j]);
+	  double temp_r = sqrt(FOsurf_ptr[j].xpt*FOsurf_ptr[j].xpt + FOsurf_ptr[j].ypt*FOsurf_ptr[j].ypt);
+          double temp_phi = atan2(FOsurf_ptr[j].ypt, FOsurf_ptr[j].xpt);
+		if (temp_phi < 0.0)
+			temp_phi += 2.*M_PI;
+	if (USE_ANALYTIC_S)
+	{
+		S_p = S_prefactor * S_direct(temp_r, local_eta_s, FOsurf_ptr[j].tau, mT, K_T_local, cos(temp_phi - K_phi_local));
+		if (j==0 && fabs(K_phi_local - M_PI) < 1.e-3 && fabs(K_T_local - 0.05) < 1.e-6)
+			cerr << temp_r << "   " << temp_phi << "   " << local_eta_s << "   " << FOsurf_ptr[j].tau
+				<< "   " << mT << "   " << K_T_local << "   " << cos(temp_phi - K_phi_local)
+				<< "   " << S_p*FOsurf_ptr[j].tau << endl;
+	}
+	else
+	        S_p = Emissionfunction(p0, px, py, pz, &FOsurf_ptr[j]);
         if (flagneg == 1 && S_p < tol)
         {
            S_p = 0.0e0;
@@ -434,10 +440,7 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
            (*Emissionfunction_ptr)[idx].eta = local_eta_s;
            (*Emissionfunction_ptr)[idx].x = FOsurf_ptr[j].xpt;
            (*Emissionfunction_ptr)[idx].y = FOsurf_ptr[j].ypt;
-           (*Emissionfunction_ptr)[idx].r = sqrt(FOsurf_ptr[j].xpt*FOsurf_ptr[j].xpt + FOsurf_ptr[j].ypt*FOsurf_ptr[j].ypt);
-           double temp_phi = atan2(FOsurf_ptr[j].ypt, FOsurf_ptr[j].xpt);
-		if (temp_phi < 0.0)
-			temp_phi += 2.*M_PI;
+           (*Emissionfunction_ptr)[idx].r = temp_r;
            (*Emissionfunction_ptr)[idx].phi = temp_phi;
            (*Emissionfunction_ptr)[idx].z = FOsurf_ptr[j].tau*sh_localetas;
            CDF += S_p_withweight;
@@ -580,6 +583,7 @@ void doHBT::Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, d
    double sign = particle_sign;
    double degen = particle_gspin;
    double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+	double localmass = particle_mass;
 
    for(int isurf=0; isurf<FO_length ; isurf++)
    {
@@ -603,6 +607,8 @@ void doHBT::Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, d
       double pi12 = surf->pi12;
       double pi22 = surf->pi22;
       double pi33 = surf->pi33;
+	double temp_r = surf->r;
+	double temp_phi = surf->phi;
 
 /*
 cout << "isurf: " << isurf << " of " << FO_length << endl;
@@ -633,10 +639,12 @@ cout  << endl << endl << endl;
       
       for(int ipt = 0; ipt < n_SP_pT; ipt++)
       {
+	double pT = SP_pT[ipt];
       for(int iphi = 0; iphi < n_SP_pphi; iphi++)
       {
          double px = SP_px[ipt][iphi];
          double py = SP_py[ipt][iphi];
+	double cos_phi_m_pphi = cos(temp_phi - SP_pphi[iphi]);
       for(int ieta=0; ieta < eta_s_npts; ieta++)
       {
          double p0 = SP_p0[ipt][ieta];
@@ -658,7 +666,15 @@ cout  << endl << endl << endl;
 		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
 	 }
 
-         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
+	double S_p;
+
+	if (USE_ANALYTIC_S)
+	{
+		S_p = prefactor * S_direct(temp_r, eta_s[ieta], tau, sqrt(pT*pT + localmass*localmass), pT, cos_phi_m_pphi);
+		if (VERBOSE > 0 && isurf == 0) *global_out_stream_ptr << "  --> Cal_dN_dypTdpTdphi(): computed emission function with S_direct()..." << endl;
+	}
+	else
+		S_p = prefactor*pdsigma*f0*(1.+deltaf);
 	 if (1. + deltaf < 0.0) S_p = 0.0;
         if (flagneg == 1 && S_p < tol)
         {
@@ -668,7 +684,6 @@ cout  << endl << endl << endl;
 	double symmetry_factor = 1.0;
 	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
          double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor count for the assumed reflection symmetry along eta direction
-	//***==>SYMMETRY FACTOR ALREADY ACCOUNTED FOR IN UPDATE_SOURCE_VARIANCE(...)
 //cout << "(ipt, iphi, ieta) = (" << ipt << ", " << iphi << ", " << ieta << "): " << "dN_dypTdpTdphi[ipt][iphi] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
          dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
       }

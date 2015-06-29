@@ -79,6 +79,11 @@ class SourceVariances
 		double zeta_max;
 		double s_min, s_max;
 		
+		//integrated space-time moments vars.
+		double S_r_to_part, S_xs_r_to_part, S_xo_r_to_part, S_xl_r_to_part, S_t_r_to_part;
+		double S_xs2_r_to_part, S_xo2_r_to_part, S_xl2_r_to_part, S_t2_r_to_part;
+		double S_xs_xo_r_to_part, S_xs_xl_r_to_part, S_xs_t_r_to_part, S_xo_xl_r_to_part, S_xo_t_r_to_part, S_xl_t_r_to_part;
+		
 		//array to hold resonance info
 		resonance_info resonances;
 		int current_resonance_idx;
@@ -86,8 +91,9 @@ class SourceVariances
 		double current_resonance_mass;
 		double current_resonance_Gamma;
 		double current_resonance_total_br;
-		double* current_resonance_decay_masses;
-		double* P_eval;
+		double * current_resonance_decay_masses;
+		double * P_eval;
+		double * alpha_mu;
 
 		//*************************************************************
 		//freeze-out surface interpolation arrays (prefix: "FOI_"), etc...
@@ -195,7 +201,7 @@ class SourceVariances
 		double * VEC_n2_MTm;
 		double ** VEC_n2_MT;
 		double ** VEC_n2_PPhi_tilde, ** VEC_n2_PPhi_tildeFLIP, ** VEC_n2_PT;
-		double *** VEC_n2_Pp;
+		double *** VEC_n2_Pp, *** VEC_n2_Pm, *** VEC_n2_alpha, *** VEC_n2_alpha_m;
 		//double ** VEC_n2_PpT, ** VEC_n2_Ppphi;
 		double VEC_n2_s_factor;
 		double * VEC_n2_v_factor;
@@ -214,7 +220,7 @@ class SourceVariances
 		double ** VEC_MTm;
 		double *** VEC_MT;
 		double *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT;
-		double **** VEC_Pp;
+		double **** VEC_Pp, **** VEC_alpha, **** VEC_Pm, **** VEC_alpha_m;
 		//double *** VEC_PpT, *** VEC_Ppphi;
 		double * VEC_s_factor;
 		double ** VEC_v_factor;
@@ -253,6 +259,13 @@ class SourceVariances
 		
 		//HBT radii coefficients
 		double **R2_side, **R2_out, **R2_long, **R2_outside, **R2_sidelong, **R2_outlong;
+		double **R2_side_C, **R2_side_S;
+		double **R2_out_C, **R2_out_S;
+		double **R2_long_C, **R2_long_S;
+		double **R2_outside_C, **R2_outside_S;
+		double **R2_outlong_C, **R2_outlong_S;
+		double **R2_sidelong_C, **R2_sidelong_S;
+
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -271,13 +284,9 @@ class SourceVariances
 		SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances);
 		~SourceVariances();
 
-		void Determine_plane_angle(FO_surf* FOsurf_ptr);
-		void Determine_plane_angle_check(FO_surf* FOsurf_ptr);
+		void Determine_plane_angle(FO_surf* FOsurf_ptr, int reso_idx, bool thermal_particles_only = false);
 		void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
-		void Analyze_sourcefunction_check(FO_surf* FOsurf_ptr);
-		void Reset_EmissionData();
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
-		void SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local);
 		bool fexists(const char *filename);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx);
@@ -293,8 +302,7 @@ class SourceVariances
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
-		//void Do_resonance_integrals(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_local, int reso_idx);
-		void Do_resonance_integrals(FO_surf* FOsurf_ptr, int iKT, int iKphi, int reso_idx);
+		void Do_resonance_integrals(int iKT, int iKphi, int reso_idx);
 		void Load_resonance_info(int reso_idx, double K_T_local, double K_phi_local);
 		void Update_source_variances(int iKT, int iKphi, int reso_idx);
 
@@ -305,6 +313,7 @@ class SourceVariances
 		void Calculate_R2_outside(int, int);
 		void Calculate_R2_sidelong(int, int);
 		void Calculate_R2_outlong(int, int);
+		void R2_Fourier_transform(int iKT, double plane_psi);
 
 		//miscellaneous
 		void Set_ofstream(ofstream& myout);
@@ -316,13 +325,12 @@ class SourceVariances
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
 		double get_Q();
 		double g(double s);
-		void do_all_integrals(int iKT, int iKphi, int reso_idx);
 		void set_to_zero(double * array, int arraylength);
-		//void set_surfarrays();
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);
 		void Output_SVdN_dypTdpT(int folderindex);
+		void Output_all_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);
 

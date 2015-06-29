@@ -38,9 +38,9 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	Pp = new double [4];
 	Pm = new double [4];
 
-	n_zeta_pts = 15;
-	n_v_pts = 15;
-	n_s_pts = 15;
+	n_zeta_pts = 25;
+	n_v_pts = 25;
+	n_s_pts = 25;
 	v_min = -1.;
 	v_max = 1.;
 	zeta_min = 0.;
@@ -83,7 +83,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			resonances.resonance_decay_masses[ir][1] = 0.0;
 			resonances.resonance_mu[ir] = 0.0;
 			resonances.resonance_gspin[ir] = 1.0;	//actual g's have been absorbed into definitions of br
-			resonances.resonance_sign[ir] = 1;	//not quite right
+			//resonances.resonance_sign[ir] = 1;	//not quite right
 		}
 		int row_index = 0;
 		tempresonancefile >> row_index;
@@ -210,7 +210,6 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			}
 		}
 	}
-	const double MeVToGeV = 0.001;
 	s_pts = new double * [n_resonance];
 	s_wts = new double * [n_resonance];
 	v_pts = new double [n_v_pts];
@@ -405,66 +404,107 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	xo_t_S = new double* [n_localp_T];
 	xl_t_S = new double* [n_localp_T];
 
-   R2_side = new double* [n_localp_T];
-   R2_out = new double* [n_localp_T];
-   R2_long = new double* [n_localp_T];
-   R2_outside = new double* [n_localp_T];
-   R2_sidelong = new double* [n_localp_T];
-   R2_outlong = new double* [n_localp_T];
+	R2_side = new double* [n_localp_T];
+	R2_side_C = new double* [n_localp_T];
+	R2_side_S = new double* [n_localp_T];
+	R2_out = new double* [n_localp_T];
+	R2_out_C = new double* [n_localp_T];
+	R2_out_S = new double* [n_localp_T];
+	R2_long = new double* [n_localp_T];
+	R2_long_C = new double* [n_localp_T];
+	R2_long_S = new double* [n_localp_T];
+	R2_outside = new double* [n_localp_T];
+	R2_outside_C = new double* [n_localp_T];
+	R2_outside_S = new double* [n_localp_T];
+	R2_sidelong = new double* [n_localp_T];
+	R2_sidelong_C = new double* [n_localp_T];
+	R2_sidelong_S = new double* [n_localp_T];
+	R2_outlong = new double* [n_localp_T];
+	R2_outlong_C = new double* [n_localp_T];
+	R2_outlong_S = new double* [n_localp_T];
 
-   for(int i=0; i<n_localp_T; i++)
-   {
-	S_func[i] = new double [n_localp_phi];
-	xs_S[i] = new double [n_localp_phi];
-	xs2_S[i] = new double [n_localp_phi];
-	xo_S[i] = new double [n_localp_phi];
-	xo2_S[i] = new double [n_localp_phi];
-	xl_S[i] = new double [n_localp_phi];
-	xl2_S[i] = new double [n_localp_phi];
-	t_S[i] = new double [n_localp_phi];
-	t2_S[i] = new double [n_localp_phi];
-	xo_xs_S[i] = new double [n_localp_phi];
-	xl_xs_S[i] = new double [n_localp_phi];
-	xs_t_S[i] = new double [n_localp_phi];
-	xo_xl_S[i] = new double [n_localp_phi];
-	xo_t_S[i] = new double [n_localp_phi];
-	xl_t_S[i] = new double [n_localp_phi];
-	
-	R2_side[i] = new double [n_localp_phi];
-	R2_out[i] = new double [n_localp_phi];
-	R2_long[i] = new double [n_localp_phi];
-	R2_outside[i] = new double [n_localp_phi];
-	R2_sidelong[i] = new double [n_localp_phi];
-	R2_outlong[i] = new double [n_localp_phi];
-   }
+	for(int i=0; i<n_localp_T; i++)
+	{
+		S_func[i] = new double [n_localp_phi];
+		xs_S[i] = new double [n_localp_phi];
+		xs2_S[i] = new double [n_localp_phi];
+		xo_S[i] = new double [n_localp_phi];
+		xo2_S[i] = new double [n_localp_phi];
+		xl_S[i] = new double [n_localp_phi];
+		xl2_S[i] = new double [n_localp_phi];
+		t_S[i] = new double [n_localp_phi];
+		t2_S[i] = new double [n_localp_phi];
+		xo_xs_S[i] = new double [n_localp_phi];
+		xl_xs_S[i] = new double [n_localp_phi];
+		xs_t_S[i] = new double [n_localp_phi];
+		xo_xl_S[i] = new double [n_localp_phi];
+		xo_t_S[i] = new double [n_localp_phi];
+		xl_t_S[i] = new double [n_localp_phi];
+		
+		R2_side[i] = new double [n_localp_phi];
+		R2_side_C[i] = new double [n_order];
+		R2_side_S[i] = new double [n_order];
+		R2_out[i] = new double [n_localp_phi];
+		R2_out_C[i] = new double [n_order];
+		R2_out_S[i] = new double [n_order];
+		R2_outside[i] = new double [n_localp_phi];
+		R2_outside_C[i] = new double [n_order];
+		R2_outside_S[i] = new double [n_order];
+		R2_long[i] = new double [n_localp_phi];
+		R2_long_C[i] = new double [n_order];
+		R2_long_S[i] = new double [n_order];
+		R2_sidelong[i] = new double [n_localp_phi];
+		R2_sidelong_C[i] = new double [n_order];
+		R2_sidelong_S[i] = new double [n_order];
+		R2_outlong[i] = new double [n_localp_phi];
+		R2_outlong_C[i] = new double [n_order];
+		R2_outlong_S[i] = new double [n_order];
+	}
 
-//initialize all source variances and HBT radii/coeffs
-for(int i=0; i<n_localp_T; i++)
-for(int j=0; j<n_localp_phi; j++)
-{
-	S_func[i][j] = 0.;
-	xs_S[i][j] = 0.;
-	xs2_S[i][j] = 0.;
-	xo_S[i][j] = 0.;
-	xo2_S[i][j] = 0.;
-	xl_S[i][j] = 0.;
-	xl2_S[i][j] = 0.;
-	t_S[i][j] = 0.;
-	t2_S[i][j] = 0.;
-	xo_xs_S[i][j] = 0.;
-	xl_xs_S[i][j] = 0.;
-	xs_t_S[i][j] = 0.;
-	xo_xl_S[i][j] = 0.;
-	xo_t_S[i][j] = 0.;
-	xl_t_S[i][j] = 0.;
-	
-	R2_side[i][j] = 0.;
-	R2_out[i][j] = 0.;
-	R2_long[i][j] = 0.;
-	R2_outside[i][j] = 0.;
-	R2_sidelong[i][j] = 0.;
-	R2_outlong[i][j] = 0.;
-}
+	//initialize all source variances and HBT radii/coeffs
+	for(int i=0; i<n_localp_T; i++)
+	{
+		for(int j=0; j<n_localp_phi; j++)
+		{
+			S_func[i][j] = 0.;
+			xs_S[i][j] = 0.;
+			xs2_S[i][j] = 0.;
+			xo_S[i][j] = 0.;
+			xo2_S[i][j] = 0.;
+			xl_S[i][j] = 0.;
+			xl2_S[i][j] = 0.;
+			t_S[i][j] = 0.;
+			t2_S[i][j] = 0.;
+			xo_xs_S[i][j] = 0.;
+			xl_xs_S[i][j] = 0.;
+			xs_t_S[i][j] = 0.;
+			xo_xl_S[i][j] = 0.;
+			xo_t_S[i][j] = 0.;
+			xl_t_S[i][j] = 0.;
+			
+			R2_side[i][j] = 0.;
+			R2_out[i][j] = 0.;
+			R2_long[i][j] = 0.;
+			R2_outside[i][j] = 0.;
+			R2_sidelong[i][j] = 0.;
+			R2_outlong[i][j] = 0.;
+		}
+		for(int j=0; j<n_order; j++)
+		{
+			R2_side_C[i][j] = 0.;
+			R2_side_S[i][j] = 0.;
+			R2_out_C[i][j] = 0.;
+			R2_out_S[i][j] = 0.;
+			R2_outside_C[i][j] = 0.;
+			R2_outside_S[i][j] = 0.;
+			R2_long_C[i][j] = 0.;
+			R2_long_S[i][j] = 0.;
+			R2_sidelong_C[i][j] = 0.;
+			R2_sidelong_S[i][j] = 0.;
+			R2_outlong_C[i][j] = 0.;
+			R2_outlong_S[i][j] = 0.;
+		}
+	}
 
 //**************************************************************************************************
 //time_t rawtime;
@@ -509,24 +549,7 @@ void SourceVariances::Update_sourcefunction(particle_info* particle, int FOarray
       sine_iorder[i][j] = 0.0e0;
    }
 
-   //Emission function
    FO_length = FOarray_length;
-   Emissionfunction_length = FO_length*eta_s_npts;
-   Emissionfunction_ptr = new vector<Emissionfunction_data> (Emissionfunction_length);
-   avgFOsurf_ptr = new vector<Emissionfunction_data> (FO_length*n_localp_T);
-
-	for(int i=0; i<Emissionfunction_length; i++)
-	   {
-		(*Emissionfunction_ptr)[i].data = 0.0;
-		(*Emissionfunction_ptr)[i].t = 0.0;
-		(*Emissionfunction_ptr)[i].x = 0.0;
-		(*Emissionfunction_ptr)[i].y = 0.0;
-		(*Emissionfunction_ptr)[i].z = 0.0;
-		(*Emissionfunction_ptr)[i].r = 0.0;
-		(*Emissionfunction_ptr)[i].phi = 0.0;
-		(*Emissionfunction_ptr)[i].tau = 0.0;
-		(*Emissionfunction_ptr)[i].eta = 0.0;
-	}
 
 //reset only EBE source variances and EBE HBT radii/coeffs
 for(int i=0; i<n_localp_T; i++)
@@ -592,24 +615,6 @@ SourceVariances::~SourceVariances()
    return;
 }
 
-void SourceVariances::Reset_EmissionData()
-{
-	Emissionfunction_length = FO_length*eta_s_npts;
-
-	for(int i=0; i<Emissionfunction_length; i++)
-	{
-		(*Emissionfunction_ptr)[i].data = 0.0;
-		(*Emissionfunction_ptr)[i].t = 0.0;
-		(*Emissionfunction_ptr)[i].x = 0.0;
-		(*Emissionfunction_ptr)[i].y = 0.0;
-		(*Emissionfunction_ptr)[i].z = 0.0;
-		(*Emissionfunction_ptr)[i].r = 0.0;
-		(*Emissionfunction_ptr)[i].phi = 0.0;
-		(*Emissionfunction_ptr)[i].tau = 0.0;
-		(*Emissionfunction_ptr)[i].eta = 0.0;
-	}
-}
-
 bool SourceVariances::fexists(const char *filename)
 {
   ifstream ifile(filename);
@@ -664,8 +669,7 @@ void SourceVariances::Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr)
 {
 	current_FOsurf_ptr = FOsurf_ptr;
 	
-	//double ** surf_damu, ** surf_pimunu, ** surf_Bn_muS_muB, ** surf_geometry_pts, ** surf_particle_mu;
-	surf_damu = new double * [3];
+	/*surf_damu = new double * [3];
 	surf_pimunu = new double * [8];  //all pimunu's and bulkPi coeff --> latter probably zero
 	surf_Bn_muS_muB = new double * [3];
 	surf_geometry_pts = new double * [7];
@@ -714,7 +718,7 @@ void SourceVariances::Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr)
 		surf_flow[0][isurf] = surf->vx;
 		surf_flow[1][isurf] = surf->vy;
 		surf_flow[2][isurf] = surf->gammaT;
-	}
+	}*/
 	
 	return;
 }

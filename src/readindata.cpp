@@ -316,8 +316,8 @@ Nstable_particle = set_stable_particle_monval();
             if(particle[j].monval == stable_particle_monval[i])
             {
                particle[j].stable = 1;
-               //for(int k=0; k<FO_length; k++)
-               for(int k=0; k<1; k++)
+               //for(int k=0; k<1; k++)
+               for(int k=0; k<FO_length; k++)
                    FOsurf_ptr[k].particle_mu[j] = particle_mu[i][k];
                break;
             }
@@ -334,8 +334,8 @@ Nstable_particle = set_stable_particle_monval();
                   {
                      if(particle[i].decays_part[j][k] == particle[l].monval)	//once you've found it,
                      {
-                        //for(int m=0; m<FO_length; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
-			for(int m=0; m<1; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
+			//for(int m=0; m<1; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
+                        for(int m=0; m<FO_length; m++)				//update the chemical potential for the original particle along the FO surface in the following way:
                           FOsurf_ptr[m].particle_mu[i] += particle[i].decays_branchratio[j]*FOsurf_ptr[m].particle_mu[l];
                         break;							//note that the pdg list is organized in such a way as to force unstable particles to decay *only* into
 										//other preceding particles in the file.  particle_mu[i] is therefore only updated by chemical potentials
@@ -536,7 +536,7 @@ int set_stable_particle_monval()
    //}
    //else
    //{
-      cout << "Reading particle table and calculating chemical potential for particles...";
+      //cout << "Reading particle table and calculating chemical potential for particles...";
       //ifstream particletable("EOS/EOS_particletable.dat");
       ifstream particletable("/home/plumberg.1/HBTPlumberg/EOS/EOS_particletable.dat");
       particletable >> local_Nstable_particle;

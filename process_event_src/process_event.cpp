@@ -38,7 +38,7 @@ bool get_plane_angle_only = false;
    int folderindex = get_folder_index(currentworkingdirectory);
    initialize_PRfile(currentworkingdirectory);
    Source_function.Set_path(currentworkingdirectory);
-   Source_function.Set_use_delta_f(false);
+   Source_function.Set_use_delta_f(true);
 
    ostringstream filename_stream;
    filename_stream << currentworkingdirectory << "/Processing_record.txt";

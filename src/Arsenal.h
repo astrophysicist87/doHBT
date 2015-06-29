@@ -20,13 +20,14 @@ void polint(double xa[], double ya[], long n, double x, double *y, double *dy);
 void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1, double x2, double *y, double *dy);
 
 //individual interpolation routines
-//double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing);
-//double interpolate2D(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, int kind, bool uniform_spacing);
 double interpLinearDirect(double * x, double * y, double x0, long size);
 double interpLinearNondirect(double * x, double * y, double x0, long size);
 double interpBiLinearDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
+double interpTriLinearDirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size);
+double interpTriLinearNondirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size);
 double interpCubicDirect(double * x, double * y, double x0, long size);
+double interpCubicNondirect(double * x, double * y, double xx, long size);
 double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag = false);
 double interpPolyDirect(double * x, double * y, double x0, long size);
@@ -38,5 +39,7 @@ double interpNewtonDirect(double * x, double * y, double x0, long size);
 //main interpolation routines
 double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing);
 double interpolate2D(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, int kind, bool uniform_spacing, bool returnflag = false);
+double interpolate3D(double * x, double * y, double * z, double *** f, double x0, double y0, double z0,
+			long x_size, long y_size, long z_size, int kind, bool uniform_spacing, bool returnflag = false);
 
 #endif

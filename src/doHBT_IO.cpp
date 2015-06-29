@@ -51,7 +51,8 @@ for(int iKT = 0; iKT < n_localp_T; iKT++)
 			<< "  " << R2_side[iKT][iKphi] << "  " << R2_out[iKT][iKphi]
 			<< "  " << R2_outside[iKT][iKphi] << "  " << R2_long[iKT][iKphi]
 			<< "  " << R2_sidelong[iKT][iKphi] << "  " << R2_outlong[iKT][iKphi] << endl;
-         	output_Svars << scientific << setprecision(8) << setw(15) 
+         	//output_Svars << scientific << setprecision(8) << setw(15) 
+         	output_Svars << setprecision(8) << setw(15) 
 			<< K_T[iKT] << "   " << K_phi[iKphi] << "   " << S_func[iKT][iKphi] << "   "
 			<< xs_S[iKT][iKphi]  << "   " << xo_S[iKT][iKphi]  << "   " << xl_S[iKT][iKphi]  << "   " << t_S[iKT][iKphi]  << "   "
 			<< xs_t_S[iKT][iKphi]  << "   " << xo_t_S[iKT][iKphi]  << "   " << xl_t_S[iKT][iKphi]  << "   " << xo_xs_S[iKT][iKphi]  << "   "

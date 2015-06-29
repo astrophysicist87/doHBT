@@ -5,15 +5,22 @@
 #include<sstream>
 using namespace std;
 
-#define SYMMETRIC_PT_PTS 0		// chooses whether or not to use gaussian spacing or symmetric spacing for pt points
-#define INTERPOLATION_FORMAT 2		// 0 - no interpolation, calculate everything exactly (bad idea)
-					// 1 - Cartesian grid spacing in px - py
-					// 2 - polar grid spacing in pT - pphi
-#define UNIFORM_SPACING true		// specifies uniform or non-uniform grid spacing for interpolation
-#define ASSUME_ETA_SYMMETRIC 1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
-					// 0 means just integrate over given range of eta_s without worrying about symmetry
+#define SYMMETRIC_PT_PTS		0		// chooses whether or not to use gaussian spacing or symmetric spacing for pt points
+#define INTERPOLATION_FORMAT		2		// 0 - no interpolation, calculate everything exactly (bad idea)
+							// 1 - Cartesian grid spacing in px - py
+							// 2 - polar grid spacing in pT - pphi
+#define UNIFORM_SPACING			true		// specifies uniform or non-uniform grid spacing for interpolation
+#define ASSUME_ETA_SYMMETRIC		1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
+							// 0 means just integrate over given range of eta_s without worrying about symmetry
+#define USE_ANALYTIC_S			true		// use toy model for emission function instead of Cooper-Frye
+#define USE_PLANE_PSI_ORDER		0		// specifies whether to do HBT relative to flow-plane angle,
+							// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle
+							// at given order
+#define TRUNCATE_COOPER_FRYE		true		// ignore contributions to CF integral which are extremely small --> speeds up code by factor of 3-4
+#define VERBOSE				2		// specifies level of output - 0 is lowest (no output)
 
 const double hbarC=0.197327053;  //GeV*fm
+const double hbarC3=hbarC*hbarC*hbarC;  //GeV*fm
 
 //particle information
 const int Maxparticle=400;            //size of array for storage of the particles
@@ -46,14 +53,14 @@ const int corrfuncdim = 1;
 const bool lambdaflag = true;
 
 //pair momentum info
-const int n_localp_T = 5;
-const double localp_T_min = 0.0;
-const double localp_T_max = 2.0;
+const int n_localp_T = 14;
+const double localp_T_min = 0.05;
+const double localp_T_max = 0.7;
 const int n_localp_phi = 51;
 const double localp_phi_min = 0.0;
 const double localp_phi_max = 2*M_PI;
 
-const int n_order = 4;
+const int n_order = 1;
 //const int n_order = 10;
 
 //const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4/NEW_TDEP_V4_results-";
@@ -66,7 +73,7 @@ const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RES
 const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
 const double tol = 1e-15;  //tolarence
-const int flagneg = 0;     //neglect all points that are negative
+const int flagneg = 1;     //neglect all points that are negative
 
 const int MCint_calls = 5000;  //# of calls for monte carlo integration
 
