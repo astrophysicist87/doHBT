@@ -47,7 +47,8 @@ const double MeVToGeV = 0.001;
 const double hbarC3=hbarC*hbarC*hbarC;
 const int order = 43;
 const int order2 = order;
-const int n_weighting_functions = 15;	//# of SV's, including just spectra
+//const int n_weighting_functions = 15;	//# of SV's, including just spectra
+const int n_weighting_functions = 1;	//# no SV's here
 int n_resonance;
 
 
@@ -85,8 +86,8 @@ double tau_integrated_S_prefactor, tau_integrated_Stau_prefactor, tau_integrated
 //physical variables
 double current_KT, current_MT, current_Kphi, current_cos_Kphi, current_sin_Kphi;
 
-const int n_K_T = 15, n_K_phi = 2;
-const double K_T_min = 0.0, K_T_max = 0.7;
+const int n_K_T = 41, n_K_phi = 2;
+const double K_T_min = 0.0, K_T_max = 2.0;
 const double K_phi_min = 0.0, K_phi_max = 2.*M_PI;
 double * K_T, * K_phi, * K_phi_weights;
 
@@ -109,6 +110,7 @@ string particle_name = "Pion_p";
 
 	//store spectra
 	double **** resonance_spectra;
+	double * spacetime_moments;
 	double * PTpts, * PPhipts, * PYpts;
 	const int nPTpts = 100;
 	const int nPPhipts = 100;
@@ -176,12 +178,14 @@ double g(double s);
 double get_Q();
 void Set_resonance_integration_points(double smin, double smax);
 double Direct_contributions_to_pion_spectra(double pT, double y, double pphi);
+double Direct_contributions_to_Y_integrated_pion_spectra(double pT, double pphi);
 double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double pphi, int reso_idx);
 double S_thermal(double r, double phi, double eta, double tau, double PT, double Y, double Phi, int reso_idx = 0);
 double tauintegrated_S_thermal(double r, double phi, double eta, double PT, double Y, double Phi, int reso_idx = 0);
 void Create_integrations_points_and_weights();
 void Compute_direct_resonance_spectra();
-double Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx, double * spacetime_moments);
+double Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx);
+void Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx, double * spacetime_moments);
 void Compute_direct_pion_spectra_OLD();
 int read_in_resonances(resonance_info * resonances);
 

@@ -141,8 +141,8 @@ void Create_integrations_points_and_weights()
 	
 	//load resonances
 	n_resonance = read_in_resonances(&resonances);
-	for (int ires = 0; ires < n_resonance; ires++)
-		cout << resonances.resonance_mass[ires] << endl;
+	//for (int ires = 0; ires < n_resonance; ires++)
+	//	cout << resonances.resonance_mass[ires] << endl;
 
 	//set pair-momentum info
 	K_T = new double [n_K_T];
@@ -200,20 +200,22 @@ double Direct_contributions_to_pion_spectra(double pT, double y, double pphi)
 	for (int ieta = 0; ieta < netapts; ieta++)
 		sum += symmetry_factor * r_wts[ir] * phi_wts[iphi] * eta_wts[ieta]
 			* tau_integrated_S_prefactor * tauintegrated_S_thermal(r_pts[ir], phi_pts[iphi], eta_pts[ieta], pT, y, pphi);
-	cout << "dN_dypTdpTdpphi(pT = " << pT << ", pphi = " << pphi << ") = " << sum << endl;
+	//cout << "dN_dypTdpTdpphi(pT = " << pT << ", pphi = " << pphi << ") = " << sum << endl;
 	return sum;
 }
+
 double Direct_contributions_to_Y_integrated_pion_spectra(double pT, double pphi)
 {
 	double sum = 0.0;
-	int n_intY_pts = 43;
+	int n_intY_pts = order;
 	double intY_min = -4.0, intY_max = 4.0;
 	double * intY_pts = new double [n_intY_pts];
 	double * intY_wts = new double [n_intY_pts];
 	gauss (n_intY_pts, 0, intY_min, intY_max, intY_pts, intY_wts);
 	for (int iy = 0; iy < n_intY_pts; iy++)
 		sum += intY_wts[iy] * Direct_contributions_to_pion_spectra(pT, intY_pts[iy], pphi);
-	cout << "Direct pion: dN_pTdpTdpphi(pT = " << pT << ", pphi = " << pphi << ") = " << sum << endl;
+	//cout << "Direct pion: dN_pTdpTdpphi(pT = " << pT << ", pphi = " << pphi << ") = " << sum << endl;
+	cout << sqrt(pT*pT + m_pion*m_pion) - m_pion << "   " << sum << endl;
 	return sum;
 }
 
@@ -263,6 +265,23 @@ double Compute_direct_resonance_spectra(double pt, double py, double pphi, int r
 		sum += symmetry_factor * tau_integrated_S_prefactor * r_wts[ir] * phi_wts[iphi] * eta_wts[ieta]
 				* tauintegrated_S_thermal(r_pts[ir], phi_pts[iphi], eta_pts[ieta], pt, py, pphi, reso_idx);
 	return (sum);
+}
+
+void Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx, double * spacetime_moments)
+{
+	double sum = 0.0, symmetry_factor = 1.0;	//for eta integration
+	set_to_zero(spacetime_moments, n_weighting_functions);
+	if (ASSUME_ETA_SYMMETRIC)
+		symmetry_factor = 2.0;
+	for (int ir = 0; ir < nrpts; ir++)
+	for (int iphi = 0; iphi < nphipts; iphi++)
+	for (int ieta = 0; ieta < netapts; ieta++)
+	{//CURRENTLY WRONG --> NEED TO ACTUALLY CONSTRUCT CORRECT SV'S
+		for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+			spacetime_moments[wfi] += symmetry_factor * tau_integrated_S_prefactor * r_wts[ir] * phi_wts[iphi] * eta_wts[ieta]
+					* tauintegrated_S_thermal(r_pts[ir], phi_pts[iphi], eta_pts[ieta], pt, py, pphi, reso_idx);
+	}
+	return;
 }
 
 void Compute_direct_pion_spectra_OLD()
@@ -359,14 +378,16 @@ double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double
 	if (fabs(pT) < 1e-12) return (0.0);
 	double ssum = 0.0;
 	spacetime_moments = new double [n_weighting_functions];
-	double * ssumvec = new double [n_weighting_function];
-	double * vsumvec = new double [n_weighting_function];
-	double * zetasumvec = new double [n_weighting_function];
-	double * ptausumvec = new double [n_weighting_function];
+	double * ssumvec = new double [n_weighting_functions];
+	double * vsumvec = new double [n_weighting_functions];
+	double * zetasumvec = new double [n_weighting_functions];
+	double * ptausumvec = new double [n_weighting_functions];
+	double * Csumvec = new double [n_weighting_functions];
 	set_to_zero(ssumvec, n_weighting_functions);
 	set_to_zero(vsumvec, n_weighting_functions);
 	set_to_zero(zetasumvec, n_weighting_functions);
 	set_to_zero(ptausumvec, n_weighting_functions);
+	set_to_zero(Csumvec, n_weighting_functions);
 	set_to_zero(spacetime_moments, n_weighting_functions);
 	m = m_pion;
 	double mT = sqrt(m*m+pT*pT);
@@ -449,7 +470,7 @@ double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double
 				Pm[2] = PT * sin(PPhi_tilde_shiftFLIP);
 				Pm[3] = Pp[3];
 				//double ptausum = 0.0;
-				set_to_zero(ssumvec, n_weighting_functions);
+				/*set_to_zero(ptausumvec, n_weighting_functions);
 				for (int iptau = 0; iptau < nptaupts; iptau++)
 				{
 					double Csum = 0.0, tempSres;
@@ -460,9 +481,10 @@ double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double
 							PkPhi = PPhi_tilde_shiftFLIP;		//also takes Pp --> Pm
 						//try without interpolation...
 						Compute_direct_resonance_spectra(PkT, PkY, PkPhi, reso_idx, spacetime_moments);
-						Csum += tempSres;
-						/*Csum += interpolate3D(PTpts, PPhipts, PYpts, resonance_spectra[reso_idx - 1],
-									PkT, PkPhi, PkY, nPTpts, nPPhipts, nPYpts, 0, true, true);*/
+						for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+							Csumvec[wfi] += spacetime_moments[wfi];
+						//Csum += interpolate3D(PTpts, PPhipts, PYpts, resonance_spectra[reso_idx - 1],
+						//			PkT, PkPhi, PkY, nPTpts, nPPhipts, nPYpts, 0, true, true);
 						//cout << "Guessing this is where the problem is..." << endl
 						//	<< "PkPhi = " << PkPhi << endl;
 						//mytemp = interpolate3D(PTpts, PPhipts, PYpts, resonance_spectra[reso_idx - 1],
@@ -470,21 +492,38 @@ double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double
 						//cerr << PkT << "   " << PkPhi << "   " << PkY << "   " << mytemp << endl;
 						//Csum += mytemp;
 					}
-					ptausum += ptau_factor*Csum;
+					for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+						ptausumvec[wfi] += ptau_factor*Csumvec[wfi];
+				}*/
+				double Csum = 0.0, tempSres;
+				set_to_zero(Csumvec, n_weighting_functions);
+				//double ptau_factor = Gamma * exp(-Gamma*ptau_pts[iptau]) * ptau_wts[iptau];
+				for (int tempidx = 1; tempidx <= 2; tempidx++)
+				{
+					if (tempidx != 1)
+						PkPhi = PPhi_tilde_shiftFLIP;		//also takes Pp --> Pm
+					Compute_direct_resonance_spectra(PkT, PkY, PkPhi, reso_idx, spacetime_moments);
+					for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+						Csumvec[wfi] += spacetime_moments[wfi];
 				}
-				zetasum += zeta_factor*ptausum;
+				for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+					zetasumvec[wfi] += zeta_factor*Csumvec[wfi];
+					//zetasumvec[wfi] += zeta_factor*ptausumvec[wfi];
 			}
-			vsum += v_factor*zetasum;
+			for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+				vsumvec[wfi] += v_factor*zetasumvec[wfi];
 		}
-		ssum += Mres*s_factor*vsum;
+		for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+			ssumvec[wfi] += Mres*s_factor*vsumvec[wfi];
 	}
 	else if (n_body == 3)
 	{
 		;
 	}
 	
-	cout << "pion pT = " << pT << ": ssum = " << ssum << endl;
-	return (ssum);
+	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
+		cout << "pion pT = " << pT << ": ssumvec[" << wfi << "] = " << ssumvec[wfi] << endl;
+	return (ssumvec[0]);
 }
 
 double get_Q()

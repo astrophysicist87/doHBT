@@ -48,6 +48,8 @@ const double hbarC3=hbarC*hbarC*hbarC;
 const int order = 43;
 const int order2 = order;
 int n_resonance;
+const int n_weighting_functions = 1;	//# no SV's here
+const int n_xi_pts = order;
 
 const int nrpts = order;
 const int nphipts = order;
@@ -104,14 +106,17 @@ string particle_name = "Pion_p";
 	double * zeta_pts, * zeta_wts;
 	double * ptau_pts, * ptau_wts;	//for proper time integration
 	resonance_info resonances;
+	
+	double * xi_pts, * xi_wts, * ch_xi_pts, * sh_xi_pts;
 
 	//store spectra
 	double **** resonance_spectra;
+	double * spacetime_moments;
 	double * PTpts, * PPhipts, * PYpts;
-	const int nPTpts = 100;
-	const int nPPhipts = 100;
-	const int nPYpts = 100;
-	const double PTmin = 0.0, PTmax = 5.0;
+	const int nPTpts = 25;
+	const int nPPhipts = 25;
+	const int nPYpts = 25;
+	const double PTmin = 0.0, PTmax = 3.0;
 	const double PPhimin = 0.0, PPhimax = 2.*M_PI;
 	const double PYmin = -3.0, PYmax = 3.0;
 
@@ -163,18 +168,30 @@ double place_in_range(double phi, double min, double max)
 	return (phi);
 }
 
+void set_to_zero(double * array, int length)
+{
+	for (int i = 0; i < length; i++)
+		array[i] = 0.0;
+	return;
+}
+
 double g(double s);
 double get_Q();
-void Set_resonance_integration_points(double smin, double smax);
+void Set_resonance_integration_points(double smin, double smax, double Gamma);
 double Direct_contributions_to_pion_spectra(double pT, double y, double pphi);
-double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double pphi, int reso_idx);
+double Direct_contributions_to_Y_integrated_pion_spectra(double pT, double pphi);
+double Y_integrated_direct_resonance_spectra(double PT, int reso_idx = 0);
+double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double pphi, int reso_idx = 0);
 double S_thermal(double r, double phi, double eta, double tau, double PT, double Y, double Phi, int reso_idx = 0);
 double tauintegrated_S_thermal(double r, double phi, double eta, double PT, double Y, double Phi, int reso_idx = 0);
 void Create_integrations_points_and_weights();
 void Compute_direct_resonance_spectra();
-double Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx);
+void Set_xi_integration_points();
 void Compute_direct_pion_spectra_OLD();
+double Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx = 0);
+void Compute_direct_resonance_spectra(double * spacetime_moments, double pt, double py, double pphi, int reso_idx = 0);
 int read_in_resonances(resonance_info * resonances);
+double Resonance_decay_contributions_to_pion_spectra_no_interpolation(double pT, double y, double pphi, int reso_idx = 0);
 
 
 #endif
