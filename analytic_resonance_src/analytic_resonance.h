@@ -25,6 +25,9 @@ using namespace std;
 
 #define ASSUME_ETA_SYMMETRIC 		0		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
 							// 0 means just integrate over given range of eta_s without worrying about symmetry
+#define USE_INTERPOLATION 		0		// 1 means use interpolation, 0 means don't
+#define USE_SIMPSON	 		0		// 1 means use Newton-Cotes 9-pt method, 0 means use Gaussian quadrature
+#define VERBOSE				0
 
 #include "../src/Arsenal.h"
 
@@ -43,9 +46,10 @@ typedef struct
 const double PI = 3.14159265358979323846264338327950;
 const double twopi = 2.*PI;
 const double hbarC=0.197327053;  //GeV*fm
+//const double hbarC=1.;  //GeV*fm
 const double MeVToGeV = 0.001;
 const double hbarC3=hbarC*hbarC*hbarC;
-const int order = 43;
+const int order = 11;
 const int order2 = order;
 int n_resonance;
 const int n_weighting_functions = 1;	//# no SV's here
@@ -66,8 +70,13 @@ const double phi_min = 0.0, phi_max = 2.0*M_PI;
 const double eta_min = -5.0, eta_max = 5.0;
 const double tau_min = 0.0, tau_max = 20.0;
 
+//const double simpsons_coeffs3[3] = {1./6., 2./3., 1./6.};
+//const double simpsons_coeffs5[5] = {7./90., 16./45., 2./15., 16./45., 7./90.};
+//const double simpsons_coeffs9[9] = {989./28350., 2944./14175., -464./14175., 5248./14175., -454./2835., 5248./14175., -464./14175., 2944./14175., 989./28350.};
+
 const double M1_4PI = 1./(4.*PI);
-const double m_pion = 0.13957;  //in GeV
+const double m_pion = 0.139;  //in GeV
+//const double m_pion = 139.;  //in GeV
 
 //physical constants used
 //physical constants used
@@ -76,9 +85,10 @@ const double eta0 = 0.0;
 const double tau0 = 5.0;
 const double Deleta = 1.2;
 const double Deltau = 1.0;
-const double eta_f = 0.0;
+const double eta_f = 0.3;
 const double Jr = 0.0;
 const double Tdec = 0.15;
+//const double Tdec = 150.;
 
 double tau_integrated_S_prefactor, tau_integrated_Stau_prefactor, tau_integrated_Stau2_prefactor;
 
@@ -105,12 +115,14 @@ string particle_name = "Pion_p";
 	double * v_pts, * v_wts;
 	double * zeta_pts, * zeta_wts;
 	double * ptau_pts, * ptau_wts;	//for proper time integration
+	
 	resonance_info resonances;
 	
 	double * xi_pts, * xi_wts, * ch_xi_pts, * sh_xi_pts;
 
 	//store spectra
 	double **** resonance_spectra;
+	double ** Yint_resonance_spectra;
 	double * spacetime_moments;
 	double * PTpts, * PPhipts, * PYpts;
 	const int nPTpts = 25;
@@ -181,17 +193,16 @@ void Set_resonance_integration_points(double smin, double smax, double Gamma);
 double Direct_contributions_to_pion_spectra(double pT, double y, double pphi);
 double Direct_contributions_to_Y_integrated_pion_spectra(double pT, double pphi);
 double Y_integrated_direct_resonance_spectra(double PT, int reso_idx = 0);
-double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double pphi, int reso_idx = 0);
+double Resonance_decay_contributions_to_pion_spectra(double pT, double y, double pphi);
+double Resonance_decay_contributions_to_Y_integrated_pion_spectra(double pT, int reso_idx);
 double S_thermal(double r, double phi, double eta, double tau, double PT, double Y, double Phi, int reso_idx = 0);
 double tauintegrated_S_thermal(double r, double phi, double eta, double PT, double Y, double Phi, int reso_idx = 0);
 void Create_integrations_points_and_weights();
 void Compute_direct_resonance_spectra();
+void Compute_Y_integrated_direct_resonance_spectra();
 void Set_xi_integration_points();
-void Compute_direct_pion_spectra_OLD();
 double Compute_direct_resonance_spectra(double pt, double py, double pphi, int reso_idx = 0);
 void Compute_direct_resonance_spectra(double * spacetime_moments, double pt, double py, double pphi, int reso_idx = 0);
 int read_in_resonances(resonance_info * resonances);
-double Resonance_decay_contributions_to_pion_spectra_no_interpolation(double pT, double y, double pphi, int reso_idx = 0);
-
 
 #endif

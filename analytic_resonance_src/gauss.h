@@ -27,7 +27,7 @@ using namespace std;
 void gauss (int npts, int job, double a, double b, double x[], double w[]);
 
 //************************************************************************
-void
+/*void
 gauss (int npts, int job, double a, double b, double xpts[], double weights[])
 {
   //     npts     number of points                                       
@@ -92,7 +92,7 @@ gauss (int npts, int job, double a, double b, double xpts[], double weights[])
 	  weights[i] = weights[i] * 2 * (a + b) / (t * t);
 	}
     }
-}
+}*/
 
 //End of file
 

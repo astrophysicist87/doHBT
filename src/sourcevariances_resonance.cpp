@@ -43,13 +43,14 @@ double SourceVariances::get_Q()
 
 double SourceVariances::g(double s)
 {
-	double g_res = br/(4.*M_PI);
+	//double g_res = br/(4.*M_PI);
+	double g_res;
 	if (n_body == 3)
 	{
 		double pre_f = (Mres*br)/(2.*M_PI*s);
 		double num = sqrt( (s - (m2+m3)*(m2+m3)) * (s - (m2-m3)*(m2-m3)) );
 		double den = Qfunc;
-		double g_res = pre_f * num / den;
+		g_res = pre_f * num / den;
 	}
 	//haven't treated (rare) case of n_body == 4 just yet...
 
@@ -99,6 +100,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 				//cerr << "  Starting zeta-loop #" << izeta << endl;
 				set_to_zero(Csum_vec, n_weighting_functions);
 				double PKT = VEC_n2_PT[iv][izeta];
+				double PKY = VEC_n2_P_Y[iv];
 				double PKphi = VEC_n2_PPhi_tilde[iv][izeta];
 				for (int tempidx = 1; tempidx <= 2; tempidx++)
 				{
@@ -113,7 +115,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 					//just interpolate table of single particle spectra...
 					//do interpolations
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-						y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx-1][iweight],
+						y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					//now compute appropriate linear combinations
 					//[{1}_r]_{r-->\pi}
@@ -125,15 +127,20 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 					//[{xo}_r]_{r-->\pi}
 					Csum_vec[3] += y_of_r[3] + alpha_o*y_of_r[0];
 					//[{xo2}_r]_{r-->\pi}
-					Csum_vec[4] += y_of_r[4] + 2.*alpha_o*y_of_r[1] + 2.*alpha_o*alpha_o*y_of_r[0];
+					Csum_vec[4] += y_of_r[4] + 2.*alpha_o*y_of_r[3] + 2.*alpha_o*alpha_o*y_of_r[0];
 					//[{xl}_r]_{r-->\pi}
 					Csum_vec[5] += y_of_r[5] + alpha_l*y_of_r[0];
 					//[{xl2}_r]_{r-->\pi}
-					Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[1] + 2.*alpha_l*alpha_l*y_of_r[0];
+					Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[5] + 2.*alpha_l*alpha_l*y_of_r[0];
+if (iKT == 0 && iKphi == 0)
+	cerr << v_pts[iv] << "   " << zeta_pts[izeta] << "   " << tempidx << "   " << K_T[iKT] << "   " << K_phi[iKphi] << "   "
+		<< PKT << "   " << PKY << "   " << PKphi << "   "
+		/*<< alpha_l << "   " */<< Csum_vec[0] << "   " /*<< Csum_vec[5] << "   " << Csum_vec[6] << "   "*/
+		<< y_of_r[0] /*<< "   " << y_of_r[5] << "   " << y_of_r[6] */<< endl;
 					//[{t}_r]_{r-->\pi}
 					Csum_vec[7] += y_of_r[7] + alpha_t*y_of_r[0];
 					//[{t2}_r]_{r-->\pi}
-					Csum_vec[8] += y_of_r[8] + 2.*alpha_t*y_of_r[1] + 2.*alpha_t*alpha_t*y_of_r[0];
+					Csum_vec[8] += y_of_r[8] + 2.*alpha_t*y_of_r[7] + 2.*alpha_t*alpha_t*y_of_r[0];
 					//[{xs_xo}_r]_{r-->\pi}
 					Csum_vec[9] += y_of_r[9] + alpha_s*y_of_r[3] + alpha_o*y_of_r[1] + 2.*alpha_s*alpha_o*y_of_r[0];
 					//[{xs_xl}_r]_{r-->\pi}
@@ -194,7 +201,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 						//just interpolate table of single particle spectra...
 						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx-1][iweight],
+							y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 										PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 						//now compute appropriate linear combinations
 						//[{1}_r]_{r-->\pi}
@@ -206,15 +213,15 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 						//[{xo}_r]_{r-->\pi}
 						Csum_vec[3] += y_of_r[3] + alpha_o*y_of_r[0];
 						//[{xo2}_r]_{r-->\pi}
-						Csum_vec[4] += y_of_r[4] + 2.*alpha_o*y_of_r[1] + 2.*alpha_o*alpha_o*y_of_r[0];
+						Csum_vec[4] += y_of_r[4] + 2.*alpha_o*y_of_r[3] + 2.*alpha_o*alpha_o*y_of_r[0];
 						//[{xl}_r]_{r-->\pi}
 						Csum_vec[5] += y_of_r[5] + alpha_l*y_of_r[0];
 						//[{xl2}_r]_{r-->\pi}
-						Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[1] + 2.*alpha_l*alpha_l*y_of_r[0];
+						Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[5] + 2.*alpha_l*alpha_l*y_of_r[0];
 						//[{t}_r]_{r-->\pi}
 						Csum_vec[7] += y_of_r[7] + alpha_t*y_of_r[0];
 						//[{t2}_r]_{r-->\pi}
-						Csum_vec[8] += y_of_r[8] + 2.*alpha_t*y_of_r[1] + 2.*alpha_t*alpha_t*y_of_r[0];
+						Csum_vec[8] += y_of_r[8] + 2.*alpha_t*y_of_r[7] + 2.*alpha_t*alpha_t*y_of_r[0];
 						//[{xs_xo}_r]_{r-->\pi}
 						Csum_vec[9] += y_of_r[9] + alpha_s*y_of_r[3] + alpha_o*y_of_r[1] + 2.*alpha_s*alpha_o*y_of_r[0];
 						//[{xs_xl}_r]_{r-->\pi}
@@ -241,7 +248,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 
 	//return ssum;
 	for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		integrated_spacetime_moments[reso_idx-1][iweight][iKT][iKphi] = ssum_vec[iweight];
+		integrated_spacetime_moments[reso_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
 	return;
 }
 

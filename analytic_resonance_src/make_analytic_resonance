@@ -29,7 +29,8 @@ COMMAND=analytic_resonance
 #  to a line here, make sure that each \ has NO spaces following it.
 SRCS= \
 analytic_resonance.cpp \
-$(SRCDIR)/Arsenal.cpp
+$(SRCDIR)/Arsenal.cpp \
+gauss.cpp
 
 # Header files (if any) here
 HDRS= \

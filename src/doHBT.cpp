@@ -44,7 +44,10 @@ double S_direct(double r, double eta, double tau, double MT, double PT, double c
 	Sdir_ch_Y_m_eta = cosh(Sdir_Y - eta);
 	Sdir_expon = -(MT/Sdir_T)*Sdir_ch_Y_m_eta*cosh(Sdir_etaf*Sdir_rt)
 			+ (PT/Sdir_T)*sinh(Sdir_etaf*Sdir_rt)*cos_phi_m_Phi;
+	//double result = MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon);
+	//cerr << r << "   " << eta << "   " << tau << "   " << MT << "   " << PT << "   " << cos_phi_m_Phi << "   " << result << endl;
 	return (MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon));
+	//return (exp(-r*r));
 	//return((r > Sdir_R) ? 0. : 1.);
 }
 
@@ -420,6 +423,10 @@ void doHBT::SetEmissionData(FO_surf* FOsurf_ptr, double K_T_local, double K_phi_
 	if (USE_ANALYTIC_S)
 	{
 		S_p = S_prefactor * S_direct(temp_r, local_eta_s, FOsurf_ptr[j].tau, mT, K_T_local, cos(temp_phi - K_phi_local));
+		//if (j == 0)
+		//{
+		//	cerr << K_phi_local << "   " << K_T_local << endl;
+		//}
 		if (j==0 && fabs(K_phi_local - M_PI) < 1.e-3 && fabs(K_T_local - 0.05) < 1.e-6)
 			cerr << temp_r << "   " << temp_phi << "   " << local_eta_s << "   " << FOsurf_ptr[j].tau
 				<< "   " << mT << "   " << K_T_local << "   " << cos(temp_phi - K_phi_local)
@@ -650,10 +657,10 @@ cout  << endl << endl << endl;
          double p0 = SP_p0[ipt][ieta];
          double pz = SP_pz[ipt][ieta];
          double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
-         //double f0;
-         //if(expon > 20) f0 = 0.0e0;
-         //else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
-	double f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+         double f0;
+         if(expon > 20) f0 = 0.0e0;
+         else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+	//double f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
 
          //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
          double pdsigma = p0*da0 + px*da1 + py*da2;
@@ -671,15 +678,20 @@ cout  << endl << endl << endl;
 	if (USE_ANALYTIC_S)
 	{
 		S_p = prefactor * S_direct(temp_r, eta_s[ieta], tau, sqrt(pT*pT + localmass*localmass), pT, cos_phi_m_pphi);
-		if (VERBOSE > 0 && isurf == 0) *global_out_stream_ptr << "  --> Cal_dN_dypTdpTdphi(): computed emission function with S_direct()..." << endl;
+		//if (VERBOSE > 0 && isurf == 0) *global_out_stream_ptr << "  --> Cal_dN_dypTdpTdphi(): computed emission function with S_direct()..." << endl;
+		if (/*isurf == 0 && */fabs(SP_pphi[iphi] - 0.00386099) < 1.e-3 && fabs(pT - 0.0180112) < 1.e-6)
+		//if (isurf==0)
+			cerr << temp_r << "   " << temp_phi << "   " << eta_s[ieta] << "   " << FOsurf_ptr[isurf].tau
+				<< "   " << sqrt(pT*pT + localmass*localmass) << "   " << pT << "   " << cos_phi_m_pphi
+				<< "   " << S_p*FOsurf_ptr[isurf].tau << endl;
 	}
 	else
+	{
 		S_p = prefactor*pdsigma*f0*(1.+deltaf);
-	 if (1. + deltaf < 0.0) S_p = 0.0;
-        if (flagneg == 1 && S_p < tol)
-        {
-           S_p = 0.0e0;
-        }
+	        if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
+	        //if (1. + deltaf < 0.0)
+			S_p = 0.0e0;
+	}
 //cout << "S_p = " << S_p << endl;
 	double symmetry_factor = 1.0;
 	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;

@@ -46,8 +46,8 @@ const double twopi = 2.*PI;
 const double hbarC=0.197327053;  //GeV*fm
 const double MeVToGeV = 0.001;
 const double hbarC3=hbarC*hbarC*hbarC;
-const int order = 43;
-const int order2 = 15;
+const int order = 11;
+const int order2 = order;
 int n_resonance;
 
 const int nrpts = order;

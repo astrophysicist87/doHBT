@@ -19,6 +19,7 @@
 // include files
 #include <cmath>
 #include "../src/Arsenal.h"
+#include "gauss.h"
 
 //************************************************************************
 void
