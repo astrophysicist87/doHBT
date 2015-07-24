@@ -24,7 +24,7 @@ using namespace std;
 
 //need to define some variables for quick evaluation of S_direct
 double Sdir_Y = 0.0, Sdir_R = 5., Sdir_Deltau = 1., Sdir_Deleta = 1.2;
-double Sdir_eta0 = 0.0, Sdir_tau0 = 5., Sdir_etaf = 0.0, Sdir_T = 0.15;
+double Sdir_eta0 = 0.0, Sdir_tau0 = 5., Sdir_etaf = 0.3, Sdir_T = 0.15;
 double Sdir_prefactor, Sdir_rt, Sdir_H, Sdir_etat, Sdir_ch_Y_m_eta, Sdir_expon;
 double Sdir_term1, Sdir_term2, Sdir_term3;
 
@@ -33,7 +33,7 @@ double S_direct(double r, double eta, double tau, double MT, double PT, double c
 	//Sdir_prefactor = (2.*Sdir_Jr + 1.)/(twopi*twopi*twopi);
 	Sdir_rt = r/Sdir_R;
 	Sdir_term1 = 0.5*Sdir_rt*Sdir_rt;
-	Sdir_term2 = 0.5*(eta-Sdir_eta0)*(eta-Sdir_eta0)/(Sdir_Deleta*Sdir_Deleta);
+	Sdir_term2 = 0.0*0.5*(eta-Sdir_eta0)*(eta-Sdir_eta0)/(Sdir_Deleta*Sdir_Deleta);
 	Sdir_term3 = 0.5*(tau-Sdir_tau0)*(tau-Sdir_tau0)/(Sdir_Deltau*Sdir_Deltau);
 	//Sdir_term2 = 0.0;
 	//Sdir_term3 = 0.0;
@@ -42,7 +42,7 @@ double S_direct(double r, double eta, double tau, double MT, double PT, double c
 	Sdir_ch_Y_m_eta = cosh(Sdir_Y - eta);
 	Sdir_expon = -(MT/Sdir_T)*Sdir_ch_Y_m_eta*cosh(Sdir_etaf*Sdir_rt)
 			+ (PT/Sdir_T)*sinh(Sdir_etaf*Sdir_rt)*cos_phi_m_Phi;
-	return (MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon));
+	return (r * MT * Sdir_ch_Y_m_eta * Sdir_H * exp(Sdir_expon));
 	//return (1.);
 	//return((r > Sdir_R) ? 0. : 1.);
 }
@@ -86,17 +86,17 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	}
 	global_plane_psi = plane_psi;
 
-	//int resonance_loop_cutoff = 0;				//loop over direct pions only
+	int resonance_loop_cutoff = 0;				//loop over direct pions only
 	//int resonance_loop_cutoff = n_resonance;			//loop over direct pions and resonances
-	int resonance_loop_cutoff = 1;					//other
+	//int resonance_loop_cutoff = 1;					//other
 	
 	for (int ir = 0; ir <= resonance_loop_cutoff; ir++)
 	{
-		if (ir != 0 && ir != 1)
+		/*if (ir != 0 && ir != 1)
 		{
 			cout << "ir = " << ir << ": skipping." << endl;
 			continue;
-		}
+		}*/
 		time (&rawtime);
 		timeinfo = localtime (&rawtime);
 		//if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Started setting spacetime moments at " << asctime(timeinfo);
@@ -443,7 +443,7 @@ double px, py, p0, pz, f0, deltaf, S_p, S_p_withweight;
            S_p = 0.0e0;
         }
 
-	S_p_withweight = S_p*tau*eta_s_weight[ieta]; //eta_even_factor accounts for the assumed reflection symmetry along eta direction
+	S_p_withweight = S_p*tau*eta_s_weight[ieta];
 	z0 = tau*ch_eta_s[ieta];
 	z3 = tau*sh_eta_s[ieta];
 	dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] += eta_even_factor*S_p_withweight;			//<1>
@@ -474,10 +474,9 @@ double temp;
 		temp = dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi];
 		ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = log(abs(temp));
 		sign_of_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = sgn(temp);
-		if (wfi == 0 || wfi == 5 || wfi == 6)
-			cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15) << wfi << "   "
-				<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << temp << endl;
 	}
+//cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
+//			<< PKT << "   " << PKphi << "   " << dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][5][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][6][ipt][iphi] << endl;
 //cerr << "***Checkpoint #3" << endl;
 //cout << "***Exited Cal_dN_dypTdpTdphi_with_weights_polar" << endl;
    return;
@@ -738,15 +737,17 @@ void SourceVariances::Load_resonance_info(int reso_idx, double K_T_local, double
 		{
 			//set up vectors of points to speed-up integrals...
 			double s_loc = m2*m2;
+			VEC_n2_spt = s_loc;
 			double pstar_loc = sqrt( ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc) )/(2.0*Mres);
 			VEC_n2_pstar = pstar_loc;
 			double g_s_loc = g(s_loc)/pstar_loc;	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
-			VEC_n2_g_s = g_s_loc;
-			//VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);
-			VEC_n2_s_factor = VEC_n2_g_s;
+			VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);
+			//VEC_n2_g_s = g_s_loc;
+			//VEC_n2_s_factor = VEC_n2_g_s;
 			double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
 			VEC_n2_Estar = Estar_loc;
 			double psBmT = pstar_loc / mT;
+			VEC_n2_psBmT = psBmT;
 			double DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
 			VEC_n2_DeltaY = DeltaY_loc;
 			p_y = 0.0;
@@ -1125,41 +1126,40 @@ double SourceVariances::weight_function(double zvec[], int weight_function_index
 void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 {
 	if (VERBOSE > 1) *global_out_stream_ptr << "\t\t\t   () Successfully entered Update_source_variances()..." << endl;
-	//if (reso_idx == 0 || reso_idx == 1)
 	if (reso_idx == 0)
 	{
 		double phi_K = K_phi[iKphi];
 		double KT = K_T[iKT];
-		double temp_factor = 0.0;
-		S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][0],
+		//double temp_factor = 0.0;
+		S_func[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][0],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][1],
+		xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][1],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][2],
+		xs2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][2],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][3],
+		xo_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][3],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][4],
+		xo2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][4],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][5],
+		xl_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][5],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][6],
+		xl2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][6],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-		t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][7],
+		t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][7],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][8],
+		t2_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][8],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-		xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][9],
+		xo_xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][9],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][10],
+		xl_xs_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][10],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][11],
+		xs_t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][11],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][12],
+		xo_xl_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][12],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][13],
+		xo_t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][13],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][14],
+		xl_t_S[iKT][iKphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][14],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 		if (DEBUG)		
 			cerr << "DEBUG: reso_idx = " << reso_idx << "  " << S_func[iKT][iKphi] << "  " << xs_S[iKT][iKphi] << "  " << xs2_S[iKT][iKphi] << endl;

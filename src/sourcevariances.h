@@ -189,8 +189,10 @@ class SourceVariances
 
 		//some arrays to save unnecessary multiple calculations for resonances
 		//use these for n_body = 2
+		double VEC_n2_spt;
 		double VEC_n2_pstar;
 		double VEC_n2_Estar;
+		double VEC_n2_psBmT;
 		double VEC_n2_DeltaY;
 		double VEC_n2_Yp;
 		double VEC_n2_Ym;
@@ -303,6 +305,7 @@ class SourceVariances
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int reso_idx);
+		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
 		void Load_resonance_info(int reso_idx, double K_T_local, double K_phi_local);
 		void Update_source_variances(int iKT, int iKphi, int reso_idx);
 

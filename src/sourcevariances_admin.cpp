@@ -26,7 +26,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 {
 	//particle information (both final-state particle used in HBT and all decay resonances)
 	particle_name = particle->name;
-	particle_mass = particle->mass;
+	//particle_mass = particle->mass;
+	particle_mass = 0.139;
 	particle_sign = particle->sign;
 	particle_gspin = particle->gspin;
 	//particle_id = particle_idx;
@@ -529,7 +530,8 @@ void SourceVariances::Update_sourcefunction(particle_info* particle, int FOarray
 {
    //particle information
    particle_name = particle->name;
-   particle_mass = particle->mass;
+   //particle_mass = particle->mass;
+   particle_mass = 0.139;
    particle_sign = particle->sign;
    particle_gspin = particle->gspin;
    particle_id = particle_idx;
