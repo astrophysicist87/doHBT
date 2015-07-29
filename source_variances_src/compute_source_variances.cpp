@@ -121,65 +121,23 @@ int main(int argc, char *argv[])
         return 0;
      }
 
-//**********************************************************************************
-//SELECT RESONANCES TO INCLUDE IN SOURCE VARIANCES CALCULATIONS
-//sort resonances by importance and loop over all resonances needed to achieve a certain minimum percentage of total decay pions
-	double threshold = 0.6;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
+	double threshold = 0.35;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
 				//threshold = 1.0 means include all resonance-decay pion(+)s,
 				//threshold = 0.0 means include none of them
-	vector<double> percent_contributions;
-	for (int i = 0; i < Nparticle; i++)
-		percent_contributions.push_back(particle[i].percent_contribution);
-	vector<size_t> sorted_resonance_indices = ordered(percent_contributions);
-	reverse(sorted_resonance_indices.begin(), sorted_resonance_indices.end());
 	vector<int> chosen_resonance_indices;
-	double running_total_percentage = 0.0;
-	int count = 0;
-	if (threshold < 1e-12)
-	{
-		output << "No resonances included." << endl;
-	}
-	else if (fabs(1. - threshold) < 1e-12)
-	{
-		for (int ii = 1; ii <= count; ii++)
-			chosen_resonance_indices.push_back(sorted_resonance_indices[ii]);
-		output << "All resonances included." << endl;
-	}
-	else
-	{
-		while (running_total_percentage <= threshold)
-		{
-			running_total_percentage += 0.01 * particle[sorted_resonance_indices[count]].percent_contribution;
-			chosen_resonance_indices.push_back(sorted_resonance_indices[count]);
-			count++;
-		}
-		if (chosen_resonance_indices.size() == 0)
-		{
-			output << "No resonances included!  Choose a higher threshold!" << endl;
-			exit(1);
-		}
-		else
-		{
-			output << "Including the following " << count + 1 << " resonances (accounting for " << 100.*running_total_percentage
-				<< "%, threshold = " << 100.*threshold << "%): " << endl;
-			for (int ii = 1; ii <= count; ii++)
-				output << "\t" << ii << ": " << particle[sorted_resonance_indices[ii - 1]].name << endl;
-		}
-	}
-//END OF CODE SELECTING INCLUDED RESONANCES
-//**********************************************************************************
+	get_important_resonances(&chosen_resonance_indices, particle, Nparticle, threshold, output);
 
-//if (1) exit(1);
-
-   SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices);
+   SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx);
    Source_function.Set_path(currentworkingdirectory);
    Source_function.Set_use_delta_f(true);
+   Source_function.Set_ofstream(output);
 
    Source_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
-
-   Source_function.Set_ofstream(output);
+	
+	//if (1) exit(1);
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
+   //Source_function.Analyze_sourcefunction_V2(FOsurf_ptr);
    Source_function.Output_SVdN_dypTdpTdphi(folderindex);
    Source_function.Output_SVdN_dypTdpT(folderindex);
    //Source_function.Output_all_dN_dypTdpTdphi(folderindex);

@@ -43,8 +43,8 @@ double SourceVariances::get_Q()
 
 double SourceVariances::g(double s)
 {
-	double g_res = br/(4.*M_PI);
-	//double g_res;
+	double gs_pstar_loc = sqrt( ((Mres+mass)*(Mres+mass) - s)*((Mres-mass)*(Mres-mass) - s) )/(2.0*Mres);
+	double g_res = br/(4.*M_PI*gs_pstar_loc);
 	if (n_body == 3)
 	{
 		double pre_f = (Mres*br)/(2.*M_PI*s);
@@ -176,10 +176,10 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
+if (0) cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
 			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
 			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
-cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
+if (0) cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
 			<< PKT << "   " << PKY << "   " << PKphi << "   " << rap_indep_y_of_r[0] << "   " << rap_indep_y_of_r[7]
 			<< "   " << rap_indep_y_of_r[8] << "   " << rap_indep_y_of_r[5] << "   " << rap_indep_y_of_r[6] << "   " << rap_indep_y_of_r[14] << endl;
 					//now compute appropriate linear combinations (maybe shift these into preceding function eventually?)
@@ -198,7 +198,7 @@ cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
 					//[{xl2}_r]_{r-->\pi}
 					Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[5] + 2.*alpha_l*alpha_l*y_of_r[0];
 if (iKT == 0 && iKphi == 0)
-	cerr << v_pts[iv] << "   " << zeta_pts[izeta] << "   " << tempidx << "   " << K_T[iKT] << "   " << K_phi[iKphi] << "   "
+	if (0) cerr << v_pts[iv] << "   " << zeta_pts[izeta] << "   " << tempidx << "   " << K_T[iKT] << "   " << K_phi[iKphi] << "   "
 			<< PKT << "   " << PKphi << "   " << PKY << "   " << Csum_vec[0] << "   " << y_of_r[0] << endl;
 					//[{t}_r]_{r-->\pi}
 					Csum_vec[7] += y_of_r[7] + alpha_t*y_of_r[0];

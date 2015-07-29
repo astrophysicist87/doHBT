@@ -22,15 +22,14 @@
 
 using namespace std;
 
-SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances)
+SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx)
 {
 	//particle information (both final-state particle used in HBT and all decay resonances)
 	particle_name = particle->name;
-	//particle_mass = particle->mass;
-	particle_mass = 0.139;
+	particle_mass = particle->mass;
 	particle_sign = particle->sign;
 	particle_gspin = particle->gspin;
-	//particle_id = particle_idx;
+	particle_id = particle_idx;
 	S_prefactor = 1.0/(8.0*(M_PI*M_PI*M_PI))/hbarC/hbarC/hbarC;
 	all_particles = all_particles_in;
 
@@ -68,6 +67,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	current_resonance_decay_masses[1] = 0.0;
 	if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
 	{
+		cout << "Reading /home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat" << endl;
 		ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
 		tempresonancefile >> n_resonance;
 		resonances.resonance_mass = new double [n_resonance];
@@ -105,45 +105,90 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	}
 	else
 	{
-		cerr << "Reading in important resonances not yet supported!  exiting..." << endl;
-		exit(1);
+		//cerr << "Reading in important resonances not yet supported!  exiting..." << endl;
+		//exit(1);
+		//ostringstream filename_stream_HBT;
+		//filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << no_df_stem << ".dat";
+		//ofstream outputHBT;
 		
 		//n_resonance is actually total number of decay channels which can generate pions
 		//from chosen resonances
 		n_resonance = get_number_of_decay_channels(chosen_resonances, all_particles);
+n_resonance--;
+		cout << "Computed n_resonance = " << n_resonance << endl;
 		resonances.resonance_mass = new double [n_resonance];
+		resonances.nbody = new int [n_resonance];
 		resonances.resonance_Gamma = new double [n_resonance];
 		resonances.resonance_total_br = new double [n_resonance];
 		resonances.resonance_mu = new double [n_resonance];
 		resonances.resonance_gspin = new double [n_resonance];
 		resonances.resonance_sign = new int [n_resonance];
-		resonances.resonance_decay_masses = new double* [n_resonance];
+		resonances.resonance_decay_masses = new double * [n_resonance];
 		int temp_idx = 0;
 		for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
 		{
-			particle_info particle_temp = particle[chosen_resonances[icr]];
+			particle_info particle_temp = all_particles[chosen_resonances[icr]];
+			if (VERBOSE > 0) cout << "Loading resonance: " << particle_temp.name << ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
 			for (int idecay = 0; idecay < particle_temp.decays; idecay++)
 			{
+				if (particle_temp.decays_effective_branchratio[idecay] <= 1.e-12 || idecay > 0)
+				{
+					if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": skipping." << endl;
+					continue;
+				}
 				resonances.resonance_decay_masses[temp_idx] = new double [2];
 				for (int ii = 0; ii < 2; ii++)
 					resonances.resonance_decay_masses[temp_idx][ii] = 0.0;
-				resonances.resonance_mu[temp_idx] = particle_temp.mu;
-				resonances.resonance_gspin[temp_idx] = particle_temp.gspin;
+				//resonances.resonance_mu[temp_idx] = particle_temp.mu;
+				resonances.resonance_mu[temp_idx] = 0.0;			//temporary
+				//resonances.resonance_gspin[temp_idx] = particle_temp.gspin;
+				resonances.resonance_gspin[temp_idx] = 1.0;			//temporary
 				resonances.resonance_sign[temp_idx] = particle_temp.sign;
 				resonances.resonance_mass[temp_idx] = particle_temp.mass;
 				resonances.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
 				resonances.resonance_Gamma[temp_idx] = particle_temp.width;
-				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
-				
+				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay] * particle_temp.gspin;
+				if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": mu=" << resonances.resonance_mu[temp_idx]
+						<< ", gs=" << resonances.resonance_gspin[temp_idx] << ", sign=" << resonances.resonance_sign[temp_idx]
+						<< ", M=" << resonances.resonance_mass[temp_idx] << ", nbody=" << resonances.nbody[temp_idx]
+						<< ", Gamma=" << resonances.resonance_Gamma[temp_idx] << ", br=" << resonances.resonance_total_br[temp_idx] << endl;
+
 				//set daughter particles masses for each decay channel
 				//currently assuming no more than nbody = 3
-				int decay_part_idx = 0;
+
+
+				bool target_daughter_flag = false;
+				int additional_daughter_count = 0;
+				for (int decay_part_idx = 0; decay_part_idx < resonances.nbody[temp_idx]; decay_part_idx++)
+				{
+					//if it's the first target daughter (say, pion(+)) in this decay channel, increment the count and move on to the next daughter
+					if (particle_temp.decays_part[idecay][decay_part_idx] == particle->monval && !target_daughter_flag)
+						target_daughter_flag = true;
+					else
+					{//otherwise, count it as an extra decay product, even if it's the same target daughter (degen. gets lumped into br_tot)
+						int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][additional_daughter_count]);
+						resonances.resonance_decay_masses[temp_idx][additional_daughter_count] = all_particles[itemp].mass;
+						additional_daughter_count++;
+					}
+				}
+
+
+				/*//int decay_part_idx = 0;
+				int target_daughter_count = 0;
 				while (particle_temp.decays_part[idecay][decay_part_idx] != 0)
 				{
-					int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][decay_part_idx]);
-					resonances.resonance_decay_masses[temp_idx][decay_part_idx] = particle[itemp].mass;
+					//if it's the first target daughter (say, pion(+)) in this decay channel, increment the count and move on to the next daughter
+					if (particle_temp.decays_part[idecay][decay_part_idx] == particle->monval && target_daughter_count == 0)
+						target_daughter_count++;
+					else
+					{//otherwise, count it as an extra decay product, even if it's the same target daughter (degen. gets lumped into br_tot)
+						int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][decay_part_idx]);
+						resonances.resonance_decay_masses[temp_idx][decay_part_idx] = all_particles[itemp].mass;
+						if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": daughter " << decay_part_idx
+							<< " (" << all_particles[itemp].name << ") has m" << decay_part_idx << "=" << all_particles[itemp].mass << endl;
+					}
 					decay_part_idx++;
-				}
+				}*/
 
 				temp_idx++;
 			}
@@ -530,8 +575,7 @@ void SourceVariances::Update_sourcefunction(particle_info* particle, int FOarray
 {
    //particle information
    particle_name = particle->name;
-   //particle_mass = particle->mass;
-   particle_mass = 0.139;
+   particle_mass = particle->mass;
    particle_sign = particle->sign;
    particle_gspin = particle->gspin;
    particle_id = particle_idx;
@@ -561,8 +605,40 @@ for(int i=0; i<n_localp_T; i++)
 		S_func[i][j] = 0.;
 		xs_S[i][j] = 0.;
 		xs2_S[i][j] = 0.;
-
+		xo_S[i][j] = 0.;
+		xo2_S[i][j] = 0.;
+		xl_S[i][j] = 0.;
+		xl2_S[i][j] = 0.;
+		t_S[i][j] = 0.;
+		t2_S[i][j] = 0.;
+		xo_xs_S[i][j] = 0.;
+		xl_xs_S[i][j] = 0.;
+		xs_t_S[i][j] = 0.;
+		xo_xl_S[i][j] = 0.;
+		xo_t_S[i][j] = 0.;
+		xl_t_S[i][j] = 0.;
+		
 		R2_side[i][j] = 0.;
+		R2_out[i][j] = 0.;
+		R2_long[i][j] = 0.;
+		R2_outside[i][j] = 0.;
+		R2_sidelong[i][j] = 0.;
+		R2_outlong[i][j] = 0.;
+	}
+	for(int j=0; j<n_order; j++)
+	{
+		R2_side_C[i][j] = 0.;
+		R2_side_S[i][j] = 0.;
+		R2_out_C[i][j] = 0.;
+		R2_out_S[i][j] = 0.;
+		R2_outside_C[i][j] = 0.;
+		R2_outside_S[i][j] = 0.;
+		R2_long_C[i][j] = 0.;
+		R2_long_S[i][j] = 0.;
+		R2_sidelong_C[i][j] = 0.;
+		R2_sidelong_S[i][j] = 0.;
+		R2_outlong_C[i][j] = 0.;
+		R2_outlong_S[i][j] = 0.;
 	}
 }
 

@@ -180,29 +180,14 @@ class SourceVariances
 		double* eta_s_weight;
 
 		//points and weights for resonance integrals
-		double* zeta_pts;
-		double* v_pts;
-		double** s_pts;
-		double* zeta_wts;
-		double* v_wts;
-		double** s_wts;
+		double * zeta_pts, * v_pts, ** s_pts;
+		double * zeta_wts, * v_wts, ** s_wts;
 
 		//some arrays to save unnecessary multiple calculations for resonances
 		//use these for n_body = 2
-		double VEC_n2_spt;
-		double VEC_n2_pstar;
-		double VEC_n2_Estar;
-		double VEC_n2_psBmT;
-		double VEC_n2_DeltaY;
-		double VEC_n2_Yp;
-		double VEC_n2_Ym;
-		double * VEC_n2_P_Y;
-		double * VEC_n2_MTbar;
-		double * VEC_n2_DeltaMT;
-		double * VEC_n2_MTp;
-		double * VEC_n2_MTm;
-		double ** VEC_n2_MT;
-		double ** VEC_n2_PPhi_tilde, ** VEC_n2_PPhi_tildeFLIP, ** VEC_n2_PT;
+		double VEC_n2_spt, VEC_n2_pstar, VEC_n2_Estar, VEC_n2_psBmT, VEC_n2_DeltaY, VEC_n2_Yp, VEC_n2_Ym;
+		double * VEC_n2_P_Y, * VEC_n2_MTbar, * VEC_n2_DeltaMT, * VEC_n2_MTp, * VEC_n2_MTm;
+		double ** VEC_n2_MT, ** VEC_n2_PPhi_tilde, ** VEC_n2_PPhi_tildeFLIP, ** VEC_n2_PT;
 		double *** VEC_n2_Pp, *** VEC_n2_Pm, *** VEC_n2_alpha, *** VEC_n2_alpha_m;
 		//double ** VEC_n2_PpT, ** VEC_n2_Ppphi;
 		double VEC_n2_s_factor;
@@ -283,11 +268,12 @@ class SourceVariances
 		bool particles_are_the_same(int idx1, int idx2);
 
 	public:
-		SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances);
+		SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx);
 		~SourceVariances();
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr, int reso_idx, bool thermal_particles_only = false);
 		void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
+		void Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr);
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
 		bool fexists(const char *filename);
 
@@ -295,18 +281,24 @@ class SourceVariances
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int reso_idx);
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int reso_idx);
-		void Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FO_surf* FOsurf_ptr, int reso_idx);
-		double loop_over_FO_surface(FO_surf* FOsurf_ptr, double p0, double px, double py, double pz, double mu);
-		void interpolate_FO_loop(FO_surf* FOsurf_ptr);
-		void set_FOinterp_gridpoints();
-		void fill_out_FOinterp_grid(FO_surf* FOsurf_ptr);
+		//void Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FO_surf* FOsurf_ptr, int reso_idx);
+		//double loop_over_FO_surface(FO_surf* FOsurf_ptr, double p0, double px, double py, double pz, double mu);
+		//void interpolate_FO_loop(FO_surf* FOsurf_ptr);
+		//void set_FOinterp_gridpoints();
+		//void fill_out_FOinterp_grid(FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py);
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int reso_idx);
+		void Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
 		void Load_resonance_info(int reso_idx, double K_T_local, double K_phi_local);
+		void s_loop(double s_loc, double * ssum_vec);
+		void v_loop(double v_loc, double * vsum_vec);
+		void zeta_loop(double zeta_loc, double * zetasum_vec);
+		void combine_sourcevariances(double * output, double * input, double alpha_t, double alpha_o, double alpha_s, double alpha_l);
+		void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
 		void Update_source_variances(int iKT, int iKphi, int reso_idx);
 
 		void Get_source_variances(int, int);
@@ -329,6 +321,9 @@ class SourceVariances
 		double get_Q();
 		double g(double s);
 		void set_to_zero(double * array, int arraylength);
+		void adaptive_simpson_integration(void (SourceVariances::*f) (double, double *), double a, double b, double * results);
+		double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi);
+		double place_in_range(double phi, double min, double max);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);
