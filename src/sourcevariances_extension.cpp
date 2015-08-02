@@ -22,6 +22,81 @@
 
 using namespace std;
 
+void SourceVariances::Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr)
+{
+	//this version uses adaptive Simpson's method routine to do resonance integrals
+	//checking to see if it can be made any faster/more accurate than the Gaussian points integration of V1 above...
+	time_t rawtime;
+  	struct tm * timeinfo;
+
+	double plane_psi = 0.0;
+	int iorder = USE_PLANE_PSI_ORDER;
+	if (USE_PLANE_PSI_ORDER)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
+		Determine_plane_angle(current_FOsurf_ptr, 0, true);	//uses only thermal pions...
+		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
+		plane_psi = plane_angle[iorder];
+	}
+	else
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
+	}
+	global_plane_psi = plane_psi;
+
+	//int resonance_loop_cutoff = 0;				//loop over direct pions only
+	//int resonance_loop_cutoff = n_resonance;			//loop over direct pions and resonances
+	int resonance_loop_cutoff = 1;					//other
+	
+	for (int ir = 0; ir <= resonance_loop_cutoff; ir++)
+	{
+		if (ir != 0 && ir != 1)
+		{
+			if (VERBOSE > 0) *global_out_stream_ptr << "ir = " << ir << ": skipping." << endl;
+			continue;
+		}
+		if (INTERPOLATION_FORMAT == 0) return;
+		for(int iKT = 0; iKT < n_localp_T; iKT++)
+		{
+			if (abs(K_T[iKT]) < 1.e-10) continue;
+			if (iKT > 0) continue;
+			for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+			{
+				if (iKphi > 0) continue;
+				time (&rawtime);
+				timeinfo = localtime (&rawtime);
+				if (VERBOSE > 0) *global_out_stream_ptr << "Starting KT = " << K_T[iKT] << " and Kphi = " << K_phi[iKphi]
+					<< " for resonance #" << ir << " at " << asctime(timeinfo);
+				if (ir > 0)
+					Do_resonance_integrals_V2(iKT, iKphi, ir);
+				Update_source_variances(iKT, iKphi, ir);
+
+			}
+		}
+	}
+	for(int iKT = 0; iKT < n_localp_T; iKT++)
+	{
+		if (abs(K_T[iKT]) < 1.e-10) continue;
+		double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
+		beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
+		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+		{
+			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Finished!  Getting R^2_ij..." << endl;
+			Calculate_R2_side(iKT, iKphi);
+			Calculate_R2_out(iKT, iKphi);
+			Calculate_R2_long(iKT, iKphi);
+			Calculate_R2_outside(iKT, iKphi);
+			Calculate_R2_sidelong(iKT, iKphi);
+			Calculate_R2_outlong(iKT, iKphi);
+			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Moving on!" << endl;
+		}
+		R2_Fourier_transform(iKT, plane_psi);
+	}
+
+   return;
+}
+
 //some declarations for the functions in this file
 	const int jmax = 4;
 	const double eps = 1.e-2;
@@ -176,7 +251,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 	set_to_zero(ssum_vec, n_weighting_functions);
 
 	current_resonance_idx = reso_idx;
-	//cerr << "Entering Load_resonance_info for reso_idx = " << reso_idx << endl;
+	//cerr << "Entering Load_decay_channel_info for reso_idx = " << reso_idx << endl;
 	if (reso_idx == 0)
 	{
 		muRES = particle_mu;
@@ -195,7 +270,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 	}
 	else
 	{
-		//cerr << "Entering loop in Load_resonance_info for reso_idx = " << reso_idx << endl;
+		//cerr << "Entering loop in Load_decay_channel_info for reso_idx = " << reso_idx << endl;
 		current_resonance_mass = resonances.resonance_mass[reso_idx-1];
 		current_resonance_Gamma = resonances.resonance_Gamma[reso_idx-1];
 		current_resonance_total_br = resonances.resonance_total_br[reso_idx-1];
@@ -236,7 +311,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 		current_K_phi = K_phi_local;
 		cos_cKphi = cos(K_phi_local);
 		sin_cKphi = sin(K_phi_local);
-		Qfunc = get_Q();
+		Qfunc = get_Q(reso_idx);
 		
 		if (n_body == 2)
 		{

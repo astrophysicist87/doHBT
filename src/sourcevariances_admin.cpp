@@ -22,8 +22,12 @@
 
 using namespace std;
 
-SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx)
+SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle,
+					FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout)
 {
+	//set ofstream for output file
+	global_out_stream_ptr = &myout;
+	
 	//particle information (both final-state particle used in HBT and all decay resonances)
 	particle_name = particle->name;
 	particle_mass = particle->mass;
@@ -32,6 +36,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	particle_id = particle_idx;
 	S_prefactor = 1.0/(8.0*(M_PI*M_PI*M_PI))/hbarC/hbarC/hbarC;
 	all_particles = all_particles_in;
+	thermal_pions_only = false;
 
 	//just need this for various dummy momentum calculations
 	P_eval = new double [4];
@@ -65,11 +70,19 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	current_resonance_decay_masses = new double [2];
 	current_resonance_decay_masses[0] = 0.0;
 	current_resonance_decay_masses[1] = 0.0;
-	if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
+	previous_resonance_particle_id = -1;
+	previous_resonance_idx = -1;				//different for each decay channel
+	previous_resonance_mass = 0.0;
+	previous_resonance_Gamma = 0.0;
+	previous_resonance_total_br = 0.0;
+	//if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
+	if (CHECKING_RESONANCE_CALC)
 	{
-		cout << "Reading /home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat" << endl;
+		//cout << "Reading /home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat" << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "Reading /home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat" << endl;
 		ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
 		tempresonancefile >> n_resonance;
+		resonances.resonance_particle_id = new int [n_resonance];
 		resonances.resonance_mass = new double [n_resonance];
 		resonances.resonance_Gamma = new double [n_resonance];
 		resonances.resonance_total_br = new double [n_resonance];
@@ -77,14 +90,15 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		resonances.resonance_gspin = new double [n_resonance];
 		resonances.resonance_sign = new int [n_resonance];
 		resonances.resonance_decay_masses = new double* [n_resonance];
+		resonances.resonance_name = new string [n_resonance];
 		for (int ir=0; ir<n_resonance; ir++)
 		{
 			resonances.resonance_decay_masses[ir] = new double [2];
 			resonances.resonance_decay_masses[ir][0] = 0.0;
 			resonances.resonance_decay_masses[ir][1] = 0.0;
+			resonances.resonance_particle_id[ir] = ir;
 			resonances.resonance_mu[ir] = 0.0;
 			resonances.resonance_gspin[ir] = 1.0;	//actual g's have been absorbed into definitions of br
-			//resonances.resonance_sign[ir] = 1;	//not quite right
 		}
 		int row_index = 0;
 		tempresonancefile >> row_index;
@@ -97,25 +111,19 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			tempresonancefile >> resonances.resonance_Gamma[row_index-1];
 			tempresonancefile >> resonances.resonance_total_br[row_index-1];
 			tempresonancefile >> resonances.resonance_sign[row_index-1];
+			tempresonancefile >> resonances.resonance_name[row_index-1];
 			if (DEBUG)
 				cerr << "Made it through row_index = " << row_index << endl;
 			tempresonancefile >> row_index;
 		}
 		tempresonancefile.close();
 	}
-	else
+	else if (chosen_resonances.size() == 0)
 	{
-		//cerr << "Reading in important resonances not yet supported!  exiting..." << endl;
-		//exit(1);
-		//ostringstream filename_stream_HBT;
-		//filename_stream_HBT << global_path << "/HBTradii_ev" << folderindex << no_df_stem << ".dat";
-		//ofstream outputHBT;
-		
-		//n_resonance is actually total number of decay channels which can generate pions
-		//from chosen resonances
-		n_resonance = get_number_of_decay_channels(chosen_resonances, all_particles);
-n_resonance--;
-		cout << "Computed n_resonance = " << n_resonance << endl;
+		n_resonance = 1;
+		thermal_pions_only = true;
+		if (VERBOSE > 0) *global_out_stream_ptr << "Thermal pion(+) only!" << endl;
+		resonances.resonance_particle_id = new int [n_resonance];
 		resonances.resonance_mass = new double [n_resonance];
 		resonances.nbody = new int [n_resonance];
 		resonances.resonance_Gamma = new double [n_resonance];
@@ -124,31 +132,67 @@ n_resonance--;
 		resonances.resonance_gspin = new double [n_resonance];
 		resonances.resonance_sign = new int [n_resonance];
 		resonances.resonance_decay_masses = new double * [n_resonance];
+		resonances.resonance_name = new string [n_resonance];
+	}
+	else
+	{
+		//n_resonance is actually total number of decay channels which can generate pions
+		//from chosen resonances
+		//cerr << all_particles[0].name << endl;
+		//cerr << all_particles[319].name << endl;
+		n_resonance = get_number_of_decay_channels(chosen_resonances, all_particles);
+//n_resonance--;
+		//cout << "Computed n_resonance = " << n_resonance << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "Computed n_resonance = " << n_resonance << endl;
+		resonances.resonance_particle_id = new int [n_resonance];
+		resonances.resonance_mass = new double [n_resonance];
+		resonances.nbody = new int [n_resonance];
+		resonances.resonance_Gamma = new double [n_resonance];
+		resonances.resonance_total_br = new double [n_resonance];
+		resonances.resonance_mu = new double [n_resonance];
+		resonances.resonance_gspin = new double [n_resonance];
+		resonances.resonance_sign = new int [n_resonance];
+		resonances.resonance_decay_masses = new double * [n_resonance];
+		resonances.resonance_name = new string [n_resonance];
 		int temp_idx = 0;
 		for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
 		{
 			particle_info particle_temp = all_particles[chosen_resonances[icr]];
-			if (VERBOSE > 0) cout << "Loading resonance: " << particle_temp.name << ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
+			//if (VERBOSE > 0) cout << "Loading resonance: " << particle_temp.name << ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
+			if (VERBOSE > 0) *global_out_stream_ptr << "Loading resonance: " << particle_temp.name
+					<< ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
 			for (int idecay = 0; idecay < particle_temp.decays; idecay++)
 			{
-				if (particle_temp.decays_effective_branchratio[idecay] <= 1.e-12 || idecay > 0)
+				if (VERBOSE > 0) *global_out_stream_ptr << "Current temp_idx = " << temp_idx << endl;
+				if (temp_idx == n_resonance)	//i.e., all contributing resonances/decay channels have been loaded
+					break;
+				resonances.resonance_name[temp_idx] = particle_temp.name;		// set name of resonance
+				if (particle_temp.decays_effective_branchratio[idecay] <= 1.e-12/* || idecay > 0*/)
 				{
-					if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": skipping." << endl;
+					//if (VERBOSE > 0) cout << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1 << ": skipping." << endl;
+					if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx]
+							<< ", decay channel " << idecay + 1 << ": skipping." << endl;
 					continue;
 				}
+				resonances.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance
 				resonances.resonance_decay_masses[temp_idx] = new double [2];
 				for (int ii = 0; ii < 2; ii++)
 					resonances.resonance_decay_masses[temp_idx][ii] = 0.0;
-				//resonances.resonance_mu[temp_idx] = particle_temp.mu;
-				resonances.resonance_mu[temp_idx] = 0.0;			//temporary
-				//resonances.resonance_gspin[temp_idx] = particle_temp.gspin;
-				resonances.resonance_gspin[temp_idx] = 1.0;			//temporary
+				resonances.resonance_mu[temp_idx] = particle_temp.mu;
+				//resonances.resonance_mu[temp_idx] = 0.0;			//temporary
+				resonances.resonance_gspin[temp_idx] = particle_temp.gspin;
 				resonances.resonance_sign[temp_idx] = particle_temp.sign;
 				resonances.resonance_mass[temp_idx] = particle_temp.mass;
 				resonances.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
 				resonances.resonance_Gamma[temp_idx] = particle_temp.width;
-				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay] * particle_temp.gspin;
-				if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": mu=" << resonances.resonance_mu[temp_idx]
+				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
+				//if (VERBOSE > 0) cout << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1
+				//		<< ": mu=" << resonances.resonance_mu[temp_idx]
+				//		<< ", gs=" << resonances.resonance_gspin[temp_idx] << ", sign=" << resonances.resonance_sign[temp_idx]
+				//		<< ", M=" << resonances.resonance_mass[temp_idx] << ", nbody=" << resonances.nbody[temp_idx]
+				//		<< ", Gamma=" << resonances.resonance_Gamma[temp_idx] << ", br=" << resonances.resonance_total_br[temp_idx] << endl;
+				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1
+						<< ": mu=" << resonances.resonance_mu[temp_idx]
 						<< ", gs=" << resonances.resonance_gspin[temp_idx] << ", sign=" << resonances.resonance_sign[temp_idx]
 						<< ", M=" << resonances.resonance_mass[temp_idx] << ", nbody=" << resonances.nbody[temp_idx]
 						<< ", Gamma=" << resonances.resonance_Gamma[temp_idx] << ", br=" << resonances.resonance_total_br[temp_idx] << endl;
@@ -181,7 +225,7 @@ n_resonance--;
 					if (particle_temp.decays_part[idecay][decay_part_idx] == particle->monval && target_daughter_count == 0)
 						target_daughter_count++;
 					else
-					{//otherwise, count it as an extra decay product, even if it's the same target daughter (degen. gets lumped into br_tot)
+					{//otherwise, count it as an extra decay product, even if it's the same target daughter (degen. already lumped into br_tot)
 						int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][decay_part_idx]);
 						resonances.resonance_decay_masses[temp_idx][decay_part_idx] = all_particles[itemp].mass;
 						if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": daughter " << decay_part_idx
@@ -264,7 +308,8 @@ n_resonance--;
 	zeta_wts = new double [n_zeta_pts];
 	for (int ir=0; ir<n_resonance; ir++)
 	{
-		if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
+		//if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
+		if (CHECKING_RESONANCE_CALC)
 		{
 			resonances.resonance_mass[ir] *= MeVToGeV;
 			resonances.resonance_decay_masses[ir][0] *= MeVToGeV;
@@ -379,22 +424,33 @@ n_resonance--;
 	}
 
    dN_dypTdpTdphi = new double* [n_SP_pT];
+   SV_dN_dypTdpTdphi = new double* [n_SP_pT];
    cosine_iorder = new double* [n_SP_pT];
    sine_iorder = new double* [n_SP_pT];
    for(int i=0; i<n_SP_pT; i++)
    {
       dN_dypTdpTdphi[i] = new double [n_SP_pphi];
+      SV_dN_dypTdpTdphi[i] = new double [n_SP_pphi];
       cosine_iorder[i] = new double [n_order];
       sine_iorder[i] = new double [n_order];
    }
    dN_dydphi = new double [n_SP_pphi];
    dN_dypTdpT = new double [n_SP_pT];
    pTdN_dydphi = new double [n_SP_pphi];
+   SV_dN_dydphi = new double [n_SP_pphi];
+   SV_dN_dypTdpT = new double [n_SP_pT];
+   SV_pTdN_dydphi = new double [n_SP_pphi];
    for(int i=0; i<n_SP_pphi; i++)
    {
       dN_dydphi[i] = 0.0e0;
       pTdN_dydphi[i] = 0.0e0;
-      for(int j=0; j<n_SP_pT; j++) dN_dypTdpTdphi[j][i] = 0.0e0;
+      SV_dN_dydphi[i] = 0.0e0;
+      SV_pTdN_dydphi[i] = 0.0e0;
+      for(int j=0; j<n_SP_pT; j++)
+      {
+	dN_dypTdpTdphi[j][i] = 0.0e0;
+	SV_dN_dypTdpTdphi[j][i] = 0.0e0;
+      }
    }
    for(int i=0; i<n_SP_pT; i++)
    for(int j=0; j<n_order; j++)
@@ -403,7 +459,10 @@ n_resonance--;
       sine_iorder[i][j] = 0.0e0;
    }
    for (int i=0; i<n_SP_pT; i++)
+   {
 	dN_dypTdpT[i] = 0.0e0;
+	SV_dN_dypTdpT[i] = 0.0e0;
+   }
    plane_angle = new double [n_order];
 
    //pair momentum

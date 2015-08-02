@@ -450,22 +450,28 @@ double interpLinearNondirect(double * x, double * y, double x0, long size)
 
 
 //**********************************************************************
-double interpBiLinearDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+double interpBiLinearDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/)
 {
-  //long size = x->size();
-  if (x_size==1 && y_size==1) {cout<<"interpBiLinearDirect warning: table size = 1"<<endl; return z[0][0];}
-  double dx = x[1]-x[0]; // increment in x
-  //double dy = y[1]-y[0]; // increment in y
-
-  // assume not close to edges for now...
-  // find x's integer index
-  long xidx = floor((x0-x[0])/dx);
-  if (xidx < 0 || xidx >= x_size-1)
-  {
-	cerr << "interpBiLinearDirect(): index out of range!  Aborting!" << endl
-		<< "interpBiLinearDirect(): x_size = " << x_size << ", x0 = " << x0 << ", xidx = " << xidx << endl;
-	exit(1);
-  }
+	//long size = x->size();
+	if (x_size==1 && y_size==1) {cout<<"interpBiLinearDirect warning: table size = 1"<<endl; return z[0][0];}
+	double dx = x[1]-x[0]; // increment in x
+	//double dy = y[1]-y[0]; // increment in y
+	
+	double def = 0.0;
+	
+	// assume not close to edges for now...
+	// find x's integer index
+	long xidx = floor((x0-x[0])/dx);
+	if (xidx < 0 || xidx >= x_size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cerr << "interpBiLinearDirect(): index out of range!  Aborting!" << endl
+				<< "interpBiLinearDirect(): x_size = " << x_size << ", x0 = " << x0 << ", xidx = " << xidx << endl;
+			exit(1);
+		}
+		else return (def);
+	}
 
   double xidxINT = interpLinearDirect(y, z[xidx], y0, y_size);
   double xidxp1INT = interpLinearDirect(y, z[xidx+1], y0, y_size);

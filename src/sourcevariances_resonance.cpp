@@ -22,7 +22,7 @@
 
 using namespace std;
 
-double SourceVariances::get_Q()
+double SourceVariances::get_Q(int reso_idx)
 {
 	double smin = (m2+m3)*(m2+m3);
 	double smax = (Mres-mass)*(Mres-mass);
@@ -30,12 +30,12 @@ double SourceVariances::get_Q()
 	
 	for (int is = 0; is < n_s_pts; is++)
 	{
-		double sp = s_pts[current_resonance_idx-1][is];
+		double sp = s_pts[reso_idx-1][is];
 		double f1 = (Mres+mass)*(Mres+mass) - sp;
 		double f2 = smax - sp;
 		double f3 = smin - sp;
 		double f4 = (m2-m3)*(m2-m3) - sp;
-		sum += s_wts[current_resonance_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		sum += s_wts[reso_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
 	}
 
 	return sum;
@@ -116,7 +116,7 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 
 void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 {
-	if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to do_all_integrals(): n_body = " << n_body << endl;
+	if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
 	double ssum = 0.;
@@ -133,7 +133,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	set_to_zero(Csum_vec, n_weighting_functions);
 	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
 	set_to_zero(y_of_r, n_weighting_functions);
-	Qfunc = get_Q();
+	Qfunc = get_Q(reso_idx);
 	//double one_by_Gamma_M = 1./(Gamma*Mres);
 
 	if (n_body == 2)
@@ -172,6 +172,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 					//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 					//just interpolate table of single particle spectra...
 					//do interpolations
+if (0) cerr << iKT << "   " << iKphi << "   " << iv << "   " << izeta << "   " << tempidx << endl;
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);

@@ -35,22 +35,24 @@ typedef struct
 
 typedef struct
 {
-   int* nbody;
-   int* resonance_sign;
-   double* resonance_mass;
-   double* resonance_mu;
-   double* resonance_gspin;
-   double* resonance_Gamma;
-   double* resonance_total_br;
-   double** resonance_decay_masses;
+   int * resonance_particle_id;		// keeps track of current resonance's index in all_particles array
+   int * nbody;
+   int * resonance_sign;
+   double * resonance_mass;
+   double * resonance_mu;
+   double * resonance_gspin;
+   double * resonance_Gamma;
+   double * resonance_total_br;
+   double ** resonance_decay_masses;
+   string * resonance_name;
 }resonance_info;
 
 struct Correlationfunction1D_data
 {
   size_t data_length;
-  double *q;
-  double *y;
-  double *sigma;
+  double * q;
+  double * y;
+  double * sigma;
 };
 
 int Fittarget_correlfun1D_f (const gsl_vector *xvec_ptr, void *params_ptr, gsl_vector *f_ptr);
@@ -69,31 +71,24 @@ class SourceVariances
 		double particle_gspin;  //particle degeneracy 
 		double particle_mu;
 		particle_info * all_particles;
+		bool thermal_pions_only;
 
-		int n_zeta_pts;
-		int n_v_pts;
-		int n_s_pts;
-		double v_min;
-		double v_max;
-		double zeta_min;
-		double zeta_max;
-		double s_min, s_max;
+		int n_zeta_pts, n_v_pts, n_s_pts;
+		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
 		
 		//integrated space-time moments vars.
 		double S_r_to_part, S_xs_r_to_part, S_xo_r_to_part, S_xl_r_to_part, S_t_r_to_part;
 		double S_xs2_r_to_part, S_xo2_r_to_part, S_xl2_r_to_part, S_t2_r_to_part;
 		double S_xs_xo_r_to_part, S_xs_xl_r_to_part, S_xs_t_r_to_part, S_xo_xl_r_to_part, S_xo_t_r_to_part, S_xl_t_r_to_part;
 		
-		//array to hold resonance info
+		//array to hold previous and current resonance info
 		resonance_info resonances;
-		int current_resonance_idx;
-		double current_resonance_mu;
-		double current_resonance_mass;
-		double current_resonance_Gamma;
-		double current_resonance_total_br;
-		double * current_resonance_decay_masses;
-		double * P_eval;
-		double * alpha_mu;
+		int current_resonance_idx, current_resonance_particle_id;
+		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_resonance_total_br;
+		double * current_resonance_decay_masses, * P_eval, * alpha_mu;
+		int previous_resonance_idx, previous_resonance_particle_id;
+		double previous_resonance_mu, previous_resonance_mass, previous_resonance_Gamma, previous_resonance_total_br;
+		double * previous_resonance_decay_masses;
 
 		//*************************************************************
 		//freeze-out surface interpolation arrays (prefix: "FOI_"), etc...
@@ -123,21 +118,21 @@ class SourceVariances
 		//resonance momentum info
 		double P_Y, PT, PPhi, MT, Mres, PPhip, PPhim;
 		double m2, m3, Gamma, br;
-		double* Pp;
-		double* Pm;
+		double * Pp;
+		double * Pm;
 		double * zvec;
 
 		//SP momentum arrays for interpolation grid
-		double* SPinterp1_px;
-		double* SPinterp1_py;
-		double*** SPinterp1_p0;
-		double*** SPinterp1_pz;
-		double* SPinterp2_pT;
-		double* SPinterp2_pphi;
-		double* sin_SPinterp2_pphi;
-		double* cos_SPinterp2_pphi;
-		double** SPinterp2_p0;
-		double** SPinterp2_pz;
+		double * SPinterp1_px;
+		double * SPinterp1_py;
+		double *** SPinterp1_p0;
+		double *** SPinterp1_pz;
+		double * SPinterp2_pT;
+		double * SPinterp2_pphi;
+		double * sin_SPinterp2_pphi;
+		double * cos_SPinterp2_pphi;
+		double ** SPinterp2_p0;
+		double ** SPinterp2_pz;
 
 		FO_surf* current_FOsurf_ptr;
 		//FO surface info that is constant - to save time
@@ -147,37 +142,19 @@ class SourceVariances
 	
 		//single particle spectra for plane angle determination
 		//int n_order;
-		double* SP_pT;
-		double* SP_pphi;
-		double* SP_pT_weight;
-		double* SP_pphi_weight;
-		double SP_p_y;
-		double** dN_dypTdpTdphi;
-		double* dN_dypTdpT;
-		double** cosine_iorder;
-		double** sine_iorder;
-		double* dN_dydphi;
-		double* pTdN_dydphi;
-		double* plane_angle;
-		double global_plane_psi;
-		double mean_pT;
+		double SP_p_y, global_plane_psi, mean_pT;
+		double * SP_pT, * SP_pphi, * SP_pT_weight, * SP_pphi_weight, * dN_dypTdpT, * SV_dN_dypTdpT;
+		double * dN_dydphi, * SV_dN_dydphi, * pTdN_dydphi, * SV_pTdN_dydphi, * plane_angle;
+		double ** dN_dypTdpTdphi, ** SV_dN_dypTdpTdphi, ** cosine_iorder, ** sine_iorder;
 		     
 		//pair momentum
 		double K_y, ch_K_y, sh_K_y;
-		double* K_T;
-		double* K_phi;
-		double* K_phi_weight;
-		//double K0, Kx, Ky, Kz;
-		//inelegant way of making K_phi accessible to resonance integrals
-		//without passing it everywhere...
 		double current_K_phi, cos_cKphi, sin_cKphi;
 		double beta_perp, beta_l;
+		double * K_T, * K_phi, * K_phi_weight;
 		    
 		//spatial rapidity grid
-		double* eta_s;
-		double* ch_eta_s;
-		double* sh_eta_s;
-		double* eta_s_weight;
+		double * eta_s, * ch_eta_s, * sh_eta_s, * eta_s_weight;
 
 		//points and weights for resonance integrals
 		double * zeta_pts, * v_pts, ** s_pts;
@@ -195,25 +172,10 @@ class SourceVariances
 		double ** VEC_n2_zeta_factor;
 		double VEC_n2_g_s;
 		//use these for n_body = 3
-		double * VEC_pstar;
-		double * VEC_Estar;
-		double * VEC_DeltaY;
-		double * VEC_Yp;
-		double * VEC_Ym;
-		double ** VEC_P_Y;
-		double ** VEC_MTbar;
-		double ** VEC_DeltaMT;
-		double ** VEC_MTp;
-		double ** VEC_MTm;
-		double *** VEC_MT;
-		double *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT;
+		double * VEC_pstar, * VEC_Estar, * VEC_DeltaY, * VEC_Yp, * VEC_Ym, * VEC_s_factor, * VEC_g_s;
+		double ** VEC_P_Y, ** VEC_MTbar, ** VEC_DeltaMT, ** VEC_MTp, ** VEC_MTm, ** VEC_v_factor;
+		double *** VEC_MT, *** VEC_PPhi_tilde, *** VEC_PPhi_tildeFLIP, *** VEC_PT, *** VEC_zeta_factor;
 		double **** VEC_Pp, **** VEC_alpha, **** VEC_Pm, **** VEC_alpha_m;
-		//double *** VEC_PpT, *** VEC_Ppphi;
-		double * VEC_s_factor;
-		double ** VEC_v_factor;
-		double *** VEC_zeta_factor;
-		//double * VEC_tau_factor;
-		double * VEC_g_s;
 		
 		//array to hold momenta to be integrated over in resonance calculations
 		//momentum_data**** Pplus;
@@ -226,17 +188,15 @@ class SourceVariances
 		
 		double spectra;
 		
-		double* q_out;
-		double* q_side;
-		double* q_long;
+		double * q_out, * q_side, * q_long;
 		
 		//store correlation functions
-		double* Correl_1D_out;
-		double* Correl_1D_out_err;
-		double* Correl_1D_side;
-		double* Correl_1D_side_err;
-		double* Correl_1D_long;
-		double* Correl_1D_long_err;
+		double * Correl_1D_out;
+		double * Correl_1D_out_err;
+		double * Correl_1D_side;
+		double * Correl_1D_side_err;
+		double * Correl_1D_long;
+		double * Correl_1D_long_err;
 
 		//source variances
 		double **S_func;
@@ -266,9 +226,11 @@ class SourceVariances
 
 		//some private methods		
 		bool particles_are_the_same(int idx1, int idx2);
+		bool Search_for_similar_particle(int reso_idx, int * result);
 
 	public:
-		SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle, FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx);
+		SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle,
+				FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout);
 		~SourceVariances();
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr, int reso_idx, bool thermal_particles_only = false);
@@ -293,7 +255,9 @@ class SourceVariances
 		void Do_resonance_integrals(int iKT, int iKphi, int reso_idx);
 		void Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
-		void Load_resonance_info(int reso_idx, double K_T_local, double K_phi_local);
+		void Set_current_particle_info(int reso_idx);
+		void Recycle_spacetime_moments();
+		void Load_decay_channel_info(int reso_idx, double K_T_local, double K_phi_local);
 		void s_loop(double s_loc, double * ssum_vec);
 		void v_loop(double v_loc, double * vsum_vec);
 		void zeta_loop(double zeta_loc, double * zetasum_vec);
@@ -318,7 +282,7 @@ class SourceVariances
 		void Set_use_delta_f(bool usrdef_usedeltaf);
 		void Set_particle_mass(double usrdef_particle_mass);
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
-		double get_Q();
+		double get_Q(int reso_idx);
 		double g(double s);
 		void set_to_zero(double * array, int arraylength);
 		void adaptive_simpson_integration(void (SourceVariances::*f) (double, double *), double a, double b, double * results);
@@ -328,6 +292,9 @@ class SourceVariances
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);
 		void Output_SVdN_dypTdpT(int folderindex);
+		void Output_dN_dypTdpTdphi(int folderindex);
+		void Output_dN_dypTdpT(int folderindex);
+		void Output_dN_dypTdpTdphi_grid(int folderindex, int reso_idx);
 		void Output_all_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);

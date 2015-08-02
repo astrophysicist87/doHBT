@@ -121,13 +121,15 @@ int main(int argc, char *argv[])
         return 0;
      }
 
-	double threshold = 0.35;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
+	//double threshold = 0.35;	//include only enough of the most important resonances to account for fixed fraction of total resonance-decay pion(+)s
+	double threshold = atof(argv[1]);
 				//threshold = 1.0 means include all resonance-decay pion(+)s,
 				//threshold = 0.0 means include none of them
+	output << "Working with threshold = " << threshold << endl;
 	vector<int> chosen_resonance_indices;
-	get_important_resonances(&chosen_resonance_indices, particle, Nparticle, threshold, output);
+	get_important_resonances(particle_idx, &chosen_resonance_indices, particle, Nparticle, threshold, output);
 
-   SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx);
+   SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output);
    Source_function.Set_path(currentworkingdirectory);
    Source_function.Set_use_delta_f(true);
    Source_function.Set_ofstream(output);
@@ -140,6 +142,9 @@ int main(int argc, char *argv[])
    //Source_function.Analyze_sourcefunction_V2(FOsurf_ptr);
    Source_function.Output_SVdN_dypTdpTdphi(folderindex);
    Source_function.Output_SVdN_dypTdpT(folderindex);
+   Source_function.Output_dN_dypTdpTdphi(folderindex);
+   Source_function.Output_dN_dypTdpT(folderindex);
+   Source_function.Output_dN_dypTdpTdphi_grid(folderindex, 0);
    //Source_function.Output_all_dN_dypTdpTdphi(folderindex);
    Source_function.Output_results(folderindex);
    output << "Finished calculating HBT radii via source variances method" << endl;
