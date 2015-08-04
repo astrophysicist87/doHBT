@@ -551,15 +551,16 @@ void print_particle_stability(particle_info * particle, int Nparticle)
 int get_number_of_decay_channels(vector<int> chosen_resonances, particle_info * particle)
 {
 	int count = 0, total_number_of_decays = 0;
-	cerr << "get_number_of_decay_channels(): (int)chosen_resonances.size() = " << (int)chosen_resonances.size() << endl;
+	//cerr << "get_number_of_decay_channels(): (int)chosen_resonances.size() = " << (int)chosen_resonances.size() << endl;
 	for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
 	{
-		cerr << "get_number_of_decay_channels(): accessing icr = " << icr << ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
+		//cerr << "get_number_of_decay_channels(): accessing icr = " << icr << ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
 		total_number_of_decays = particle[chosen_resonances[icr]].decays;
-		cerr << "get_number_of_decay_channels(): total_number_of_decays = " << total_number_of_decays << endl;
-		for (int idecay = 0; idecay < total_number_of_decays; idecay++)
-			count += (particle[chosen_resonances[icr]].decays_effective_branchratio[idecay] > 1e-12) ? 1 : 0;
-		cerr << "get_number_of_decay_channels(): count = " << count << endl;
+		//cerr << "get_number_of_decay_channels(): total_number_of_decays = " << total_number_of_decays << endl;
+		//for (int idecay = 0; idecay < total_number_of_decays; idecay++)
+		//	count += (particle[chosen_resonances[icr]].decays_effective_branchratio[idecay] > 1e-12) ? 1 : 0;
+		count += total_number_of_decays;
+		//cerr << "get_number_of_decay_channels(): count = " << count << endl;
 	}
 	return count;
 }

@@ -91,6 +91,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		resonances.resonance_sign = new int [n_resonance];
 		resonances.resonance_decay_masses = new double* [n_resonance];
 		resonances.resonance_name = new string [n_resonance];
+		resonances.include_channel = new bool [n_resonance];
 		for (int ir=0; ir<n_resonance; ir++)
 		{
 			resonances.resonance_decay_masses[ir] = new double [2];
@@ -99,6 +100,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			resonances.resonance_particle_id[ir] = ir;
 			resonances.resonance_mu[ir] = 0.0;
 			resonances.resonance_gspin[ir] = 1.0;	//actual g's have been absorbed into definitions of br
+			resonances.include_channel[ir] = true;
 		}
 		int row_index = 0;
 		tempresonancefile >> row_index;
@@ -133,6 +135,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		resonances.resonance_sign = new int [n_resonance];
 		resonances.resonance_decay_masses = new double * [n_resonance];
 		resonances.resonance_name = new string [n_resonance];
+		resonances.include_channel = new bool [n_resonance];
 	}
 	else
 	{
@@ -154,6 +157,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		resonances.resonance_sign = new int [n_resonance];
 		resonances.resonance_decay_masses = new double * [n_resonance];
 		resonances.resonance_name = new string [n_resonance];
+		resonances.include_channel = new bool [n_resonance];
 		int temp_idx = 0;
 		for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
 		{
@@ -167,13 +171,16 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				if (temp_idx == n_resonance)	//i.e., all contributing resonances/decay channels have been loaded
 					break;
 				resonances.resonance_name[temp_idx] = particle_temp.name;		// set name of resonance
+
+				//check if effective branching is too small for inclusion in source variances
+				bool effective_br_is_too_small = false;
 				if (particle_temp.decays_effective_branchratio[idecay] <= 1.e-12/* || idecay > 0*/)
 				{
-					//if (VERBOSE > 0) cout << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1 << ": skipping." << endl;
-					if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx]
-							<< ", decay channel " << idecay + 1 << ": skipping." << endl;
-					continue;
+					//if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx]
+					//		<< ", decay channel " << idecay + 1 << ": skipping." << endl;
+					effective_br_is_too_small = true;
 				}
+
 				resonances.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance
 				resonances.resonance_decay_masses[temp_idx] = new double [2];
 				for (int ii = 0; ii < 2; ii++)
@@ -186,11 +193,12 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				resonances.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
 				resonances.resonance_Gamma[temp_idx] = particle_temp.width;
 				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
-				//if (VERBOSE > 0) cout << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1
-				//		<< ": mu=" << resonances.resonance_mu[temp_idx]
-				//		<< ", gs=" << resonances.resonance_gspin[temp_idx] << ", sign=" << resonances.resonance_sign[temp_idx]
-				//		<< ", M=" << resonances.resonance_mass[temp_idx] << ", nbody=" << resonances.nbody[temp_idx]
-				//		<< ", Gamma=" << resonances.resonance_Gamma[temp_idx] << ", br=" << resonances.resonance_total_br[temp_idx] << endl;
+				
+				//check if particle lifetime is too long for inclusion in source variances
+				bool lifetime_is_too_long = false;
+				if (resonances.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
+					lifetime_is_too_long = true;		//i.e., for lifetimes longer than 100 fm/c, skip decay channel
+
 				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1
 						<< ": mu=" << resonances.resonance_mu[temp_idx]
 						<< ", gs=" << resonances.resonance_gspin[temp_idx] << ", sign=" << resonances.resonance_sign[temp_idx]
@@ -199,7 +207,6 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 
 				//set daughter particles masses for each decay channel
 				//currently assuming no more than nbody = 3
-
 
 				bool target_daughter_flag = false;
 				int additional_daughter_count = 0;
@@ -216,23 +223,10 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 					}
 				}
 
-
-				/*//int decay_part_idx = 0;
-				int target_daughter_count = 0;
-				while (particle_temp.decays_part[idecay][decay_part_idx] != 0)
-				{
-					//if it's the first target daughter (say, pion(+)) in this decay channel, increment the count and move on to the next daughter
-					if (particle_temp.decays_part[idecay][decay_part_idx] == particle->monval && target_daughter_count == 0)
-						target_daughter_count++;
-					else
-					{//otherwise, count it as an extra decay product, even if it's the same target daughter (degen. already lumped into br_tot)
-						int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][decay_part_idx]);
-						resonances.resonance_decay_masses[temp_idx][decay_part_idx] = all_particles[itemp].mass;
-						if (VERBOSE > 0) cout << "Decay channel " << idecay + 1 << ": daughter " << decay_part_idx
-							<< " (" << all_particles[itemp].name << ") has m" << decay_part_idx << "=" << all_particles[itemp].mass << endl;
-					}
-					decay_part_idx++;
-				}*/
+				// if decay channel parent resonance is not too long-lived
+				// and decay channel contains at least one target daughter particle,
+				// include channel
+				resonances.include_channel[temp_idx] = (target_daughter_flag && !lifetime_is_too_long && !effective_br_is_too_small);
 
 				temp_idx++;
 			}
@@ -750,6 +744,209 @@ SourceVariances::~SourceVariances()
    delete[] xs2_S;
 
    return;
+}
+
+void SourceVariances::Allocate_decay_channel_info()
+{
+	if (VERBOSE > 2) *global_out_stream_ptr << "Reallocating memory for decay channel information..." << endl;
+	VEC_n2_v_factor = new double [n_v_pts];
+	VEC_n2_zeta_factor = new double * [n_v_pts];
+	VEC_n2_P_Y = new double [n_v_pts];
+	VEC_n2_MTbar = new double [n_v_pts];
+	VEC_n2_DeltaMT = new double [n_v_pts];
+	VEC_n2_MTp = new double [n_v_pts];
+	VEC_n2_MTm = new double [n_v_pts];
+	VEC_n2_MT = new double * [n_v_pts];
+	VEC_n2_PPhi_tilde = new double * [n_v_pts];
+	VEC_n2_PPhi_tildeFLIP = new double * [n_v_pts];
+	VEC_n2_PT = new double * [n_v_pts];
+	VEC_n2_Pp = new double ** [n_v_pts];
+	VEC_n2_alpha = new double ** [n_v_pts];
+	VEC_n2_Pm = new double ** [n_v_pts];
+	VEC_n2_alpha_m = new double ** [n_v_pts];
+	for(int iv = 0; iv < n_v_pts; iv++)
+	{
+		VEC_n2_MT[iv] = new double [n_zeta_pts];
+		VEC_n2_PPhi_tilde[iv] = new double [n_zeta_pts];
+		VEC_n2_PPhi_tildeFLIP[iv] = new double [n_zeta_pts];
+		VEC_n2_PT[iv] = new double [n_zeta_pts];
+		VEC_n2_Pp[iv] = new double * [n_zeta_pts];
+		VEC_n2_alpha[iv] = new double * [n_zeta_pts];
+		VEC_n2_Pm[iv] = new double * [n_zeta_pts];
+		VEC_n2_alpha_m[iv] = new double * [n_zeta_pts];
+		VEC_n2_zeta_factor[iv] = new double [n_zeta_pts];
+		for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+		{
+			VEC_n2_Pp[iv][izeta] = new double [4];
+			VEC_n2_alpha[iv][izeta] = new double [4];
+			VEC_n2_Pm[iv][izeta] = new double [4];
+			VEC_n2_alpha_m[iv][izeta] = new double [4];
+		}
+	}
+	VEC_pstar = new double [n_s_pts];
+	VEC_Estar = new double [n_s_pts];
+	VEC_DeltaY = new double [n_s_pts];
+	VEC_g_s = new double [n_s_pts];
+	VEC_s_factor = new double [n_s_pts];
+	VEC_v_factor = new double * [n_s_pts];
+	VEC_zeta_factor = new double ** [n_s_pts];
+	VEC_Yp = new double [n_s_pts];
+	VEC_Ym = new double [n_s_pts];
+	VEC_P_Y = new double * [n_s_pts];
+	VEC_MTbar = new double * [n_s_pts];
+	VEC_DeltaMT = new double * [n_s_pts];
+	VEC_MTp = new double * [n_s_pts];
+	VEC_MTm = new double * [n_s_pts];
+	VEC_MT = new double ** [n_s_pts];
+	VEC_PPhi_tilde = new double ** [n_s_pts];
+	VEC_PPhi_tildeFLIP = new double ** [n_s_pts];
+	VEC_PT = new double ** [n_s_pts];
+	VEC_Pp = new double *** [n_s_pts];
+	VEC_alpha = new double *** [n_s_pts];
+	VEC_Pm = new double *** [n_s_pts];
+	VEC_alpha_m = new double *** [n_s_pts];
+	for(int is = 0; is < n_s_pts; is++)
+	{
+		VEC_v_factor[is] = new double [n_v_pts];
+		VEC_zeta_factor[is] = new double * [n_v_pts];
+		VEC_P_Y[is] = new double [n_v_pts];
+		VEC_MTbar[is] = new double [n_v_pts];
+		VEC_DeltaMT[is] = new double [n_v_pts];
+		VEC_MTp[is] = new double [n_v_pts];
+		VEC_MTm[is] = new double [n_v_pts];
+		VEC_MT[is] = new double * [n_v_pts];
+		VEC_PPhi_tilde[is] = new double * [n_v_pts];
+		VEC_PPhi_tildeFLIP[is] = new double * [n_v_pts];
+		VEC_PT[is] = new double * [n_v_pts];
+		VEC_Pp[is] = new double ** [n_v_pts];
+		VEC_alpha[is] = new double ** [n_v_pts];
+		VEC_Pm[is] = new double ** [n_v_pts];
+		VEC_alpha_m[is] = new double ** [n_v_pts];
+		for(int iv = 0; iv < n_v_pts; iv++)
+		{
+			VEC_MT[is][iv] = new double [n_zeta_pts];
+			VEC_PPhi_tilde[is][iv] = new double [n_zeta_pts];
+			VEC_PPhi_tildeFLIP[is][iv] = new double [n_zeta_pts];
+			VEC_PT[is][iv] = new double [n_zeta_pts];
+			VEC_Pp[is][iv] = new double * [n_zeta_pts];
+			VEC_alpha[is][iv] = new double * [n_zeta_pts];
+			VEC_Pm[is][iv] = new double * [n_zeta_pts];
+			VEC_alpha_m[is][iv] = new double * [n_zeta_pts];
+			VEC_zeta_factor[is][iv] = new double [n_zeta_pts];
+			for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+			{
+				VEC_Pp[is][iv][izeta] = new double [4];
+				VEC_alpha[is][iv][izeta] = new double [4];
+				VEC_Pm[is][iv][izeta] = new double [4];
+				VEC_alpha_m[is][iv][izeta] = new double [4];
+			}
+		}
+	}
+	if (VERBOSE > 2) *global_out_stream_ptr << "Reallocated memory for decay channel information." << endl;
+
+	return;
+}
+
+void SourceVariances::Delete_decay_channel_info()
+{
+	if (VERBOSE > 2) *global_out_stream_ptr << "Deleting memory for decay channel information..." << endl;
+	for(int iv = 0; iv < n_v_pts; iv++)
+	{
+		for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+		{
+			delete [] VEC_n2_Pp[iv][izeta];
+			delete [] VEC_n2_alpha[iv][izeta];
+			delete [] VEC_n2_Pm[iv][izeta];
+			delete [] VEC_n2_alpha_m[iv][izeta];
+		}
+		delete [] VEC_n2_MT[iv];
+		delete [] VEC_n2_PPhi_tilde[iv];
+		delete [] VEC_n2_PPhi_tildeFLIP[iv];
+		delete [] VEC_n2_PT[iv];
+		delete [] VEC_n2_Pp[iv];
+		delete [] VEC_n2_alpha[iv];
+		delete [] VEC_n2_Pm[iv];
+		delete [] VEC_n2_alpha_m[iv];
+		delete [] VEC_n2_zeta_factor[iv];
+	}
+	delete [] VEC_n2_v_factor;
+	delete [] VEC_n2_zeta_factor;
+	delete [] VEC_n2_P_Y;
+	delete [] VEC_n2_MTbar ;
+	delete [] VEC_n2_DeltaMT;
+	delete [] VEC_n2_MTp;
+	delete [] VEC_n2_MTm;
+	delete [] VEC_n2_MT;
+	delete [] VEC_n2_PPhi_tilde;
+	delete [] VEC_n2_PPhi_tildeFLIP;
+	delete [] VEC_n2_PT;
+	delete [] VEC_n2_Pp;
+	delete [] VEC_n2_alpha;
+	delete [] VEC_n2_Pm;
+	delete [] VEC_n2_alpha_m;
+
+	for(int is = 0; is < n_s_pts; is++)
+	{
+		for(int iv = 0; iv < n_v_pts; iv++)
+		{
+			for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+			{
+				delete [] VEC_Pp[is][iv][izeta];
+				delete [] VEC_alpha[is][iv][izeta];
+				delete [] VEC_Pm[is][iv][izeta];
+				delete [] VEC_alpha_m[is][iv][izeta];
+			}
+			delete [] VEC_MT[is][iv];
+			delete [] VEC_PPhi_tilde[is][iv];
+			delete [] VEC_PPhi_tildeFLIP[is][iv];
+			delete [] VEC_PT[is][iv];
+			delete [] VEC_Pp[is][iv];
+			delete [] VEC_alpha[is][iv];
+			delete [] VEC_Pm[is][iv];
+			delete [] VEC_alpha_m[is][iv];
+			delete [] VEC_zeta_factor[is][iv];
+		}
+		delete [] VEC_v_factor[is];
+		delete [] VEC_zeta_factor[is];
+		delete [] VEC_P_Y[is];
+		delete [] VEC_MTbar[is];
+		delete [] VEC_DeltaMT[is];
+		delete [] VEC_MTp[is];
+		delete [] VEC_MTm[is];
+		delete [] VEC_MT[is];
+		delete [] VEC_PPhi_tilde[is];
+		delete [] VEC_PPhi_tildeFLIP[is];
+		delete [] VEC_PT[is];
+		delete [] VEC_Pp[is];
+		delete [] VEC_alpha[is];
+		delete [] VEC_Pm[is];
+		delete [] VEC_alpha_m[is];
+	}
+	delete [] VEC_pstar;
+	delete [] VEC_Estar;
+	delete [] VEC_DeltaY;
+	delete [] VEC_g_s;
+	delete [] VEC_s_factor;
+	delete [] VEC_v_factor;
+	delete [] VEC_zeta_factor;
+	delete [] VEC_Yp;
+	delete [] VEC_Ym;
+	delete [] VEC_P_Y;
+	delete [] VEC_MTbar;
+	delete [] VEC_DeltaMT;
+	delete [] VEC_MTp;
+	delete [] VEC_MTm;
+	delete [] VEC_MT;
+	delete [] VEC_PPhi_tilde;
+	delete [] VEC_PPhi_tildeFLIP;
+	delete [] VEC_PT;
+	delete [] VEC_Pp;
+	delete [] VEC_alpha;
+	delete [] VEC_Pm;
+	delete [] VEC_alpha_m;
+	if (VERBOSE > 2) *global_out_stream_ptr << "Deleted memory for decay channel information." << endl;
+
+	return;
 }
 
 bool SourceVariances::fexists(const char *filename)

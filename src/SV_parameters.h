@@ -110,7 +110,7 @@ const string path = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RES
 const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08/NEW_TDEP_V4";
 
 //const double tol = 1e-15;  //tolarence
-const double tol = 0.0;  //tolarence
+const double tol = 0.0;  //tolerance
 const int flagneg = 1;     //neglect all points that are negative
 
 const int MCint_calls = 5000;  //# of calls for monte carlo integration
@@ -118,8 +118,8 @@ const int MCint_calls = 5000;  //# of calls for monte carlo integration
 const size_t fit_max_iterations = 1000;  // stop at this point if not converged 
 const double fit_tolarence = 1e-6;
 
-//const int n_events = 2;
-//const int initial_event = 1;
+//misc. resonance info
+const double max_lifetime = 100.;	// fm/c
 
 namespace patch
 {
@@ -130,8 +130,5 @@ namespace patch
         return stm.str() ;
     }
 }
-
-//needed some extra variables for check.cpp
-const double Rad = 3.5;  //fm
 
 #endif

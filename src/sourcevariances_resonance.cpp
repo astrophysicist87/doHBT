@@ -116,10 +116,10 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 
 void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 {
-	if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
+	//if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
-	double ssum = 0.;
+	//double ssum = 0.;
 	//double local_eta_s_wt = eta_s_weight[ieta];
 	double * ssum_vec = new double [n_weighting_functions];
 	double * vsum_vec = new double [n_weighting_functions];
@@ -134,13 +134,12 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
 	set_to_zero(y_of_r, n_weighting_functions);
 	Qfunc = get_Q(reso_idx);
-	//double one_by_Gamma_M = 1./(Gamma*Mres);
 
 	if (n_body == 2)
 	{
 		//then g(s) is delta-function, skip s-integration entirely
 		//double s_loc = m2*m2;
-		ssum = 0.0;
+		//ssum = 0.0;
     		set_to_zero(vsum_vec, n_weighting_functions);
 		for (int iv = 0; iv < n_v_pts; iv++)
 		{
@@ -172,17 +171,17 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 					//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 					//just interpolate table of single particle spectra...
 					//do interpolations
-if (0) cerr << iKT << "   " << iKphi << "   " << iv << "   " << izeta << "   " << tempidx << endl;
+//if (0) cerr << iKT << "   " << iKphi << "   " << iv << "   " << izeta << "   " << tempidx << endl;
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-if (0) cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
-			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
-			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
-if (0) cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
-			<< PKT << "   " << PKY << "   " << PKphi << "   " << rap_indep_y_of_r[0] << "   " << rap_indep_y_of_r[7]
-			<< "   " << rap_indep_y_of_r[8] << "   " << rap_indep_y_of_r[5] << "   " << rap_indep_y_of_r[6] << "   " << rap_indep_y_of_r[14] << endl;
+//if (reso_idx==42) cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
+//			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
+//			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
+//if (0) cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
+//			<< PKT << "   " << PKY << "   " << PKphi << "   " << rap_indep_y_of_r[0] << "   " << rap_indep_y_of_r[7]
+//			<< "   " << rap_indep_y_of_r[8] << "   " << rap_indep_y_of_r[5] << "   " << rap_indep_y_of_r[6] << "   " << rap_indep_y_of_r[14] << endl;
 					//now compute appropriate linear combinations (maybe shift these into preceding function eventually?)
 					//[{1}_r]_{r-->\pi}
 					Csum_vec[0] += y_of_r[0];
@@ -198,9 +197,9 @@ if (0) cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
 					Csum_vec[5] += y_of_r[5] + alpha_l*y_of_r[0];
 					//[{xl2}_r]_{r-->\pi}
 					Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[5] + 2.*alpha_l*alpha_l*y_of_r[0];
-if (iKT == 0 && iKphi == 0)
-	if (0) cerr << v_pts[iv] << "   " << zeta_pts[izeta] << "   " << tempidx << "   " << K_T[iKT] << "   " << K_phi[iKphi] << "   "
-			<< PKT << "   " << PKphi << "   " << PKY << "   " << Csum_vec[0] << "   " << y_of_r[0] << endl;
+//if (iKT == 0 && iKphi == 0)
+//	if (0) cerr << v_pts[iv] << "   " << zeta_pts[izeta] << "   " << tempidx << "   " << K_T[iKT] << "   " << K_phi[iKphi] << "   "
+//			<< PKT << "   " << PKphi << "   " << PKY << "   " << Csum_vec[0] << "   " << y_of_r[0] << endl;
 					//[{t}_r]_{r-->\pi}
 					Csum_vec[7] += y_of_r[7] + alpha_t*y_of_r[0];
 					//[{t2}_r]_{r-->\pi}
@@ -230,7 +229,7 @@ if (iKT == 0 && iKphi == 0)
 	}
 	else if (n_body == 3)
 	{
-		ssum = 0.0;
+		//ssum = 0.0;
 		for (int is = 0; is < n_s_pts; is++)
 		{
 			time (&rawtime);
@@ -252,6 +251,7 @@ if (iKT == 0 && iKphi == 0)
 					//cerr << "\t\tStarting zeta-loop #" << izeta << endl;
 					set_to_zero(Csum_vec, n_weighting_functions);
 					double PKT = VEC_PT[is][iv][izeta];
+					double PKY = VEC_P_Y[iv][izeta];
 					double PKphi = VEC_PPhi_tilde[is][iv][izeta];
 					for (int tempidx = 1; tempidx <= 2; tempidx++)
 					{
@@ -265,8 +265,12 @@ if (iKT == 0 && iKphi == 0)
 						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 						//just interpolate table of single particle spectra...
 						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
+							rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 										PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
+						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
+//if (reso_idx==42) cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
+//			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
+//			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
 						//now compute appropriate linear combinations
 						//[{1}_r]_{r-->\pi}
 						Csum_vec[0] += y_of_r[0];
@@ -313,6 +317,15 @@ if (iKT == 0 && iKphi == 0)
 	//return ssum;
 	for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 		integrated_spacetime_moments[reso_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
+
+	//clean up
+	delete [] ssum_vec;
+	delete [] vsum_vec;
+	delete [] zetasum_vec;
+	delete [] Csum_vec;
+	delete [] rap_indep_y_of_r;
+	delete [] y_of_r;
+
 	return;
 }
 

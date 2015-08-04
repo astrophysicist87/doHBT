@@ -45,6 +45,7 @@ typedef struct
    double * resonance_total_br;
    double ** resonance_decay_masses;
    string * resonance_name;
+   bool * include_channel;
 }resonance_info;
 
 struct Correlationfunction1D_data
@@ -256,8 +257,12 @@ class SourceVariances
 		void Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
 		void Set_current_particle_info(int reso_idx);
+		bool Do_this_decay_channel(int reso_idx);
+		void Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx);
 		void Recycle_spacetime_moments();
+		void Allocate_decay_channel_info();
 		void Load_decay_channel_info(int reso_idx, double K_T_local, double K_phi_local);
+		void Delete_decay_channel_info();
 		void s_loop(double s_loc, double * ssum_vec);
 		void v_loop(double v_loc, double * vsum_vec);
 		void zeta_loop(double zeta_loc, double * zetasum_vec);

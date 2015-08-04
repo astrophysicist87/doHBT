@@ -63,17 +63,14 @@ double SourceVariances::place_in_range(double phi, double min, double max)
 	return (phi);
 }
 
+// this is the driver function for all source-variances-with-resonances calculations
 void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
-	time_t rawtime;
-  	struct tm * timeinfo;
-
 	double plane_psi = 0.0;
 	int iorder = USE_PLANE_PSI_ORDER;
 	if (USE_PLANE_PSI_ORDER)
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
-		//cerr << "Determine nth-order plane angles..." << endl;
 		Determine_plane_angle(current_FOsurf_ptr, 0, true);	//uses only thermal pions...
 		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
 		if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
@@ -82,7 +79,6 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	else
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
-		//cerr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
 	}
 	global_plane_psi = plane_psi;
 
@@ -90,125 +86,175 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	int resonance_loop_cutoff = n_resonance;			//loop over direct pions and resonances
 	//int resonance_loop_cutoff = 1;					//other
 	
-	double max_lifetime = 100.;	// fm/c
-	
+	// ************************************************************
+	// loop over resonances (ir == 0 corresponds to thermal pions)
+	// ************************************************************
 	for (int ir = 0; ir <= resonance_loop_cutoff; ir++)
 	{
-		string local_name = "Thermal pion(+)";
-		if (ir > 0)
-		{
-			if (thermal_pions_only)
-				break;
-			else
-				local_name = resonances.resonance_name[ir-1];
-		}
-		if (CHECKING_RESONANCE_CALC)
-		{
-			if (ir != 0 && ir != 1 && ir != 7)
-			{
-				//cout << "ir = " << ir << ": skipping." << endl;
-				if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping." << endl;
-				continue;
-			}
-		}
-		else if (ir > 0 && resonances.resonance_Gamma[ir-1] < hbarC / max_lifetime)	//i.e., for lifetimes longer than 100 fm/c, skip
-		{
-			//cout << "ir = " << ir << ": lifetime too long --> skipping." << endl;
-			if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": lifetime too long --> skipping." << endl;
+		// ************************************************************
+		// check whether to do this decay channel
+		// ************************************************************
+		if (ir > 0 && thermal_pions_only)
+			break;
+		else if (!Do_this_decay_channel(ir))
 			continue;
-		}
-		else
-		{
-			//cout << "ir = " << ir << ": doing this one." << endl;
-			if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one." << endl;
-		}
-		time (&rawtime);
-		timeinfo = localtime (&rawtime);
+
+		// ************************************************************
+		// if so, set decay channel info
+		// ************************************************************
 		Set_current_particle_info(ir);
-		//if (VERBOSE > 0) *global_out_stream_ptr << "\t\t   * Started setting spacetime moments at " << asctime(timeinfo);
-		//cerr << "Setting spacetime moments" << endl;
-		if (recycle_previous_moments && RECYCLE_ST_MOMENTS && ir > 1)
+
+		// ************************************************************
+		// decide whether to recycle old moments or calculate new moments
+		// ************************************************************
+		Get_spacetime_moments(FOsurf_ptr, ir);
+
+		// ************************************************************
+		// compute flow plane angle and thermal spectra for given resonance decay channel
+		// ************************************************************
+		Determine_plane_angle(FOsurf_ptr, ir);						// for ir==0, just gives thermal pions (as above)
+		if (INTERPOLATION_FORMAT == 0)
+			return;									// if calculating everything exactly, only do E_p * dN_d3p
+
+		// ************************************************************
+		// begin source variances calculations here...
+		// ************************************************************
+		for(int iKT = 0; iKT < n_localp_T; iKT++)					// loop over KT
 		{
-			if (VERBOSE > 0) *global_out_stream_ptr << local_name
-				<< ": same parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
-				<< ") as previous decay channel \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
-			Recycle_spacetime_moments();
-		}
-		else if (recycle_similar_moments && RECYCLE_ST_MOMENTS && ir > 1)
-		{
-			if (VERBOSE > 0) *global_out_stream_ptr << local_name
-				<< ": parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
-				<< ") sufficiently close to preceding parent resonance (" << resonances.resonance_name[reso_idx_of_moments_to_recycle-1]
-				<< ", reso_idx = " << reso_idx_of_moments_to_recycle
-				<< ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
-			Recycle_spacetime_moments();
-		}
-		else
-		{
-			if (ir == 0)
+			if (abs(K_T[iKT]) < 1.e-10)						// KT == 0 not currently supported
+				continue;
+			for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)			// loop over Kphi
 			{
-				if (VERBOSE > 0) *global_out_stream_ptr << "Computing dN_dypTdpTdphi_moments for thermal pion(+)!" << endl;
-			}
-			else if (ir == 1)
-			{
-				if (VERBOSE > 0) *global_out_stream_ptr << "Computing dN_dypTdpTdphi_moments for " << local_name << endl;
-			}
-			else
-			{
-				if (VERBOSE > 0 && !RECYCLE_ST_MOMENTS) *global_out_stream_ptr << local_name
-					<< ": RECYCLE_ST_MOMENTS currently set to false \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
-				else if (VERBOSE > 0 && !recycle_previous_moments && !recycle_similar_moments) *global_out_stream_ptr << local_name
-					<< ": different parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
-					<< ") from previous decay channel's parent resonance (" << resonances.resonance_name[previous_resonance_idx-1] << ", reso_idx = "
-					<< previous_resonance_idx << ") and dissimilar from all preceding resonances \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
-				else
+				if (ir > 0)							// don't need to do any resonance integrals for thermal pions
 				{
-					cerr << "You shouldn't have ended up here!" << endl;
-					exit(1);
+					Allocate_decay_channel_info();				// allocate needed memory
+					Load_decay_channel_info(ir, K_T[iKT], K_phi[iKphi]);	// set decay channel information
+					Do_resonance_integrals(iKT, iKphi, ir);			// interpolate thermal resonance spectra to do phase-space integrals
+					Delete_decay_channel_info();				// free up memory
 				}
-			}
-			Set_dN_dypTdpTdphi_moments(FOsurf_ptr, ir);
-		}
-		time (&rawtime);
-		timeinfo = localtime (&rawtime);
-		Determine_plane_angle(FOsurf_ptr, ir);	//for ir==0, should give same answer as first call to Determine_plane_angle above...
-		if (INTERPOLATION_FORMAT == 0) return;		//if calculating everything exactly, just do dN_d3p stuff
-		// begin HBT calculations here...
-		for(int iKT = 0; iKT < n_localp_T; iKT++)
-		{
-			if (abs(K_T[iKT]) < 1.e-10) continue;
-			time (&rawtime);
-			timeinfo = localtime (&rawtime);
-			for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-			{
-				Load_decay_channel_info(ir, K_T[iKT], K_phi[iKphi]);
-				if (ir > 0)	//don't need to do any resonance integrals for thermal pions!
-					Do_resonance_integrals(iKT, iKphi, ir);
-				Update_source_variances(iKT, iKphi, ir);
-			}
-		}
-	}//end of resonance loop
+				Update_source_variances(iKT, iKphi, ir);			// include results in source integrals
+			}									// END of KT loop
+		}										// END of Kphi loop
+	}											// END of resonance loop
+
+	// ************************************************************
+	// now get HBT radii from source integrals
+	// ************************************************************
 	for(int iKT = 0; iKT < n_localp_T; iKT++)
 	{
-		//if (iKT == 0) continue;	//temporary, need to do something slightly different for K_T == 0...
-		if (abs(K_T[iKT]) < 1.e-10) continue;
+		if (abs(K_T[iKT]) < 1.e-10)
+			continue;
 		double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
 		beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
 		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 		{
-			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Finished!  Getting R^2_ij..." << endl;
 			Calculate_R2_side(iKT, iKphi);
 			Calculate_R2_out(iKT, iKphi);
 			Calculate_R2_long(iKT, iKphi);
 			Calculate_R2_outside(iKT, iKphi);
 			Calculate_R2_sidelong(iKT, iKphi);
 			Calculate_R2_outlong(iKT, iKphi);
-			if (VERBOSE > 1) *global_out_stream_ptr << "\t --> Moving on!" << endl;
 		}
 		R2_Fourier_transform(iKT, plane_psi);
 	}
 
    return;
+}
+
+bool SourceVariances::Do_this_decay_channel(int reso_idx)
+{
+	string local_name = "Thermal pion(+)";
+	if (reso_idx == 0)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one." << endl;
+		return true;
+	}
+	else
+		local_name = resonances.resonance_name[reso_idx-1];
+	//skipping to problematic resonance ir == 42
+	//if (reso_idx > 1 && reso_idx != 42)
+	//	return false;
+	//else
+	//	if (VERBOSE > 0) *global_out_stream_ptr << "Now working on reso_idx == " << reso_idx << endl;
+	//end skipping statement
+	if (CHECKING_RESONANCE_CALC)
+	{
+		if (reso_idx != 0 && reso_idx != 1 && reso_idx != 7)
+		{
+			if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping." << endl;
+			return false;
+		}
+	}
+	else if (resonances.include_channel[reso_idx-1])
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one." << endl;
+	}
+	else
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping." << endl;
+	}
+
+	return (resonances.include_channel[reso_idx-1]);
+}
+
+void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
+{
+//**************************************************************
+//Set resonance name
+//**************************************************************
+	string local_name = "Thermal pion(+)";
+	if (reso_idx > 0)
+		local_name = resonances.resonance_name[reso_idx-1];
+
+//**************************************************************
+//Decide what to do with this resonance / decay channel
+//**************************************************************
+	if (recycle_previous_moments && RECYCLE_ST_MOMENTS && reso_idx > 1)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name
+			<< ": same parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
+			<< ") as previous decay channel \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
+		Recycle_spacetime_moments();
+	}
+	else if (recycle_similar_moments && RECYCLE_ST_MOMENTS && reso_idx > 1)
+	{
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name
+			<< ": parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
+			<< ") sufficiently close to preceding parent resonance (" << resonances.resonance_name[reso_idx_of_moments_to_recycle-1]
+			<< ", reso_idx = " << reso_idx_of_moments_to_recycle
+			<< ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
+		Recycle_spacetime_moments();
+	}
+	else
+	{
+		if (reso_idx == 0)	//if it's thermal pions
+		{
+			if (VERBOSE > 0) *global_out_stream_ptr << "Computing dN_dypTdpTdphi_moments for thermal pion(+)!" << endl;
+		}
+		else if (reso_idx == 1)	//if it's the first resonance
+		{
+			if (VERBOSE > 0) *global_out_stream_ptr << "Computing dN_dypTdpTdphi_moments for " << local_name << endl;
+		}
+		else			//if it's a later resonance
+		{
+			if (VERBOSE > 0 && !RECYCLE_ST_MOMENTS) *global_out_stream_ptr << local_name
+				<< ": RECYCLE_ST_MOMENTS currently set to false \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
+			else if (VERBOSE > 0 && !recycle_previous_moments && !recycle_similar_moments) *global_out_stream_ptr << local_name
+				<< ": different parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
+				<< ") from previous decay channel's parent resonance (" << resonances.resonance_name[previous_resonance_idx-1] << ", reso_idx = "
+				<< previous_resonance_idx << ") and dissimilar from all preceding resonances \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
+			else
+			{
+				cerr << "You shouldn't have ended up here!" << endl;
+				exit(1);
+			}
+		}
+		Set_dN_dypTdpTdphi_moments(FOsurf_ptr, reso_idx);
+	}
+//**************************************************************
+//Spacetime moments now set
+//**************************************************************
+	return;
 }
 
 void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx)
@@ -413,7 +459,7 @@ double px, py, p0, pz, f0, deltaf, S_p, S_p_withweight;
 //cerr << "***Checkpoint #2" << endl;
    for(int isurf=0; isurf<FO_length ; isurf++)
    {
-	if (VERBOSE > 2) *global_out_stream_ptr << "\tCal_dN_dypTdpTdphi_with_weights_polar(): reso_idx = " << reso_idx << ", cell = " << isurf + 1 << " of " << FO_length << endl;
+	//if (VERBOSE > 2) *global_out_stream_ptr << "\tCal_dN_dypTdpTdphi_with_weights_polar(): reso_idx = " << reso_idx << ", cell = " << isurf + 1 << " of " << FO_length << endl;
 	surf = &FOsurf_ptr[isurf];
 	//mu = surf->particle_mu[particle_id];
 	tau = surf->tau;
@@ -527,6 +573,7 @@ double temp;
 //set log of dN_dypTdpTdphi_moments...
 	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
 	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	{
 	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
 		temp = dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi];
@@ -534,7 +581,8 @@ double temp;
 		sign_of_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = sgn(temp);
 	}
 //cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
-//			<< PKT << "   " << PKphi << "   " << dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][5][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][6][ipt][iphi] << endl;
+//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] << endl;
+	}
 //cerr << "***Checkpoint #3" << endl;
 //cout << "***Exited Cal_dN_dypTdpTdphi_with_weights_polar" << endl;
    return;
@@ -826,7 +874,7 @@ void SourceVariances::Set_current_particle_info(int reso_idx)
 		signRES = resonances.resonance_sign[reso_idx-1];
 		gRES = resonances.resonance_gspin[reso_idx-1];
 	
-	cerr << "Made it to checkpoint #1" << endl;
+	//cerr << "Made it to checkpoint #1" << endl;
 		
 		if (reso_idx > 1)
 		{
@@ -843,7 +891,7 @@ void SourceVariances::Set_current_particle_info(int reso_idx)
 				recycle_previous_moments = true;
 				recycle_similar_moments = false;
 				reso_idx_of_moments_to_recycle = previous_resonance_idx;
-	cerr << "Made it to checkpoint #2" << endl;
+	//cerr << "Made it to checkpoint #2" << endl;
 			}
 			else if ( Search_for_similar_particle( reso_idx, &similar_particle_idx ) )
 			{
@@ -851,7 +899,7 @@ void SourceVariances::Set_current_particle_info(int reso_idx)
 				recycle_previous_moments = false;
 				recycle_similar_moments = true;
 				reso_idx_of_moments_to_recycle = similar_particle_idx;
-	cerr << "Made it to checkpoint #3" << endl;
+	//cerr << "Made it to checkpoint #3" << endl;
 			}
 			else
 			{
@@ -861,7 +909,7 @@ void SourceVariances::Set_current_particle_info(int reso_idx)
 				recycle_previous_moments = false;
 				recycle_similar_moments = false;
 				reso_idx_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
-	cerr << "Made it to checkpoint #4" << endl;
+	//cerr << "Made it to checkpoint #4" << endl;
 			}
 		}
 	}
@@ -908,7 +956,7 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 	br = current_resonance_total_br;
 	m2 = current_resonance_decay_masses[0];
 	m3 = current_resonance_decay_masses[1];
-	if (DEBUG)
+	if (DEBUG || VERBOSE > 3)
 	{
 		cerr << "Working on resonance # = " << reso_idx << ":" << endl
 			<< "  --> muRES = " << muRES << endl
@@ -936,6 +984,11 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 		double s_loc = m2*m2;
 		VEC_n2_spt = s_loc;
 		double pstar_loc = sqrt( ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc) )/(2.0*Mres);
+		if (s_loc < 1.e-15)
+		{
+			cerr << "n_body == 2, s_loc == 0: Mres = " << Mres << ", mass = " << mass << ", pstar_loc = " << pstar_loc << endl;
+			exit(1);
+		}
 		VEC_n2_pstar = pstar_loc;
 		//double g_s_loc = g(s_loc)/pstar_loc;	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
 		double g_s_loc = g(s_loc);	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
@@ -949,23 +1002,8 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 		double DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
 		VEC_n2_DeltaY = DeltaY_loc;
 		p_y = 0.0;
-		VEC_n2_v_factor = new double [n_v_pts];
-		VEC_n2_zeta_factor = new double * [n_v_pts];
 		VEC_n2_Yp = p_y + DeltaY_loc;
 		VEC_n2_Ym = p_y - DeltaY_loc;
-		VEC_n2_P_Y = new double [n_v_pts];
-		VEC_n2_MTbar = new double [n_v_pts];
-		VEC_n2_DeltaMT = new double [n_v_pts];
-		VEC_n2_MTp = new double [n_v_pts];
-		VEC_n2_MTm = new double [n_v_pts];
-		VEC_n2_MT = new double * [n_v_pts];
-		VEC_n2_PPhi_tilde = new double * [n_v_pts];
-		VEC_n2_PPhi_tildeFLIP = new double * [n_v_pts];
-		VEC_n2_PT = new double * [n_v_pts];
-		VEC_n2_Pp = new double ** [n_v_pts];
-		VEC_n2_alpha = new double ** [n_v_pts];
-		VEC_n2_Pm = new double ** [n_v_pts];
-		VEC_n2_alpha_m = new double ** [n_v_pts];
 
 		if (VERBOSE > 3) *global_out_stream_ptr << "Working on resonance # = " << reso_idx << ":" << endl
 			<< setw(8) << setprecision(15)
@@ -983,22 +1021,25 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 			VEC_n2_P_Y[iv] = P_Y_loc;
 			double mT_ch_P_Y_p_y = mT*cosh(v_loc*DeltaY_loc);
 			double x2 = mT_ch_P_Y_p_y*mT_ch_P_Y_p_y - pT*pT;
+			if (x2 < 1e-15)
+			{
+				cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+					<< "): x2 = " << x2 << ", v = " << v_pts[iv] << endl;
+				x2 = 0.0;
+			}
 			VEC_n2_v_factor[iv] = v_wts[iv]*DeltaY_loc/sqrt(x2);
 			double MTbar_loc = Estar_loc*Mres*mT_ch_P_Y_p_y/x2;
 			VEC_n2_MTbar[iv] = MTbar_loc;
 			double DeltaMT_loc = Mres*pT*sqrt(Estar_loc*Estar_loc - x2)/x2;
+			if (Estar_loc*Estar_loc - x2 < 1e-15)
+			{
+				cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+					<< "): Estar_loc*Estar_loc - x2 = " << Estar_loc*Estar_loc - x2 << ", v = " << v_pts[iv] << endl;
+				DeltaMT_loc = 0.0;
+			}
 			VEC_n2_DeltaMT[iv] = DeltaMT_loc;
 			VEC_n2_MTp[iv] = MTbar_loc + DeltaMT_loc;
 			VEC_n2_MTm[iv] = MTbar_loc - DeltaMT_loc;
-			VEC_n2_MT[iv] = new double [n_zeta_pts];
-			VEC_n2_PPhi_tilde[iv] = new double [n_zeta_pts];
-			VEC_n2_PPhi_tildeFLIP[iv] = new double [n_zeta_pts];
-			VEC_n2_PT[iv] = new double [n_zeta_pts];
-			VEC_n2_Pp[iv] = new double * [n_zeta_pts];
-			VEC_n2_alpha[iv] = new double * [n_zeta_pts];
-			VEC_n2_Pm[iv] = new double * [n_zeta_pts];
-			VEC_n2_alpha_m[iv] = new double * [n_zeta_pts];
-			VEC_n2_zeta_factor[iv] = new double [n_zeta_pts];
 
 			if (VERBOSE > 3) *global_out_stream_ptr << "Working on resonance # = " << reso_idx << ":" << endl
 				<< setw(8) << setprecision(15)
@@ -1017,7 +1058,21 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 				VEC_n2_MT[iv][izeta] = MT_loc;
 				VEC_n2_zeta_factor[iv][izeta] = zeta_wts[izeta]*MT_loc;
 				double PT_loc = sqrt(MT_loc*MT_loc - Mres*Mres);
+				if (MT_loc*MT_loc - Mres*Mres < 1e-15)
+				{
+					cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+						<< "): MT_loc*MT_loc - Mres*Mres = " << MT_loc*MT_loc - Mres*Mres
+						<< ", v = " << v_pts[iv] << ", zeta = " << zeta_pts[izeta] << endl;
+					PT_loc = 0.0;
+				}
 				double temp_cos_PPhi_tilde_loc = (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc);
+				if (abs(temp_cos_PPhi_tilde_loc) > 1.)
+				{
+					cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+						<< "): temp_cos_PPhi_tilde_loc = " << temp_cos_PPhi_tilde_loc
+						<< ", v = " << v_pts[iv] << ", zeta = " << zeta_pts[izeta] << endl;
+					temp_cos_PPhi_tilde_loc = 1.0;
+				}
 				//assume that PPhi_tilde is +ve in next step...
 				double temp_sin_PPhi_tilde_loc = sqrt(1. - temp_cos_PPhi_tilde_loc*temp_cos_PPhi_tilde_loc);
 				double PPhi_tilde_loc = place_in_range( atan2(temp_sin_PPhi_tilde_loc, temp_cos_PPhi_tilde_loc), interp2_pphi_min, interp2_pphi_max);
@@ -1034,10 +1089,6 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 				/*DEBUG*///		<< MT_loc << "     " << PT_loc << "     " << mT*MT_loc*cosh(P_Y_loc-p_y) << "     "
 				/*DEBUG*///		<< Estar_loc*Mres << "     " << (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres) << "     "
 				/*DEBUG*///		<< (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) << endl;
-				VEC_n2_Pp[iv][izeta] = new double [4];
-				VEC_n2_alpha[iv][izeta] = new double [4];
-				VEC_n2_Pm[iv][izeta] = new double [4];
-				VEC_n2_alpha_m[iv][izeta] = new double [4];
 				//probably not the most elegant set-up, but does the job for now...
 				VEC_n2_Pp[iv][izeta][0] = MT_loc * cosh(P_Y_loc);
 				VEC_n2_Pp[iv][izeta][1] = PT_loc * cos(K_phi_local + PPhi_tilde_loc);
@@ -1063,28 +1114,6 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 	{
 		Qfunc = get_Q(reso_idx);
 		//set up vectors of points to speed-up integrals...
-		VEC_pstar = new double [n_s_pts];
-		VEC_Estar = new double [n_s_pts];
-		VEC_DeltaY = new double [n_s_pts];
-		VEC_g_s = new double [n_s_pts];
-		VEC_s_factor = new double [n_s_pts];
-		VEC_v_factor = new double * [n_s_pts];
-		VEC_zeta_factor = new double ** [n_s_pts];
-		VEC_Yp = new double [n_s_pts];
-		VEC_Ym = new double [n_s_pts];
-		VEC_P_Y = new double * [n_s_pts];
-		VEC_MTbar = new double * [n_s_pts];
-		VEC_DeltaMT = new double * [n_s_pts];
-		VEC_MTp = new double * [n_s_pts];
-		VEC_MTm = new double * [n_s_pts];
-		VEC_MT = new double ** [n_s_pts];
-		VEC_PPhi_tilde = new double ** [n_s_pts];
-		VEC_PPhi_tildeFLIP = new double ** [n_s_pts];
-		VEC_PT = new double ** [n_s_pts];
-		VEC_Pp = new double *** [n_s_pts];
-		VEC_alpha = new double *** [n_s_pts];
-		VEC_Pm = new double *** [n_s_pts];
-		VEC_alpha_m = new double *** [n_s_pts];
 		//cerr << "Entering loops now..." << endl;
 		for (int is = 0; is < n_s_pts; is++)
 		{
@@ -1095,29 +1124,19 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 			VEC_s_factor[is] = s_wts[reso_idx-1][is]*g_s_loc;
 			double pstar_loc = sqrt(((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc))/(2.0*Mres);
 			VEC_pstar[is] = pstar_loc;
+			if (s_loc < 1.e-15)
+			{
+				cerr << "n_body == 3, s_loc == 0: Mres = " << Mres << ", mass = " << mass << ", pstar_loc = " << pstar_loc << endl;
+				exit(1);
+			}
 			double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
 			VEC_Estar[is] = Estar_loc;
 			double psBmT = pstar_loc / mT;
 			double DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
 			VEC_DeltaY[is] = DeltaY_loc;
 			p_y = 0.0;
-			VEC_v_factor[is] = new double [n_v_pts];
-			VEC_zeta_factor[is] = new double * [n_v_pts];
 			VEC_Yp[is] = p_y + DeltaY_loc;
 			VEC_Ym[is] = p_y - DeltaY_loc;
-			VEC_P_Y[is] = new double [n_v_pts];
-			VEC_MTbar[is] = new double [n_v_pts];
-			VEC_DeltaMT[is] = new double [n_v_pts];
-			VEC_MTp[is] = new double [n_v_pts];
-			VEC_MTm[is] = new double [n_v_pts];
-			VEC_MT[is] = new double * [n_v_pts];
-			VEC_PPhi_tilde[is] = new double * [n_v_pts];
-			VEC_PPhi_tildeFLIP[is] = new double * [n_v_pts];
-			VEC_PT[is] = new double * [n_v_pts];
-			VEC_Pp[is] = new double ** [n_v_pts];
-			VEC_alpha[is] = new double ** [n_v_pts];
-			VEC_Pm[is] = new double ** [n_v_pts];
-			VEC_alpha_m[is] = new double ** [n_v_pts];
 			for(int iv = 0; iv < n_v_pts; iv++)
 			{
 				//cerr << "In v loop# = " << iv << endl;
@@ -1126,22 +1145,25 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 				VEC_P_Y[is][iv] = P_Y_loc;
 				double mT_ch_P_Y_p_y = mT*cosh(v_loc*DeltaY_loc);
 				double x2 = mT_ch_P_Y_p_y*mT_ch_P_Y_p_y - pT*pT;
+				if (x2 < 1e-15)
+				{
+					cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+						<< "): x2 = " << x2 << ", s = " << s_pts[is] << ", v = " << v_pts[iv] << endl;
+					x2 = 0.0;
+				}
 				VEC_v_factor[is][iv] = v_wts[iv]*DeltaY_loc/sqrt(x2);
 				double MTbar_loc = Estar_loc*Mres*mT_ch_P_Y_p_y/x2;
 				VEC_MTbar[is][iv] = MTbar_loc;
 				double DeltaMT_loc = Mres*pT*sqrt(Estar_loc*Estar_loc - x2)/x2;
+				if (Estar_loc*Estar_loc - x2 < 1e-15)
+				{
+					cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+						<< "): Estar_loc*Estar_loc - x2 = " << Estar_loc*Estar_loc - x2 << ", s = " << s_pts[is] << ", v = " << v_pts[iv] << endl;
+					DeltaMT_loc = 0.0;
+				}
 				VEC_DeltaMT[is][iv] = DeltaMT_loc;
 				VEC_MTp[is][iv] = MTbar_loc + DeltaMT_loc;
 				VEC_MTm[is][iv] = MTbar_loc - DeltaMT_loc;
-				VEC_MT[is][iv] = new double [n_zeta_pts];
-				VEC_PPhi_tilde[is][iv] = new double [n_zeta_pts];
-				VEC_PPhi_tildeFLIP[is][iv] = new double [n_zeta_pts];
-				VEC_PT[is][iv] = new double [n_zeta_pts];
-				VEC_Pp[is][iv] = new double * [n_zeta_pts];
-				VEC_alpha[is][iv] = new double * [n_zeta_pts];
-				VEC_Pm[is][iv] = new double * [n_zeta_pts];
-				VEC_alpha_m[is][iv] = new double * [n_zeta_pts];
-				VEC_zeta_factor[is][iv] = new double [n_zeta_pts];
 				for(int izeta = 0; izeta < n_zeta_pts; izeta++)
 				{
 					double zeta_loc = zeta_pts[izeta];
@@ -1149,7 +1171,21 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 					VEC_MT[is][iv][izeta] = MT_loc;
 					VEC_zeta_factor[is][iv][izeta] = zeta_wts[izeta]*MT_loc;
 					double PT_loc = sqrt(MT_loc*MT_loc - Mres*Mres);
+					if (MT_loc*MT_loc - Mres*Mres < 1e-15)
+					{
+						cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+							<< "): MT_loc*MT_loc - Mres*Mres = " << MT_loc*MT_loc - Mres*Mres
+							<< ", s = " << s_pts[is] << ", v = " << v_pts[iv] << ", zeta = " << zeta_pts[izeta] << endl;
+						PT_loc = 0.0;
+					}
 					double temp_cos_PPhi_tilde_loc = (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc);
+					if (abs(temp_cos_PPhi_tilde_loc) > 1.)
+					{
+						cerr << "Load_decay_channel_info(" << reso_idx << ", " << K_T_local << ", " << K_phi_local
+							<< "): temp_cos_PPhi_tilde_loc = " << temp_cos_PPhi_tilde_loc
+							<< ", s = " << s_pts[is] << ", v = " << v_pts[iv] << ", zeta = " << zeta_pts[izeta] << endl;
+						temp_cos_PPhi_tilde_loc = 1.0;
+					}
 					//assume that PPhi_tilde is +ve in next step...
 					double temp_sin_PPhi_tilde_loc = sqrt(1. - temp_cos_PPhi_tilde_loc*temp_cos_PPhi_tilde_loc);
 					double PPhi_tilde_loc = place_in_range( atan2(temp_sin_PPhi_tilde_loc, temp_cos_PPhi_tilde_loc), interp2_pphi_min, interp2_pphi_max);
@@ -1160,10 +1196,6 @@ void SourceVariances::Load_decay_channel_info(int reso_idx, double K_T_local, do
 					/*DEBUG*///		<< MT_loc << "     " << PT_loc << "     " << mT*MT_loc*cosh(P_Y_loc-p_y) << "     "
 					/*DEBUG*///		<< Estar_loc*Mres << "     " << (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres) << "     "
 					/*DEBUG*///		<< (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc) << endl;
-					VEC_Pp[is][iv][izeta] = new double [4];
-					VEC_alpha[is][iv][izeta] = new double [4];
-					VEC_Pm[is][iv][izeta] = new double [4];
-					VEC_alpha_m[is][iv][izeta] = new double [4];
 					VEC_Pp[is][iv][izeta][0] = MT_loc * cosh(P_Y_loc);
 					VEC_Pp[is][iv][izeta][1] = PT_loc * cos(K_phi_local + PPhi_tilde_loc);
 					VEC_Pp[is][iv][izeta][2] = PT_loc * sin(K_phi_local + PPhi_tilde_loc);
@@ -1350,7 +1382,7 @@ double SourceVariances::weight_function(double zvec[], int weight_function_index
 
 void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 {
-	if (VERBOSE > 3) *global_out_stream_ptr << "\t\t\t   () Successfully entered Update_source_variances()..." << endl;
+	//if (VERBOSE > 3) *global_out_stream_ptr << "\t\t\t   () Successfully entered Update_source_variances()..." << endl;
 	if (reso_idx == 0)
 	{
 		double phi_K = K_phi[iKphi];
@@ -1412,8 +1444,12 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 				<< "  " << integrated_spacetime_moments[reso_idx][1][iKT][iKphi]
 				<< "  " << integrated_spacetime_moments[reso_idx][2][iKT][iKphi] << endl;
 	}
+	if (isnan(S_func[iKT][iKphi]))
+	{
+		cerr << "Failed during resonance = " << reso_idx << " of " << n_resonance << ": " << resonances.resonance_name[reso_idx-1] << endl;
+	}
 
-	if (VERBOSE > 3) *global_out_stream_ptr << "\t\t\t   () Successfully completed Update_source_variances()..." << endl;
+	//if (VERBOSE > 3) *global_out_stream_ptr << "\t\t\t   () Successfully completed Update_source_variances()..." << endl;
 	return;
 }
 
