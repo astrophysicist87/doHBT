@@ -119,7 +119,6 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	//if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
-	//double ssum = 0.;
 	//double local_eta_s_wt = eta_s_weight[ieta];
 	double * ssum_vec = new double [n_weighting_functions];
 	double * vsum_vec = new double [n_weighting_functions];
@@ -139,7 +138,6 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	{
 		//then g(s) is delta-function, skip s-integration entirely
 		//double s_loc = m2*m2;
-		//ssum = 0.0;
     		set_to_zero(vsum_vec, n_weighting_functions);
 		for (int iv = 0; iv < n_v_pts; iv++)
 		{
@@ -151,8 +149,8 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 			for (int izeta = 0; izeta < n_zeta_pts; izeta++)
 			{
 				double alpha_t = VEC_n2_alpha[iv][izeta][0];
-				double alpha_s = VEC_n2_alpha[iv][izeta][2];
 				double alpha_o = VEC_n2_alpha[iv][izeta][1];
+				double alpha_s = VEC_n2_alpha[iv][izeta][2];
 				double alpha_l = VEC_n2_alpha[iv][izeta][3];
 				//cerr << "  Starting zeta-loop #" << izeta << endl;
 				set_to_zero(Csum_vec, n_weighting_functions);
@@ -229,7 +227,6 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	}
 	else if (n_body == 3)
 	{
-		//ssum = 0.0;
 		for (int is = 0; is < n_s_pts; is++)
 		{
 			time (&rawtime);
@@ -245,13 +242,13 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 				for (int izeta = 0; izeta < n_zeta_pts; izeta++)
 				{
 					double alpha_t = VEC_alpha[is][iv][izeta][0];
-					double alpha_s = VEC_alpha[is][iv][izeta][2];
 					double alpha_o = VEC_alpha[is][iv][izeta][1];
+					double alpha_s = VEC_alpha[is][iv][izeta][2];
 					double alpha_l = VEC_alpha[is][iv][izeta][3];
 					//cerr << "\t\tStarting zeta-loop #" << izeta << endl;
 					set_to_zero(Csum_vec, n_weighting_functions);
 					double PKT = VEC_PT[is][iv][izeta];
-					double PKY = VEC_P_Y[iv][izeta];
+					double PKY = VEC_P_Y[is][iv];
 					double PKphi = VEC_PPhi_tilde[is][iv][izeta];
 					for (int tempidx = 1; tempidx <= 2; tempidx++)
 					{
@@ -314,7 +311,6 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 		}
 	}
 
-	//return ssum;
 	for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 		integrated_spacetime_moments[reso_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
 

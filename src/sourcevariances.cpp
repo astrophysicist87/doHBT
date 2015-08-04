@@ -187,11 +187,11 @@ bool SourceVariances::Do_this_decay_channel(int reso_idx)
 	}
 	else if (resonances.include_channel[reso_idx-1])
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one (reso_idx = " << reso_idx << ")." << endl;
 	}
 	else
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping this one (reso_idx = " << reso_idx << ")." << endl;
 	}
 
 	return (resonances.include_channel[reso_idx-1]);
@@ -229,11 +229,11 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
 	{
 		if (reso_idx == 0)	//if it's thermal pions
 		{
-			if (VERBOSE > 0) *global_out_stream_ptr << "Computing dN_dypTdpTdphi_moments for thermal pion(+)!" << endl;
+			if (VERBOSE > 0) *global_out_stream_ptr << "  --> Computing dN_dypTdpTdphi_moments for thermal pion(+)!" << endl;
 		}
 		else if (reso_idx == 1)	//if it's the first resonance
 		{
-			if (VERBOSE > 0) *global_out_stream_ptr << "Computing dN_dypTdpTdphi_moments for " << local_name << endl;
+			if (VERBOSE > 0) *global_out_stream_ptr << "  --> Computing dN_dypTdpTdphi_moments for " << local_name << endl;
 		}
 		else			//if it's a later resonance
 		{
@@ -259,37 +259,41 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
 
 void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_idx)
 {
-double localmass = particle_mass;
-if (reso_idx > 0) localmass = resonances.resonance_mass[reso_idx-1];
-   for(int i=0; i<eta_s_npts; i++)
-   {
-       double local_eta_s = eta_s[i];
-       double local_cosh = cosh(SP_p_y - local_eta_s);
-       double local_sinh = sinh(SP_p_y - local_eta_s);
-	for(int ipx=0; ipx<n_interp1_px_pts; ipx++)
-	for(int ipy=0; ipy<n_interp1_py_pts; ipy++)
-       {
-	double mT = sqrt(localmass*localmass + SPinterp1_px[ipx]*SPinterp1_px[ipx] + SPinterp1_py[ipy]*SPinterp1_py[ipy]);
-          SPinterp1_p0[ipx][ipy][i] = mT*local_cosh;
-          SPinterp1_pz[ipx][ipy][i] = mT*local_sinh;
-       }
-	for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
-       {
-		double mT = sqrt(localmass*localmass + SPinterp2_pT[ipt]*SPinterp2_pT[ipt]);
-		SPinterp2_p0[ipt][i] = mT*local_cosh;
-		SPinterp2_pz[ipt][i] = mT*local_sinh;
-		//cerr << SPinterp2_p0[ipt][i] << "    " << SPinterp2_pz[ipt][i] << "    " << SPinterp2_pT[ipt] << endl;
-       }
-   }
-//if (1) exit(1);
-//cerr << "Made it inside Set_dN_dypTdpTdphi_moments" << endl;
+	double localmass = particle_mass;
+	if (reso_idx > 0)
+		localmass = resonances.resonance_mass[reso_idx-1];
+
+	for(int i=0; i<eta_s_npts; i++)
+	{
+		double local_eta_s = eta_s[i];
+		double local_cosh = cosh(SP_p_y - local_eta_s);
+		double local_sinh = sinh(SP_p_y - local_eta_s);
+
+		for(int ipx=0; ipx<n_interp1_px_pts; ipx++)
+		for(int ipy=0; ipy<n_interp1_py_pts; ipy++)
+		{
+			double mT = sqrt(localmass*localmass + SPinterp1_px[ipx]*SPinterp1_px[ipx] + SPinterp1_py[ipy]*SPinterp1_py[ipy]);
+			SPinterp1_p0[ipx][ipy][i] = mT*local_cosh;
+			SPinterp1_pz[ipx][ipy][i] = mT*local_sinh;
+		}
+
+		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+		{
+			double mT = sqrt(localmass*localmass + SPinterp2_pT[ipt]*SPinterp2_pT[ipt]);
+			SPinterp2_p0[ipt][i] = mT*local_cosh;
+			SPinterp2_pz[ipt][i] = mT*local_sinh;
+			//cerr << SPinterp2_p0[ipt][i] << "    " << SPinterp2_pz[ipt][i] << "    " << SPinterp2_pT[ipt] << endl;
+		}
+	}
+	//if (1) exit(1);
+	//cerr << "Made it inside Set_dN_dypTdpTdphi_moments" << endl;
 	if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
 		Cal_dN_dypTdpTdphi_with_weights_cartesian(FOsurf_ptr, reso_idx);
 	else if (INTERPOLATION_FORMAT == 2)	//using polar grid for interpolation (pT, pphi)
 		Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, reso_idx);
 		//Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FOsurf_ptr, reso_idx);
 
-   return;
+	return;
 }
 
 void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int reso_idx)
@@ -581,7 +585,8 @@ double temp;
 		sign_of_dN_dypTdpTdphi_moments[reso_idx][wfi][ipt][iphi] = sgn(temp);
 	}
 //cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
-//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi] << endl;
+//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][0][ipt][iphi]
+//			<< "   " << dN_dypTdpTdphi_moments[reso_idx][5][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[reso_idx][6][ipt][iphi] << endl;
 	}
 //cerr << "***Checkpoint #3" << endl;
 //cout << "***Exited Cal_dN_dypTdpTdphi_with_weights_polar" << endl;
