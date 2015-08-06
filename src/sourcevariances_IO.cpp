@@ -206,7 +206,7 @@ void SourceVariances::Output_dN_dypTdpTdphi(int folderindex)
 	return;
 }
 
-void SourceVariances::Output_dN_dypTdpTdphi_grid(int folderindex, int reso_idx)
+void SourceVariances::Output_dN_dypTdpTdphi_grid(int folderindex, int dc_idx)
 {//assuming polar grid for interpolation for now
 	ostringstream filename_stream_dN_dypTdpTdphi;
 	filename_stream_dN_dypTdpTdphi << global_path << "/dN_dypTdpTdphi_polar_grid_ev" << folderindex << no_df_stem << ".dat";
@@ -217,7 +217,7 @@ void SourceVariances::Output_dN_dypTdpTdphi_grid(int folderindex, int reso_idx)
 		for(int iphi=0; iphi<n_interp2_pphi_pts; iphi++)
 		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
 			output_dN_dypTdpTdphi << imom << "   " << SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi]
-						<< "   " << dN_dypTdpTdphi_moments[reso_idx][imom][ipt][iphi] << endl;
+						<< "   " << dN_dypTdpTdphi_moments[dc_idx][imom][ipt][iphi] << endl;
 		output_dN_dypTdpTdphi << endl;
 	}
 
@@ -246,11 +246,11 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 
-	for(int ir = 1; ir <= n_resonance; ir++)
+	for(int idc = 1; idc <= n_decay_channels; idc++)
 	{
 		for(int iKT = 0; iKT < n_localp_T; iKT++)
 		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-			output_all_dN_dypTdpTdphi << K_T[iKT] << "   " << K_phi[iKphi] << "   " << integrated_spacetime_moments[ir-1][0][iKT][iKphi] << endl;
+			output_all_dN_dypTdpTdphi << K_T[iKT] << "   " << K_phi[iKphi] << "   " << integrated_spacetime_moments[idc-1][0][iKT][iKphi] << endl;
 		output_all_dN_dypTdpTdphi << endl;
 	}
 

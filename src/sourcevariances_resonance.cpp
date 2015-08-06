@@ -22,7 +22,7 @@
 
 using namespace std;
 
-double SourceVariances::get_Q(int reso_idx)
+double SourceVariances::get_Q(int dc_idx)
 {
 	double smin = (m2+m3)*(m2+m3);
 	double smax = (Mres-mass)*(Mres-mass);
@@ -30,12 +30,12 @@ double SourceVariances::get_Q(int reso_idx)
 	
 	for (int is = 0; is < n_s_pts; is++)
 	{
-		double sp = s_pts[reso_idx-1][is];
+		double sp = s_pts[dc_idx-1][is];
 		double f1 = (Mres+mass)*(Mres+mass) - sp;
 		double f2 = smax - sp;
 		double f3 = smin - sp;
 		double f4 = (m2-m3)*(m2-m3) - sp;
-		sum += s_wts[reso_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		sum += s_wts[dc_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
 	}
 
 	return sum;
@@ -114,7 +114,7 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 }
 
 
-void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
+void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 {
 	//if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
@@ -132,7 +132,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	set_to_zero(Csum_vec, n_weighting_functions);
 	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
 	set_to_zero(y_of_r, n_weighting_functions);
-	Qfunc = get_Q(reso_idx);
+	Qfunc = get_Q(dc_idx);
 
 	if (n_body == 2)
 	{
@@ -171,13 +171,13 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 					//do interpolations
 //if (0) cerr << iKT << "   " << iKphi << "   " << iv << "   " << izeta << "   " << tempidx << endl;
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
+						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-//if (reso_idx==42) cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
+//if (dc_idx==42) cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
 //			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
 //			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
-//if (0) cout << "-2   " << reso_idx << "   " << setw(8) << setprecision(15)
+//if (0) cout << "-2   " << dc_idx << "   " << setw(8) << setprecision(15)
 //			<< PKT << "   " << PKY << "   " << PKphi << "   " << rap_indep_y_of_r[0] << "   " << rap_indep_y_of_r[7]
 //			<< "   " << rap_indep_y_of_r[8] << "   " << rap_indep_y_of_r[5] << "   " << rap_indep_y_of_r[6] << "   " << rap_indep_y_of_r[14] << endl;
 					//now compute appropriate linear combinations (maybe shift these into preceding function eventually?)
@@ -217,7 +217,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 				}
 				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 					zetasum_vec[iweight] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[iweight];
-				//cerr << "BIG DEBUG (reso_idx = " << reso_idx << "): " << Csum_vec[0] << endl;
+				//cerr << "BIG DEBUG (dc_idx = " << dc_idx << "): " << Csum_vec[0] << endl;
 			}
 			for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 				vsum_vec[iweight] += VEC_n2_v_factor[iv]*zetasum_vec[iweight];
@@ -262,10 +262,10 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 						//just interpolate table of single particle spectra...
 						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
+							rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][iweight],
 										PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-//if (reso_idx==42) cout << "-1   " << reso_idx << "   " << setw(8) << setprecision(15)
+//if (dc_idx==42) cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
 //			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
 //			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
 						//now compute appropriate linear combinations
@@ -312,7 +312,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int reso_idx)
 	}
 
 	for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		integrated_spacetime_moments[reso_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
+		integrated_spacetime_moments[dc_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
 
 	//clean up
 	delete [] ssum_vec;

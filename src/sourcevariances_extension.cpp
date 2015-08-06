@@ -45,15 +45,15 @@ void SourceVariances::Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr)
 	}
 	global_plane_psi = plane_psi;
 
-	//int resonance_loop_cutoff = 0;				//loop over direct pions only
-	//int resonance_loop_cutoff = n_resonance;			//loop over direct pions and decay_channels
-	int resonance_loop_cutoff = 1;					//other
+	//int decay_channel_loop_cutoff = 0;				//loop over direct pions only
+	//int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
+	int decay_channel_loop_cutoff = 1;					//other
 	
-	for (int ir = 0; ir <= resonance_loop_cutoff; ir++)
+	for (int idc = 0; idc <= decay_channel_loop_cutoff; idc++)
 	{
-		if (ir != 0 && ir != 1)
+		if (idc != 0 && idc != 1)
 		{
-			if (VERBOSE > 0) *global_out_stream_ptr << "ir = " << ir << ": skipping." << endl;
+			if (VERBOSE > 0) *global_out_stream_ptr << "idc = " << idc << ": skipping." << endl;
 			continue;
 		}
 		if (INTERPOLATION_FORMAT == 0) return;
@@ -67,10 +67,10 @@ void SourceVariances::Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr)
 				time (&rawtime);
 				timeinfo = localtime (&rawtime);
 				if (VERBOSE > 0) *global_out_stream_ptr << "Starting KT = " << K_T[iKT] << " and Kphi = " << K_phi[iKphi]
-					<< " for resonance #" << ir << " at " << asctime(timeinfo);
-				if (ir > 0)
-					Do_resonance_integrals_V2(iKT, iKphi, ir);
-				Update_source_variances(iKT, iKphi, ir);
+					<< " for resonance #" << idc << " at " << asctime(timeinfo);
+				if (idc > 0)
+					Do_resonance_integrals_V2(iKT, iKphi, idc);
+				Update_source_variances(iKT, iKphi, idc);
 
 			}
 		}
@@ -120,7 +120,7 @@ void SourceVariances::s_loop(double s_loc, double * ssum_vec)
 	psBmT = pstar_loc / mT;
 	DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
 
-	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_decay_channel_idx << ":" << endl
 		<< setw(8) << setprecision(15)
 		<< "  --> s_loc = " << s_loc << endl
 		<< "  --> pstar_loc = " << pstar_loc << endl
@@ -152,7 +152,7 @@ void SourceVariances::v_loop(double v_loc, double * vsum_vec)
 	DeltaMT_loc = Mres*pT*sqrt(Estar_loc*Estar_loc - x2)/x2;
 	v_factor = DeltaY_loc/sqrt(x2);
 
-	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_decay_channel_idx << ":" << endl
 		<< setw(8) << setprecision(15)
 		<< "  --> v_loc = " << v_loc << endl
 		<< "  --> P_Y_loc = " << P_Y_loc << endl
@@ -188,7 +188,7 @@ void SourceVariances::zeta_loop(double zeta_loc, double * zetasum_vec)
 	PPhi_tilde_SHIFT = place_in_range( K_phi_local + PPhi_tilde_loc, interp2_pphi_min, interp2_pphi_max);
 	PPhi_tilde_SHIFT_FLIP = place_in_range( K_phi_local - PPhi_tilde_loc, interp2_pphi_min, interp2_pphi_max);
 
-	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_decay_channel_idx << ":" << endl
 		<< setw(8) << setprecision(15)
 		<< "  --> zeta_loc = " << zeta_loc << endl
 		<< "  --> MT_loc = " << MT_loc << endl
@@ -223,7 +223,7 @@ void SourceVariances::zeta_loop(double zeta_loc, double * zetasum_vec)
 			alpha_s = alpha_s_m;
 		}
 		//***this option is exact
-		compute_rap_indep_spacetime_moments(current_FOsurf_ptr, current_resonance_idx, PKT, PKphi, rap_indep_y_of_r);
+		compute_rap_indep_spacetime_moments(current_FOsurf_ptr, current_decay_channel_idx, PKT, PKphi, rap_indep_y_of_r);
 		//boost-invariant Cooper-Frye only yields boost-invariant spectra at Y=0
 		//	==> shift source-variances appropriately to obtain rapidity dependence
 		get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
@@ -240,7 +240,7 @@ void SourceVariances::zeta_loop(double zeta_loc, double * zetasum_vec)
 }
 
 
-void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx)
+void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int dc_idx)
 {
 	//if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to do_all_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
@@ -250,9 +250,9 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 	double * ssum_vec = new double [n_weighting_functions];
 	set_to_zero(ssum_vec, n_weighting_functions);
 
-	current_resonance_idx = reso_idx;
-	//cerr << "Entering Load_decay_channel_info for reso_idx = " << reso_idx << endl;
-	if (reso_idx == 0)
+	current_decay_channel_idx = dc_idx;
+	//cerr << "Entering Load_decay_channel_info for dc_idx = " << dc_idx << endl;
+	if (dc_idx == 0)
 	{
 		muRES = particle_mu;
 		signRES = particle_sign;
@@ -260,7 +260,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 		
 		/*if (DEBUG)
 		{
-			cerr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+			cerr << "Working on resonance # = " << current_decay_channel_idx << ":" << endl
 				<< "  --> muRES = " << muRES << endl
 				<< "  --> signRES = " << signRES << endl
 				<< "  --> gRES = " << gRES << endl;
@@ -270,16 +270,16 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 	}
 	else
 	{
-		//cerr << "Entering loop in Load_decay_channel_info for reso_idx = " << reso_idx << endl;
-		current_resonance_mass = decay_channels.resonance_mass[reso_idx-1];
-		current_resonance_Gamma = decay_channels.resonance_Gamma[reso_idx-1];
-		current_resonance_total_br = decay_channels.resonance_total_br[reso_idx-1];
-		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[reso_idx-1][0];
-		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[reso_idx-1][1];
+		//cerr << "Entering loop in Load_decay_channel_info for dc_idx = " << dc_idx << endl;
+		current_resonance_mass = decay_channels.resonance_mass[dc_idx-1];
+		current_resonance_Gamma = decay_channels.resonance_Gamma[dc_idx-1];
+		current_resonance_total_br = decay_channels.resonance_total_br[dc_idx-1];
+		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
+		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
 
-		muRES = decay_channels.resonance_mu[reso_idx-1];
-		signRES = decay_channels.resonance_sign[reso_idx-1];
-		gRES = decay_channels.resonance_gspin[reso_idx-1];
+		muRES = decay_channels.resonance_mu[dc_idx-1];
+		signRES = decay_channels.resonance_sign[dc_idx-1];
+		gRES = decay_channels.resonance_gspin[dc_idx-1];
 
 		Mres = current_resonance_mass;
 		mass = particle_mass;
@@ -290,7 +290,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 		m3 = current_resonance_decay_masses[1];
 		/*if (DEBUG)
 		{
-			cerr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+			cerr << "Working on resonance # = " << current_decay_channel_idx << ":" << endl
 				<< "  --> muRES = " << muRES << endl
 				<< "  --> signRES = " << signRES << endl
 				<< "  --> gRES = " << gRES << endl
@@ -311,7 +311,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 		current_K_phi = K_phi_local;
 		cos_cKphi = cos(K_phi_local);
 		sin_cKphi = sin(K_phi_local);
-		Qfunc = get_Q(reso_idx);
+		Qfunc = get_Q(dc_idx);
 		
 		if (n_body == 2)
 		{
@@ -329,7 +329,7 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 	}
 
 	for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		integrated_spacetime_moments[reso_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
+		integrated_spacetime_moments[dc_idx][iweight][iKT][iKphi] = ssum_vec[iweight];
 
 	return;
 }
@@ -375,7 +375,7 @@ void SourceVariances::combine_sourcevariances(double * output, double * input, d
 	output[14] += input[14] + alpha_l*input[7] + alpha_t*input[5] + 2.*alpha_l*alpha_t*input[0];
 }
 
-void SourceVariances::compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r)
+void SourceVariances::compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r)
 {
 	//ALL calculations here done for Y == 0!!!
 	// --> shift to non-zero rapidity afterwards
@@ -384,16 +384,16 @@ void SourceVariances::compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, i
 	
 	double tpt, xopt, xspt, zpt;
 	double sign, degen, localmass;
-	if (reso_idx == 0)
+	if (dc_idx == 0)
 	{
 		cerr << "Shouldn't have gotten here!  Don't do resonance integrals for thermal pions!" << endl;
 		exit(1);
 	}
 	else
 	{
-		sign = decay_channels.resonance_sign[reso_idx - 1];
-		degen = decay_channels.resonance_gspin[reso_idx - 1];
-		localmass = decay_channels.resonance_mass[reso_idx - 1];
+		sign = decay_channels.resonance_sign[dc_idx - 1];
+		degen = decay_channels.resonance_gspin[dc_idx - 1];
+		localmass = decay_channels.resonance_mass[dc_idx - 1];
 	}
 	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 	//these are constants along the FO surface,
