@@ -235,11 +235,9 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	
 //cerr << "finished reading and processing resonances file..." << endl;
 	integrated_spacetime_moments = new double *** [n_resonance+1];
-	//dN_dypTdpTdphi_moments = new double *** [n_resonance];
 	dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
 	ln_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
 	sign_of_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
-	//for (int ir=0; ir<n_resonance; ir++)
 	for (int ir=0; ir<=n_resonance; ir++)
 	{
 		integrated_spacetime_moments[ir] = new double ** [n_weighting_functions];

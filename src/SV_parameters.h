@@ -32,6 +32,7 @@ using namespace std;
 							// 0 forces routine to exit only when number of iterations j = jmax = 4
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
+#define SPACETIME_MOMENTS_ONLY		false		// duh
 
 const double hbarC=0.197327053;  //GeV*fm
 const double twopi = 2.*M_PI;
