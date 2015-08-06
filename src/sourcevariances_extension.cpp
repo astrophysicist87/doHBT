@@ -46,7 +46,7 @@ void SourceVariances::Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr)
 	global_plane_psi = plane_psi;
 
 	//int resonance_loop_cutoff = 0;				//loop over direct pions only
-	//int resonance_loop_cutoff = n_resonance;			//loop over direct pions and resonances
+	//int resonance_loop_cutoff = n_resonance;			//loop over direct pions and decay_channels
 	int resonance_loop_cutoff = 1;					//other
 	
 	for (int ir = 0; ir <= resonance_loop_cutoff; ir++)
@@ -271,15 +271,15 @@ void SourceVariances::Do_resonance_integrals_V2(int iKT, int iKphi, int reso_idx
 	else
 	{
 		//cerr << "Entering loop in Load_decay_channel_info for reso_idx = " << reso_idx << endl;
-		current_resonance_mass = resonances.resonance_mass[reso_idx-1];
-		current_resonance_Gamma = resonances.resonance_Gamma[reso_idx-1];
-		current_resonance_total_br = resonances.resonance_total_br[reso_idx-1];
-		current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx-1][0];
-		current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
+		current_resonance_mass = decay_channels.resonance_mass[reso_idx-1];
+		current_resonance_Gamma = decay_channels.resonance_Gamma[reso_idx-1];
+		current_resonance_total_br = decay_channels.resonance_total_br[reso_idx-1];
+		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[reso_idx-1][0];
+		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[reso_idx-1][1];
 
-		muRES = resonances.resonance_mu[reso_idx-1];
-		signRES = resonances.resonance_sign[reso_idx-1];
-		gRES = resonances.resonance_gspin[reso_idx-1];
+		muRES = decay_channels.resonance_mu[reso_idx-1];
+		signRES = decay_channels.resonance_sign[reso_idx-1];
+		gRES = decay_channels.resonance_gspin[reso_idx-1];
 
 		Mres = current_resonance_mass;
 		mass = particle_mass;
@@ -391,9 +391,9 @@ void SourceVariances::compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, i
 	}
 	else
 	{
-		sign = resonances.resonance_sign[reso_idx - 1];
-		degen = resonances.resonance_gspin[reso_idx - 1];
-		localmass = resonances.resonance_mass[reso_idx - 1];
+		sign = decay_channels.resonance_sign[reso_idx - 1];
+		degen = decay_channels.resonance_gspin[reso_idx - 1];
+		localmass = decay_channels.resonance_mass[reso_idx - 1];
 	}
 	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 	//these are constants along the FO surface,

@@ -46,7 +46,7 @@ typedef struct
    double ** resonance_decay_masses;
    string * resonance_name;
    bool * include_channel;
-}resonance_info;
+}decay_info;
 
 struct Correlationfunction1D_data
 {
@@ -83,7 +83,7 @@ class SourceVariances
 		double S_xs_xo_r_to_part, S_xs_xl_r_to_part, S_xs_t_r_to_part, S_xo_xl_r_to_part, S_xo_t_r_to_part, S_xl_t_r_to_part;
 		
 		//array to hold previous and current resonance info
-		resonance_info resonances;
+		decay_info decay_channels;
 		int current_resonance_idx, current_resonance_particle_id;
 		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_resonance_total_br;
 		double * current_resonance_decay_masses, * P_eval, * alpha_mu;

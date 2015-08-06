@@ -63,7 +63,7 @@ double SourceVariances::place_in_range(double phi, double min, double max)
 	return (phi);
 }
 
-// this is the driver function for all source-variances-with-resonances calculations
+// this is the driver function for all source-variances-with-decay_channels calculations
 void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
 	double plane_psi = 0.0;
@@ -83,11 +83,11 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	global_plane_psi = plane_psi;
 
 	//int resonance_loop_cutoff = 0;				//loop over direct pions only
-	int resonance_loop_cutoff = n_resonance;			//loop over direct pions and resonances
+	int resonance_loop_cutoff = n_resonance;			//loop over direct pions and decay_channels
 	//int resonance_loop_cutoff = 1;					//other
 	
 	// ************************************************************
-	// loop over resonances (ir == 0 corresponds to thermal pions)
+	// loop over decay_channels (ir == 0 corresponds to thermal pions)
 	// ************************************************************
 	for (int ir = 0; ir <= resonance_loop_cutoff; ir++)
 	{
@@ -175,7 +175,7 @@ bool SourceVariances::Do_this_decay_channel(int reso_idx)
 		return true;
 	}
 	else
-		local_name = resonances.resonance_name[reso_idx-1];
+		local_name = decay_channels.resonance_name[reso_idx-1];
 	//skipping to problematic resonance ir == 42
 	//if (reso_idx > 1 && reso_idx != 42)
 	//	return false;
@@ -190,7 +190,7 @@ bool SourceVariances::Do_this_decay_channel(int reso_idx)
 			return false;
 		}
 	}
-	else if (resonances.include_channel[reso_idx-1])
+	else if (decay_channels.include_channel[reso_idx-1])
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one (reso_idx = " << reso_idx << ")." << endl;
 	}
@@ -199,7 +199,7 @@ bool SourceVariances::Do_this_decay_channel(int reso_idx)
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping this one (reso_idx = " << reso_idx << ")." << endl;
 	}
 
-	return (resonances.include_channel[reso_idx-1]);
+	return (decay_channels.include_channel[reso_idx-1]);
 }
 
 void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
@@ -210,7 +210,7 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
 
 	string local_name = "Thermal pion(+)";
 	if (reso_idx > 0)
-		local_name = resonances.resonance_name[reso_idx-1];
+		local_name = decay_channels.resonance_name[reso_idx-1];
 
 //**************************************************************
 //Decide what to do with this resonance / decay channel
@@ -218,15 +218,15 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
 	if (recycle_previous_moments && RECYCLE_ST_MOMENTS && reso_idx > 1)
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
-			<< ": same parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
+			<< ": same parent resonance (" << decay_channels.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
 			<< ") as previous decay channel \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
 		Recycle_spacetime_moments();
 	}
 	else if (recycle_similar_moments && RECYCLE_ST_MOMENTS && reso_idx > 1)
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
-			<< ": parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
-			<< ") sufficiently close to preceding parent resonance (" << resonances.resonance_name[reso_idx_of_moments_to_recycle-1]
+			<< ": parent resonance (" << decay_channels.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
+			<< ") sufficiently close to preceding parent resonance (" << decay_channels.resonance_name[reso_idx_of_moments_to_recycle-1]
 			<< ", reso_idx = " << reso_idx_of_moments_to_recycle
 			<< ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
 		Recycle_spacetime_moments();
@@ -246,9 +246,9 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int reso_idx)
 			if (VERBOSE > 0 && !RECYCLE_ST_MOMENTS) *global_out_stream_ptr << local_name
 				<< ": RECYCLE_ST_MOMENTS currently set to false \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
 			else if (VERBOSE > 0 && !recycle_previous_moments && !recycle_similar_moments) *global_out_stream_ptr << local_name
-				<< ": different parent resonance (" << resonances.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
-				<< ") from previous decay channel's parent resonance (" << resonances.resonance_name[previous_resonance_idx-1] << ", reso_idx = "
-				<< previous_resonance_idx << ") and dissimilar from all preceding resonances \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
+				<< ": different parent resonance (" << decay_channels.resonance_name[current_resonance_idx-1] << ", reso_idx = " << current_resonance_idx
+				<< ") from previous decay channel's parent resonance (" << decay_channels.resonance_name[previous_resonance_idx-1] << ", reso_idx = "
+				<< previous_resonance_idx << ") and dissimilar from all preceding decay_channels \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
 			else
 			{
 				cerr << "You shouldn't have ended up here!" << endl;
@@ -273,8 +273,8 @@ void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int reso_i
 	string local_name = "Thermal pion(+)";
 	if (reso_idx > 0)
 	{
-		localmass = resonances.resonance_mass[reso_idx-1];
-		local_name = resonances.resonance_name[reso_idx-1];
+		localmass = decay_channels.resonance_mass[reso_idx-1];
+		local_name = decay_channels.resonance_name[reso_idx-1];
 	}
 
 	for(int i=0; i<eta_s_npts; i++)
@@ -450,13 +450,13 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	}
 	else
 	{
-		sign = resonances.resonance_sign[reso_idx - 1];
-		degen = resonances.resonance_gspin[reso_idx - 1];
-		localmass = resonances.resonance_mass[reso_idx - 1];
+		sign = decay_channels.resonance_sign[reso_idx - 1];
+		degen = decay_channels.resonance_gspin[reso_idx - 1];
+		localmass = decay_channels.resonance_mass[reso_idx - 1];
 		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
 			mu = 0.0;
 		else
-			mu = resonances.resonance_mu[reso_idx - 1];
+			mu = decay_channels.resonance_mu[reso_idx - 1];
 	}
 	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 	//these are constants along the FO surface,
@@ -668,7 +668,7 @@ void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr, int reso_idx, b
    double localmass = particle_mass;
    if (reso_idx > 0) return;	//don't really care about thermal resonance distributions at the moment,
 				//so just skip this part
-   //if (reso_idx > 0) localmass = resonances.resonance_mass[reso_idx-1];
+   //if (reso_idx > 0) localmass = decay_channels.resonance_mass[reso_idx-1];
    double* mT = new double [n_SP_pT];
    double** px = new double* [n_SP_pT];
    double** py = new double* [n_SP_pT];
@@ -881,17 +881,17 @@ void SourceVariances::Set_current_particle_info(int reso_idx)
 		}
 		//cerr << "Setting current resonance information for reso_idx = " << reso_idx << endl;
 		current_resonance_idx = reso_idx;
-		current_resonance_particle_id = resonances.resonance_particle_id[reso_idx-1];
-		current_resonance_mass = resonances.resonance_mass[reso_idx-1];
-		current_resonance_Gamma = resonances.resonance_Gamma[reso_idx-1];
-		current_resonance_total_br = resonances.resonance_total_br[reso_idx-1];
-		current_resonance_decay_masses[0] = resonances.resonance_decay_masses[reso_idx-1][0];
-		current_resonance_decay_masses[1] = resonances.resonance_decay_masses[reso_idx-1][1];
+		current_resonance_particle_id = decay_channels.resonance_particle_id[reso_idx-1];
+		current_resonance_mass = decay_channels.resonance_mass[reso_idx-1];
+		current_resonance_Gamma = decay_channels.resonance_Gamma[reso_idx-1];
+		current_resonance_total_br = decay_channels.resonance_total_br[reso_idx-1];
+		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[reso_idx-1][0];
+		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[reso_idx-1][1];
 		
 		// might want to rename these for notational consistency...
-		muRES = resonances.resonance_mu[reso_idx-1];
-		signRES = resonances.resonance_sign[reso_idx-1];
-		gRES = resonances.resonance_gspin[reso_idx-1];
+		muRES = decay_channels.resonance_mu[reso_idx-1];
+		signRES = decay_channels.resonance_sign[reso_idx-1];
+		gRES = decay_channels.resonance_gspin[reso_idx-1];
 	
 	//cerr << "Made it to checkpoint #1" << endl;
 		
@@ -938,13 +938,13 @@ void SourceVariances::Set_current_particle_info(int reso_idx)
 
 bool SourceVariances::Search_for_similar_particle(int reso_idx, int * result)
 {
-	// for the timebeing, just search from beginning of resonances until similar particle is found;
+	// for the timebeing, just search from beginning of decay_channels until similar particle is found;
 	// should be more careful, since could lead to small numerical discrepancies if similar particle was
 	// already recycled by some other (dissimilar) particle, but ignore this complication for now...
 	//*result = -1;
 	
 	for (int local_ir = 1; local_ir < reso_idx; local_ir++)
-	{// only need to search resonances that have already been calculated
+	{// only need to search decay_channels that have already been calculated
 		if (particles_are_the_same(local_ir, reso_idx))
 		{
 			*result = local_ir;
@@ -1465,7 +1465,7 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int reso_idx)
 	}
 	if (isnan(S_func[iKT][iKphi]))
 	{
-		cerr << "Failed during resonance = " << reso_idx << " of " << n_resonance << ": " << resonances.resonance_name[reso_idx-1] << endl;
+		cerr << "Failed during resonance = " << reso_idx << " of " << n_resonance << ": " << decay_channels.resonance_name[reso_idx-1] << endl;
 	}
 
 	//if (VERBOSE > 3) *global_out_stream_ptr << "\t\t\t   () Successfully completed Update_source_variances()..." << endl;
@@ -1584,18 +1584,18 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 			temp_sum_outlong_cos += R2_outlong[iKT][i]*cos_mK_phi[i]*K_phi_weight[i];
 			temp_sum_outlong_sin += R2_outlong[iKT][i]*sin_mK_phi[i]*K_phi_weight[i];
 		}
-		R2_side_C[iKT][Morder] = temp_sum_side_cos/(2*M_PI);
-		R2_side_S[iKT][Morder] = temp_sum_side_sin/(2*M_PI);
-		R2_out_C[iKT][Morder] = temp_sum_out_cos/(2*M_PI);
-		R2_out_S[iKT][Morder] = temp_sum_out_sin/(2*M_PI);
-		R2_outside_C[iKT][Morder] = temp_sum_outside_cos/(2*M_PI);
-		R2_outside_S[iKT][Morder] = temp_sum_outside_sin/(2*M_PI);
-		R2_long_C[iKT][Morder] = temp_sum_long_cos/(2*M_PI);
-		R2_long_S[iKT][Morder] = temp_sum_long_sin/(2*M_PI);
-		R2_sidelong_C[iKT][Morder] = temp_sum_sidelong_cos/(2*M_PI);
-		R2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2*M_PI);
-		R2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2*M_PI);
-		R2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2*M_PI);
+		R2_side_C[iKT][Morder] = temp_sum_side_cos/(2.*M_PI);
+		R2_side_S[iKT][Morder] = temp_sum_side_sin/(2.*M_PI);
+		R2_out_C[iKT][Morder] = temp_sum_out_cos/(2.*M_PI);
+		R2_out_S[iKT][Morder] = temp_sum_out_sin/(2.*M_PI);
+		R2_outside_C[iKT][Morder] = temp_sum_outside_cos/(2.*M_PI);
+		R2_outside_S[iKT][Morder] = temp_sum_outside_sin/(2.*M_PI);
+		R2_long_C[iKT][Morder] = temp_sum_long_cos/(2.*M_PI);
+		R2_long_S[iKT][Morder] = temp_sum_long_sin/(2.*M_PI);
+		R2_sidelong_C[iKT][Morder] = temp_sum_sidelong_cos/(2.*M_PI);
+		R2_sidelong_S[iKT][Morder] = temp_sum_sidelong_sin/(2.*M_PI);
+		R2_outlong_C[iKT][Morder] = temp_sum_outlong_cos/(2.*M_PI);
+		R2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2.*M_PI);
 	}
 	return;
 }
@@ -1603,13 +1603,13 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 //**********************************************************************************************
 bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
 {
-	if (resonances.resonance_sign[reso_idx1-1] != resonances.resonance_sign[reso_idx2-1])
+	if (decay_channels.resonance_sign[reso_idx1-1] != decay_channels.resonance_sign[reso_idx2-1])
 		return false;
-	if (abs(resonances.resonance_mass[reso_idx1-1]-resonances.resonance_mass[reso_idx2-1]) / (resonances.resonance_mass[reso_idx2-1]+1e-30) > PARTICLE_DIFF_TOLERANCE)
+	if (abs(decay_channels.resonance_mass[reso_idx1-1]-decay_channels.resonance_mass[reso_idx2-1]) / (decay_channels.resonance_mass[reso_idx2-1]+1.e-30) > PARTICLE_DIFF_TOLERANCE)
 		return false;
 	//assume chemical potential mu is constant over entire FO surface
-	double chem1 = resonances.resonance_mu[reso_idx1-1], chem2 = resonances.resonance_mu[reso_idx2-1];
-	if (abs(chem1-chem2)/(chem2+1e-30) > PARTICLE_DIFF_TOLERANCE)
+	double chem1 = decay_channels.resonance_mu[reso_idx1-1], chem2 = decay_channels.resonance_mu[reso_idx2-1];
+	if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
 		return false;
 	
 	return true;

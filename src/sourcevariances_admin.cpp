@@ -28,7 +28,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	//set ofstream for output file
 	global_out_stream_ptr = &myout;
 	
-	//particle information (both final-state particle used in HBT and all decay resonances)
+	//particle information (both final-state particle used in HBT and all decay decay_channels)
 	particle_name = particle->name;
 	particle_mass = particle->mass;
 	particle_sign = particle->sign;
@@ -62,7 +62,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	zvec = new double [4];
 
 //****************************************************************************************************
-//OLD CODE FOR READING IN SELECTED RESONANCES...
+//OLD CODE FOR READING IN SELECTED decay_channels...
 	current_resonance_mass = 0.0;
 	current_resonance_mu = 0.0;
 	current_resonance_Gamma = 0.0;
@@ -82,38 +82,38 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		if (VERBOSE > 0) *global_out_stream_ptr << "Reading /home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat" << endl;
 		ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
 		tempresonancefile >> n_resonance;
-		resonances.resonance_particle_id = new int [n_resonance];
-		resonances.resonance_mass = new double [n_resonance];
-		resonances.resonance_Gamma = new double [n_resonance];
-		resonances.resonance_total_br = new double [n_resonance];
-		resonances.resonance_mu = new double [n_resonance];
-		resonances.resonance_gspin = new double [n_resonance];
-		resonances.resonance_sign = new int [n_resonance];
-		resonances.resonance_decay_masses = new double* [n_resonance];
-		resonances.resonance_name = new string [n_resonance];
-		resonances.include_channel = new bool [n_resonance];
+		decay_channels.resonance_particle_id = new int [n_resonance];
+		decay_channels.resonance_mass = new double [n_resonance];
+		decay_channels.resonance_Gamma = new double [n_resonance];
+		decay_channels.resonance_total_br = new double [n_resonance];
+		decay_channels.resonance_mu = new double [n_resonance];
+		decay_channels.resonance_gspin = new double [n_resonance];
+		decay_channels.resonance_sign = new int [n_resonance];
+		decay_channels.resonance_decay_masses = new double* [n_resonance];
+		decay_channels.resonance_name = new string [n_resonance];
+		decay_channels.include_channel = new bool [n_resonance];
 		for (int ir=0; ir<n_resonance; ir++)
 		{
-			resonances.resonance_decay_masses[ir] = new double [2];
-			resonances.resonance_decay_masses[ir][0] = 0.0;
-			resonances.resonance_decay_masses[ir][1] = 0.0;
-			resonances.resonance_particle_id[ir] = ir;
-			resonances.resonance_mu[ir] = 0.0;
-			resonances.resonance_gspin[ir] = 1.0;	//actual g's have been absorbed into definitions of br
-			resonances.include_channel[ir] = true;
+			decay_channels.resonance_decay_masses[ir] = new double [2];
+			decay_channels.resonance_decay_masses[ir][0] = 0.0;
+			decay_channels.resonance_decay_masses[ir][1] = 0.0;
+			decay_channels.resonance_particle_id[ir] = ir;
+			decay_channels.resonance_mu[ir] = 0.0;
+			decay_channels.resonance_gspin[ir] = 1.0;	//actual g's have been absorbed into definitions of br
+			decay_channels.include_channel[ir] = true;
 		}
 		int row_index = 0;
 		tempresonancefile >> row_index;
 		while (!tempresonancefile.eof() && row_index != 0)
 		{
 			//note that we have to convert given table values to GeV
-			tempresonancefile >> resonances.resonance_mass[row_index-1];
-			tempresonancefile >> resonances.resonance_decay_masses[row_index-1][0];
-			tempresonancefile >> resonances.resonance_decay_masses[row_index-1][1];
-			tempresonancefile >> resonances.resonance_Gamma[row_index-1];
-			tempresonancefile >> resonances.resonance_total_br[row_index-1];
-			tempresonancefile >> resonances.resonance_sign[row_index-1];
-			tempresonancefile >> resonances.resonance_name[row_index-1];
+			tempresonancefile >> decay_channels.resonance_mass[row_index-1];
+			tempresonancefile >> decay_channels.resonance_decay_masses[row_index-1][0];
+			tempresonancefile >> decay_channels.resonance_decay_masses[row_index-1][1];
+			tempresonancefile >> decay_channels.resonance_Gamma[row_index-1];
+			tempresonancefile >> decay_channels.resonance_total_br[row_index-1];
+			tempresonancefile >> decay_channels.resonance_sign[row_index-1];
+			tempresonancefile >> decay_channels.resonance_name[row_index-1];
 			if (DEBUG)
 				cerr << "Made it through row_index = " << row_index << endl;
 			tempresonancefile >> row_index;
@@ -125,39 +125,39 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		n_resonance = 1;
 		thermal_pions_only = true;
 		if (VERBOSE > 0) *global_out_stream_ptr << "Thermal pion(+) only!" << endl;
-		resonances.resonance_particle_id = new int [n_resonance];
-		resonances.resonance_mass = new double [n_resonance];
-		resonances.nbody = new int [n_resonance];
-		resonances.resonance_Gamma = new double [n_resonance];
-		resonances.resonance_total_br = new double [n_resonance];
-		resonances.resonance_mu = new double [n_resonance];
-		resonances.resonance_gspin = new double [n_resonance];
-		resonances.resonance_sign = new int [n_resonance];
-		resonances.resonance_decay_masses = new double * [n_resonance];
-		resonances.resonance_name = new string [n_resonance];
-		resonances.include_channel = new bool [n_resonance];
+		decay_channels.resonance_particle_id = new int [n_resonance];
+		decay_channels.resonance_mass = new double [n_resonance];
+		decay_channels.nbody = new int [n_resonance];
+		decay_channels.resonance_Gamma = new double [n_resonance];
+		decay_channels.resonance_total_br = new double [n_resonance];
+		decay_channels.resonance_mu = new double [n_resonance];
+		decay_channels.resonance_gspin = new double [n_resonance];
+		decay_channels.resonance_sign = new int [n_resonance];
+		decay_channels.resonance_decay_masses = new double * [n_resonance];
+		decay_channels.resonance_name = new string [n_resonance];
+		decay_channels.include_channel = new bool [n_resonance];
 	}
 	else
 	{
 		//n_resonance is actually total number of decay channels which can generate pions
-		//from chosen resonances
+		//from chosen decay_channels
 		//cerr << all_particles[0].name << endl;
 		//cerr << all_particles[319].name << endl;
 		n_resonance = get_number_of_decay_channels(chosen_resonances, all_particles);
 //n_resonance--;
 		//cout << "Computed n_resonance = " << n_resonance << endl;
 		if (VERBOSE > 0) *global_out_stream_ptr << "Computed n_resonance = " << n_resonance << endl;
-		resonances.resonance_particle_id = new int [n_resonance];
-		resonances.resonance_mass = new double [n_resonance];
-		resonances.nbody = new int [n_resonance];
-		resonances.resonance_Gamma = new double [n_resonance];
-		resonances.resonance_total_br = new double [n_resonance];
-		resonances.resonance_mu = new double [n_resonance];
-		resonances.resonance_gspin = new double [n_resonance];
-		resonances.resonance_sign = new int [n_resonance];
-		resonances.resonance_decay_masses = new double * [n_resonance];
-		resonances.resonance_name = new string [n_resonance];
-		resonances.include_channel = new bool [n_resonance];
+		decay_channels.resonance_particle_id = new int [n_resonance];
+		decay_channels.resonance_mass = new double [n_resonance];
+		decay_channels.nbody = new int [n_resonance];
+		decay_channels.resonance_Gamma = new double [n_resonance];
+		decay_channels.resonance_total_br = new double [n_resonance];
+		decay_channels.resonance_mu = new double [n_resonance];
+		decay_channels.resonance_gspin = new double [n_resonance];
+		decay_channels.resonance_sign = new int [n_resonance];
+		decay_channels.resonance_decay_masses = new double * [n_resonance];
+		decay_channels.resonance_name = new string [n_resonance];
+		decay_channels.include_channel = new bool [n_resonance];
 		int temp_idx = 0;
 		for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
 		{
@@ -168,49 +168,49 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			for (int idecay = 0; idecay < particle_temp.decays; idecay++)
 			{
 				if (VERBOSE > 0) *global_out_stream_ptr << "Current temp_idx = " << temp_idx << endl;
-				if (temp_idx == n_resonance)	//i.e., all contributing resonances/decay channels have been loaded
+				if (temp_idx == n_resonance)	//i.e., all contributing decay_channels/decay channels have been loaded
 					break;
-				resonances.resonance_name[temp_idx] = particle_temp.name;		// set name of resonance
+				decay_channels.resonance_name[temp_idx] = particle_temp.name;		// set name of resonance
 
 				//check if effective branching is too small for inclusion in source variances
 				bool effective_br_is_too_small = false;
 				if (particle_temp.decays_effective_branchratio[idecay] <= 1.e-12/* || idecay > 0*/)
 				{
-					//if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx]
+					//if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << decay_channels.resonance_name[temp_idx]
 					//		<< ", decay channel " << idecay + 1 << ": skipping." << endl;
 					effective_br_is_too_small = true;
 				}
 
-				resonances.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance
-				resonances.resonance_decay_masses[temp_idx] = new double [2];
+				decay_channels.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance
+				decay_channels.resonance_decay_masses[temp_idx] = new double [2];
 				for (int ii = 0; ii < 2; ii++)
-					resonances.resonance_decay_masses[temp_idx][ii] = 0.0;
-				resonances.resonance_mu[temp_idx] = particle_temp.mu;
-				//resonances.resonance_mu[temp_idx] = 0.0;			//temporary
-				resonances.resonance_gspin[temp_idx] = particle_temp.gspin;
-				resonances.resonance_sign[temp_idx] = particle_temp.sign;
-				resonances.resonance_mass[temp_idx] = particle_temp.mass;
-				resonances.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
-				resonances.resonance_Gamma[temp_idx] = particle_temp.width;
-				resonances.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
+					decay_channels.resonance_decay_masses[temp_idx][ii] = 0.0;
+				decay_channels.resonance_mu[temp_idx] = particle_temp.mu;
+				//decay_channels.resonance_mu[temp_idx] = 0.0;			//temporary
+				decay_channels.resonance_gspin[temp_idx] = particle_temp.gspin;
+				decay_channels.resonance_sign[temp_idx] = particle_temp.sign;
+				decay_channels.resonance_mass[temp_idx] = particle_temp.mass;
+				decay_channels.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
+				decay_channels.resonance_Gamma[temp_idx] = particle_temp.width;
+				decay_channels.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
 				
 				//check if particle lifetime is too long for inclusion in source variances
 				bool lifetime_is_too_long = false;
-				if (resonances.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
+				if (decay_channels.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
 					lifetime_is_too_long = true;		//i.e., for lifetimes longer than 100 fm/c, skip decay channel
 
-				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << resonances.resonance_name[temp_idx] << ", decay channel " << idecay + 1
-						<< ": mu=" << resonances.resonance_mu[temp_idx]
-						<< ", gs=" << resonances.resonance_gspin[temp_idx] << ", sign=" << resonances.resonance_sign[temp_idx]
-						<< ", M=" << resonances.resonance_mass[temp_idx] << ", nbody=" << resonances.nbody[temp_idx]
-						<< ", Gamma=" << resonances.resonance_Gamma[temp_idx] << ", br=" << resonances.resonance_total_br[temp_idx] << endl;
+				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << decay_channels.resonance_name[temp_idx] << ", decay channel " << idecay + 1
+						<< ": mu=" << decay_channels.resonance_mu[temp_idx]
+						<< ", gs=" << decay_channels.resonance_gspin[temp_idx] << ", sign=" << decay_channels.resonance_sign[temp_idx]
+						<< ", M=" << decay_channels.resonance_mass[temp_idx] << ", nbody=" << decay_channels.nbody[temp_idx]
+						<< ", Gamma=" << decay_channels.resonance_Gamma[temp_idx] << ", br=" << decay_channels.resonance_total_br[temp_idx] << endl;
 
 				//set daughter particles masses for each decay channel
 				//currently assuming no more than nbody = 3
 
 				bool target_daughter_flag = false;
 				int additional_daughter_count = 0;
-				for (int decay_part_idx = 0; decay_part_idx < resonances.nbody[temp_idx]; decay_part_idx++)
+				for (int decay_part_idx = 0; decay_part_idx < decay_channels.nbody[temp_idx]; decay_part_idx++)
 				{
 					//if it's the first target daughter (say, pion(+)) in this decay channel, increment the count and move on to the next daughter
 					if (particle_temp.decays_part[idecay][decay_part_idx] == particle->monval && !target_daughter_flag)
@@ -218,7 +218,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 					else
 					{//otherwise, count it as an extra decay product, even if it's the same target daughter (degen. gets lumped into br_tot)
 						int itemp = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][additional_daughter_count]);
-						resonances.resonance_decay_masses[temp_idx][additional_daughter_count] = all_particles[itemp].mass;
+						decay_channels.resonance_decay_masses[temp_idx][additional_daughter_count] = all_particles[itemp].mass;
 						additional_daughter_count++;
 					}
 				}
@@ -226,14 +226,13 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				// if decay channel parent resonance is not too long-lived
 				// and decay channel contains at least one target daughter particle,
 				// include channel
-				resonances.include_channel[temp_idx] = (target_daughter_flag && !lifetime_is_too_long && !effective_br_is_too_small);
+				decay_channels.include_channel[temp_idx] = (target_daughter_flag && !lifetime_is_too_long && !effective_br_is_too_small);
 
 				temp_idx++;
 			}
 		}
 	}
 	
-//cerr << "finished reading and processing resonances file..." << endl;
 	integrated_spacetime_moments = new double *** [n_resonance+1];
 	dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
 	ln_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
@@ -303,10 +302,10 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		//if (CHECKING_RESONANCE_CALC || chosen_resonances.size() == 0)
 		if (CHECKING_RESONANCE_CALC)
 		{
-			resonances.resonance_mass[ir] *= MeVToGeV;
-			resonances.resonance_decay_masses[ir][0] *= MeVToGeV;
-			resonances.resonance_decay_masses[ir][1] *= MeVToGeV;
-			resonances.resonance_Gamma[ir] *= MeVToGeV;
+			decay_channels.resonance_mass[ir] *= MeVToGeV;
+			decay_channels.resonance_decay_masses[ir][0] *= MeVToGeV;
+			decay_channels.resonance_decay_masses[ir][1] *= MeVToGeV;
+			decay_channels.resonance_Gamma[ir] *= MeVToGeV;
 		}
 		s_pts[ir] = new double [n_s_pts];
 		s_wts[ir] = new double [n_s_pts];
@@ -320,10 +319,10 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	for (int ir = 0; ir < n_resonance; ir++)
 	{
 		//cerr << "working on resonance #" << ir << "..." << endl;
-		double Gamma_temp = resonances.resonance_Gamma[ir];
-		double m2_temp = resonances.resonance_decay_masses[ir][0];
-		double m3_temp = resonances.resonance_decay_masses[ir][1];
-		double M_temp = resonances.resonance_mass[ir];
+		double Gamma_temp = decay_channels.resonance_Gamma[ir];
+		double m2_temp = decay_channels.resonance_decay_masses[ir][0];
+		double m3_temp = decay_channels.resonance_decay_masses[ir][1];
+		double M_temp = decay_channels.resonance_mass[ir];
 		double s_min_temp = (m2_temp + m3_temp)*(m2_temp + m3_temp);
 		double s_max_temp = (M_temp - particle_mass)*(M_temp - particle_mass);
 		// N.B. - this is only really necessary for 3-body decays,
