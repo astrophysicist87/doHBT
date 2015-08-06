@@ -23,7 +23,7 @@
 using namespace std;
 
 SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle,
-					FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout)
+					FO_surf* FOsurf_ptr, vector<int> chosen_resonances_in, int particle_idx, ofstream& myout)
 {
 	//set ofstream for output file
 	global_out_stream_ptr = &myout;
@@ -36,6 +36,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	particle_id = particle_idx;
 	S_prefactor = 1.0/(8.0*(M_PI*M_PI*M_PI))/hbarC/hbarC/hbarC;
 	all_particles = all_particles_in;
+	for (int icr = 0; icr < (int)chosen_resonances_in.size(); icr++)
+		chosen_resonances.push_back(chosen_resonances_in[icr]);
 	thermal_pions_only = false;
 
 	//just need this for various dummy momentum calculations
@@ -82,6 +84,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		if (VERBOSE > 0) *global_out_stream_ptr << "Reading /home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat" << endl;
 		ifstream tempresonancefile("/home/plumberg.1/HBTPlumberg/EOS/temporary_resonance_data.dat");
 		tempresonancefile >> n_decay_channels;
+		n_resonance = n_decay_channels;
 		decay_channels.resonance_particle_id = new int [n_decay_channels];
 		decay_channels.resonance_mass = new double [n_decay_channels];
 		decay_channels.resonance_Gamma = new double [n_decay_channels];
@@ -97,7 +100,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			decay_channels.resonance_decay_masses[idc] = new double [2];
 			decay_channels.resonance_decay_masses[idc][0] = 0.0;
 			decay_channels.resonance_decay_masses[idc][1] = 0.0;
-			decay_channels.resonance_particle_id[idc] = idc;
+			decay_channels.resonance_particle_id[idc] = idc;	//same for both
+			decay_channels.resonance_idx[idc] = idc;		//same for both
 			decay_channels.resonance_mu[idc] = 0.0;
 			decay_channels.resonance_gspin[idc] = 1.0;	//actual g's have been absorbed into definitions of br
 			decay_channels.include_channel[idc] = true;
@@ -123,9 +127,11 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	else if (chosen_resonances.size() == 0)
 	{
 		n_decay_channels = 1;
+		n_resonance = n_decay_channels;
 		thermal_pions_only = true;
 		if (VERBOSE > 0) *global_out_stream_ptr << "Thermal pion(+) only!" << endl;
 		decay_channels.resonance_particle_id = new int [n_decay_channels];
+		decay_channels.resonance_idx = new int [n_decay_channels];
 		decay_channels.resonance_mass = new double [n_decay_channels];
 		decay_channels.nbody = new int [n_decay_channels];
 		decay_channels.resonance_Gamma = new double [n_decay_channels];
@@ -144,10 +150,12 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		//cerr << all_particles[0].name << endl;
 		//cerr << all_particles[319].name << endl;
 		n_decay_channels = get_number_of_decay_channels(chosen_resonances, all_particles);
+		n_resonance = (int)chosen_resonances.size();
 //n_decay_channels--;
 		//cout << "Computed n_decay_channels = " << n_decay_channels << endl;
 		if (VERBOSE > 0) *global_out_stream_ptr << "Computed n_decay_channels = " << n_decay_channels << endl;
 		decay_channels.resonance_particle_id = new int [n_decay_channels];
+		decay_channels.resonance_idx = new int [n_decay_channels];
 		decay_channels.resonance_mass = new double [n_decay_channels];
 		decay_channels.nbody = new int [n_decay_channels];
 		decay_channels.resonance_Gamma = new double [n_decay_channels];
@@ -159,7 +167,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		decay_channels.resonance_name = new string [n_decay_channels];
 		decay_channels.include_channel = new bool [n_decay_channels];
 		int temp_idx = 0;
-		for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
+		for (int icr = 0; icr < n_resonance; icr++)
 		{
 			particle_info particle_temp = all_particles[chosen_resonances[icr]];
 			//if (VERBOSE > 0) cout << "Loading resonance: " << particle_temp.name << ", chosen_resonances[" << icr << "] = " << chosen_resonances[icr] << endl;
@@ -168,7 +176,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 			for (int idecay = 0; idecay < particle_temp.decays; idecay++)
 			{
 				if (VERBOSE > 0) *global_out_stream_ptr << "Current temp_idx = " << temp_idx << endl;
-				if (temp_idx == n_decay_channels)	//i.e., all contributing decay_channels/decay channels have been loaded
+				if (temp_idx == n_decay_channels)	//i.e., all contributing decay channels have been loaded
 					break;
 				decay_channels.resonance_name[temp_idx] = particle_temp.name;		// set name of resonance
 
@@ -181,7 +189,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 					effective_br_is_too_small = true;
 				}
 
-				decay_channels.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance
+				decay_channels.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance in all_particles
+				decay_channels.resonance_idx[temp_idx] = icr;					// set index of resonance in chosen_resonances
 				decay_channels.resonance_decay_masses[temp_idx] = new double [2];
 				for (int ii = 0; ii < 2; ii++)
 					decay_channels.resonance_decay_masses[temp_idx][ii] = 0.0;
@@ -233,56 +242,68 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		}
 	}
 	
-	integrated_spacetime_moments = new double *** [n_decay_channels+1];
-	dN_dypTdpTdphi_moments = new double *** [n_decay_channels+1];
-	ln_dN_dypTdpTdphi_moments = new double *** [n_decay_channels+1];
-	sign_of_dN_dypTdpTdphi_moments = new double *** [n_decay_channels+1];
-	for (int idc=0; idc<=n_decay_channels; idc++)
+	//*****************************************************************
+	// Only make dN_dypTdpTdphi_moments large enough to hold all necessary resonance, not decay channels
+	//*****************************************************************
+	dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
+	ln_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
+	sign_of_dN_dypTdpTdphi_moments = new double *** [n_resonance+1];
+	for (int ir=0; ir<=n_resonance; ir++)
 	{
-		integrated_spacetime_moments[idc] = new double ** [n_weighting_functions];
-		dN_dypTdpTdphi_moments[idc] = new double ** [n_weighting_functions];
-		ln_dN_dypTdpTdphi_moments[idc] = new double ** [n_weighting_functions];
-		sign_of_dN_dypTdpTdphi_moments[idc] = new double ** [n_weighting_functions];
+		dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		ln_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		sign_of_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
 		for (int wfi=0; wfi<n_weighting_functions; wfi++)
 		{
-			integrated_spacetime_moments[idc][wfi] = new double * [n_localp_T];
 			if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
 			{
-				dN_dypTdpTdphi_moments[idc][wfi] = new double * [n_interp1_px_pts];
-				ln_dN_dypTdpTdphi_moments[idc][wfi] = new double * [n_interp1_px_pts];
-				sign_of_dN_dypTdpTdphi_moments[idc][wfi] = new double * [n_interp1_px_pts];
+				dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
+				ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
+				sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp1_px_pts];
 				for (int ipx=0; ipx<n_interp1_px_pts; ipx++)
 				{
-					dN_dypTdpTdphi_moments[idc][wfi][ipx] = new double [n_interp1_py_pts];
-					ln_dN_dypTdpTdphi_moments[idc][wfi][ipx] = new double [n_interp1_py_pts];
-					sign_of_dN_dypTdpTdphi_moments[idc][wfi][ipx] = new double [n_interp1_py_pts];
+					dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
+					ln_dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
+					sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipx] = new double [n_interp1_py_pts];
 					for (int ipy=0; ipy<n_interp1_py_pts; ipy++)
 					{
-						dN_dypTdpTdphi_moments[idc][wfi][ipx][ipy] = 0.0;
-						ln_dN_dypTdpTdphi_moments[idc][wfi][ipx][ipy] = 0.0;
-						sign_of_dN_dypTdpTdphi_moments[idc][wfi][ipx][ipy] = 0.0;
+						dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+						ln_dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
+						sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipx][ipy] = 0.0;
 					}
 				}
 			}
 			else if (INTERPOLATION_FORMAT == 2) //using polar grid for interpolation (pT, pphi)
 			{
-				dN_dypTdpTdphi_moments[idc][wfi] = new double * [n_interp2_pT_pts];
-				ln_dN_dypTdpTdphi_moments[idc][wfi] = new double * [n_interp2_pT_pts];
-				sign_of_dN_dypTdpTdphi_moments[idc][wfi] = new double * [n_interp2_pT_pts];
+				dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+				ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+				sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
 				for (int ipT=0; ipT<n_interp2_pT_pts; ipT++)
 				{
-					dN_dypTdpTdphi_moments[idc][wfi][ipT] = new double [n_interp2_pphi_pts];
-					ln_dN_dypTdpTdphi_moments[idc][wfi][ipT] = new double [n_interp2_pphi_pts];
-					sign_of_dN_dypTdpTdphi_moments[idc][wfi][ipT] = new double [n_interp2_pphi_pts];
+					dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+					ln_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+					sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
 					for (int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
 					{
-						dN_dypTdpTdphi_moments[idc][wfi][ipT][ipphi] = 0.0;
-						ln_dN_dypTdpTdphi_moments[idc][wfi][ipT][ipphi] = 0.0;
-						sign_of_dN_dypTdpTdphi_moments[idc][wfi][ipT][ipphi] = 0.0;
+						dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+						ln_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+						sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
 					}
 				}
 			}
+		}
+	}
 
+	//*****************************************************************
+	// Each integrated spacetime moment corresponds to different decay channel
+	//*****************************************************************
+	integrated_spacetime_moments = new double *** [n_decay_channels+1];
+	for (int idc=0; idc<=n_decay_channels; idc++)
+	{
+		integrated_spacetime_moments[idc] = new double ** [n_weighting_functions];
+		for (int wfi=0; wfi<n_weighting_functions; wfi++)
+		{
+			integrated_spacetime_moments[idc][wfi] = new double * [n_localp_T];
 			for (int ipt=0; ipt<n_localp_T; ipt++)
 			{
 				integrated_spacetime_moments[idc][wfi][ipt] = new double [n_localp_phi];

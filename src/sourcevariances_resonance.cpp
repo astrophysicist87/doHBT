@@ -119,6 +119,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 	//if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
+	int reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
 	//double local_eta_s_wt = eta_s_weight[ieta];
 	double * ssum_vec = new double [n_weighting_functions];
 	double * vsum_vec = new double [n_weighting_functions];
@@ -171,7 +172,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 					//do interpolations
 //if (0) cerr << iKT << "   " << iKphi << "   " << iv << "   " << izeta << "   " << tempidx << endl;
 					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][iweight],
+						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 //if (dc_idx==42) cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
@@ -262,7 +263,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 						//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 						//just interpolate table of single particle spectra...
 						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][iweight],
+							rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 										PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 //if (dc_idx==42) cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)

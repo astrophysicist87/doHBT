@@ -36,6 +36,7 @@ typedef struct
 typedef struct
 {
    int * resonance_particle_id;		// keeps track of current resonance's index in all_particles array
+   int * resonance_idx;			// keeps track of current resonance's index in chosen_resonances vector
    int * nbody;
    int * resonance_sign;
    double * resonance_mass;
@@ -72,6 +73,7 @@ class SourceVariances
 		double particle_gspin;  //particle degeneracy 
 		double particle_mu;
 		particle_info * all_particles;
+		vector<int> chosen_resonances;
 		bool thermal_pions_only;
 
 		int n_zeta_pts, n_v_pts, n_s_pts;
@@ -84,7 +86,7 @@ class SourceVariances
 		
 		//array to hold previous and current resonance info
 		decay_info decay_channels;
-		int current_decay_channel_idx, current_resonance_particle_id;
+		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx;
 		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_resonance_total_br;
 		double * current_resonance_decay_masses, * P_eval, * alpha_mu;
 		int previous_decay_channel_idx, previous_resonance_particle_id;

@@ -25,7 +25,8 @@ using namespace std;
 // only need to calculated interpolation grid of spacetime moments for each resonance, NOT each decay channel!
 bool recycle_previous_moments = false;
 bool recycle_similar_moments = false;
-int dc_idx_of_moments_to_recycle = -1;
+int reso_idx_of_moments_to_recycle = -1;
+string reso_name_of_moments_to_recycle = "NULL";
 
 //need to define some variables for quick evaluation of S_direct
 double Sdir_Y = 0.0, Sdir_R = 5., Sdir_Deltau = 1., Sdir_Deleta = 1.2;
@@ -137,7 +138,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 				Update_source_variances(iKT, iKphi, idc);			// include results in source integrals
 			}									// END of KT loop
 		}										// END of Kphi loop
-	}											// END of resonance loop
+	}											// END of decay channel loop
 
 	// ************************************************************
 	// now get HBT radii from source integrals and Fourier transform
@@ -176,12 +177,6 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 	}
 	else
 		local_name = decay_channels.resonance_name[dc_idx-1];
-	//skipping to problematic resonance idc == 42
-	//if (dc_idx > 1 && dc_idx != 42)
-	//	return false;
-	//else
-	//	if (VERBOSE > 0) *global_out_stream_ptr << "Now working on dc_idx == " << dc_idx << endl;
-	//end skipping statement
 	if (CHECKING_RESONANCE_CALC)
 	{
 		if (dc_idx != 0 && dc_idx != 1 && dc_idx != 7)
@@ -202,6 +197,107 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 	return (decay_channels.include_channel[dc_idx-1]);
 }
 
+void SourceVariances::Set_current_particle_info(int dc_idx)
+{
+	if (VERBOSE > 0) *global_out_stream_ptr << "Setting information for dc_idx = " << dc_idx << endl;
+	if (dc_idx == 0)
+	{
+		muRES = particle_mu;
+		signRES = particle_sign;
+		gRES = particle_gspin;
+		
+		return;
+	}
+	else
+	{
+		if (dc_idx > 1)
+		{
+			//cerr << "Setting previous decay channel information for dc_idx = " << dc_idx << endl;
+			previous_resonance_particle_id = current_resonance_particle_id;		//for look-up in all_particles
+			previous_decay_channel_idx = current_decay_channel_idx;				//different for each decay channel
+			previous_resonance_idx = current_resonance_idx;				//different for each decay channel
+			previous_resonance_mass = current_resonance_mass;
+			previous_resonance_Gamma = current_resonance_Gamma;
+			previous_resonance_total_br = current_resonance_total_br;
+		}
+		//cerr << "Setting current decay channel information for dc_idx = " << dc_idx << endl;
+		current_decay_channel_idx = dc_idx;
+		current_resonance_idx = decay_channels.resonance_idx[dc_idx-1];
+		current_resonance_particle_id = decay_channels.resonance_particle_id[dc_idx-1];
+		current_resonance_mass = decay_channels.resonance_mass[dc_idx-1];
+		current_resonance_Gamma = decay_channels.resonance_Gamma[dc_idx-1];
+		current_resonance_total_br = decay_channels.resonance_total_br[dc_idx-1];
+		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
+		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
+		
+		// might want to rename these for notational consistency...
+		muRES = decay_channels.resonance_mu[dc_idx-1];
+		signRES = decay_channels.resonance_sign[dc_idx-1];
+		gRES = decay_channels.resonance_gspin[dc_idx-1];
+		
+		if (dc_idx > 1)
+		{
+			int similar_particle_idx = -1;
+			int temp_reso_idx = decay_channels.resonance_idx[dc_idx-1];
+			
+			if ( current_resonance_idx == previous_resonance_idx )
+			{
+				//previous resonance is not the same as this one BUT this one is sufficiently similar to some preceding one...
+				recycle_previous_moments = true;
+				recycle_similar_moments = false;
+			}
+			else if ( Search_for_similar_particle( temp_reso_idx, &similar_particle_idx ) )
+			{
+				//previous resonance is not the same as this one BUT this one is sufficiently similar to some preceding one...
+				recycle_previous_moments = false;
+				recycle_similar_moments = true;
+				reso_idx_of_moments_to_recycle = similar_particle_idx;
+			}
+			else
+			{
+				//if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx
+				//		<< ": different parent resonance (" << current_resonance_particle_id << ") from previous decay channel's parent resonance ("
+				//		<< previous_resonance_particle_id << ") --> calculating new dN_dypTdpTdphi_moments!" << endl;
+				recycle_previous_moments = false;
+				recycle_similar_moments = false;
+				reso_idx_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
+			}
+		}
+	}
+	
+	return;
+}
+
+bool SourceVariances::Search_for_similar_particle(int reso_idx, int * result)
+{
+	// for the timebeing, just search from beginning of decay_channels until similar particle is found;
+	// should be more careful, since could lead to small numerical discrepancies if similar particle was
+	// already recycled by some other (dissimilar) particle, but ignore this complication for now...
+	//*result = -1;
+	
+	for (int local_ir = 1; local_ir < reso_idx; local_ir++)
+	{// only need to search decay_channels that have already been calculated
+		if (particles_are_the_same(local_ir, reso_idx))
+		{
+			*result = local_ir;
+			break;
+		}
+	}
+	
+	return (*result > 0);
+}
+
+void SourceVariances::Recycle_spacetime_moments()
+{
+	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
+		dN_dypTdpTdphi_moments[current_resonance_idx + 1][wfi][ipt][iphi] = dN_dypTdpTdphi_moments[reso_idx_of_moments_to_recycle + 1][wfi][ipt][iphi];
+		//N.B. - not dc_idx - 1, since spacetime moments for dc_idx = 0 are just thermal pions
+
+	return;
+}
+
 void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 {
 //**************************************************************
@@ -215,20 +311,19 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 //**************************************************************
 //Decide what to do with this resonance / decay channel
 //**************************************************************
-	if (recycle_previous_moments && RECYCLE_ST_MOMENTS && dc_idx > 1)
+	if (recycle_previous_moments && RECYCLE_ST_MOMENTS && dc_idx > 1)	// similar (but different) earlier resonance
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
-			<< ": same parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
-			<< ") as previous decay channel \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
-		Recycle_spacetime_moments();
+			<< ": new parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
+			<< ") same as preceding parent resonance \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
+		//Recycle_spacetime_moments();
 	}
-	else if (recycle_similar_moments && RECYCLE_ST_MOMENTS && dc_idx > 1)
+	else if (recycle_similar_moments && RECYCLE_ST_MOMENTS && dc_idx > 1)	// similar (but different) earlier resonance
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
-			<< ": parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
-			<< ") sufficiently close to preceding parent resonance (" << decay_channels.resonance_name[dc_idx_of_moments_to_recycle-1]
-			<< ", dc_idx = " << dc_idx_of_moments_to_recycle
-			<< ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
+			<< ": new parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
+			<< ") sufficiently close to preceding parent resonance (" << all_particles[chosen_resonances[reso_idx_of_moments_to_recycle]].name
+			<< ", reso_idx = " << reso_idx_of_moments_to_recycle << ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
 		Recycle_spacetime_moments();
 	}
 	else
@@ -246,9 +341,8 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 			if (VERBOSE > 0 && !RECYCLE_ST_MOMENTS) *global_out_stream_ptr << local_name
 				<< ": RECYCLE_ST_MOMENTS currently set to false \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
 			else if (VERBOSE > 0 && !recycle_previous_moments && !recycle_similar_moments) *global_out_stream_ptr << local_name
-				<< ": different parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
-				<< ") from previous decay channel's parent resonance (" << decay_channels.resonance_name[previous_decay_channel_idx-1] << ", dc_idx = "
-				<< previous_decay_channel_idx << ") and dissimilar from all preceding decay_channels \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
+				<< ": new parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
+				<< ") dissimilar from all preceding decay_channels \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
 			else
 			{
 				cerr << "You shouldn't have ended up here!" << endl;
@@ -327,6 +421,7 @@ void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx
 
 void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int dc_idx)
 {
+int reso_idx = decay_channels.resonance_idx[dc_idx-1] + 1;
 //CURRENTLY USING WRONG DEFINITIONS OF SIGN AND DEGEN
 //NEED TO FIX BEFORE VERSION IS STABLE
    double sign = particle_sign;
@@ -415,7 +510,7 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_
 	zvec[2] = temp_r * sin_phi;
 	zvec[3] = tau*sh_eta_s[ieta];
 	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-		dN_dypTdpTdphi_moments[dc_idx][wfi][ipx][ipy] += S_p_withweight*weight_function(zvec, wfi);
+		dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy] += S_p_withweight*weight_function(zvec, wfi);
       }
       }
       }
@@ -426,9 +521,9 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_
 	cout << SPinterp1_px[ipx] << "  " << SPinterp1_py[ipy] << "  " << dN_dypTdpTdphi_moments[dc_idx][1][ipx][ipy] << endl;
 	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
-		double temp = dN_dypTdpTdphi_moments[dc_idx][wfi][ipx][ipy];
-		ln_dN_dypTdpTdphi_moments[dc_idx][wfi][ipx][ipy] = log(abs(temp));
-		sign_of_dN_dypTdpTdphi_moments[dc_idx][wfi][ipx][ipy] = sgn(temp);
+		double temp = dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy];
+		ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy] = log(abs(temp));
+		sign_of_dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy] = sgn(temp);
 	}
 	}
    return;
@@ -436,10 +531,12 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_
 
 void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int dc_idx)
 {
+	int local_reso_idx;
 	double z0, z1, z2, z3;
 	double sign, degen, localmass, mu;
 	if (dc_idx == 0)
 	{
+		local_reso_idx = 0;
 		sign = particle_sign;
 		degen = particle_gspin;
 		localmass = particle_mass;
@@ -450,6 +547,7 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	}
 	else
 	{
+		local_reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
 		sign = decay_channels.resonance_sign[dc_idx - 1];
 		degen = decay_channels.resonance_gspin[dc_idx - 1];
 		localmass = decay_channels.resonance_mass[dc_idx - 1];
@@ -566,21 +664,21 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 					S_p_withweight = S_p*tau*eta_s_weight[ieta];
 					z0 = tau*ch_eta_s[ieta];
 					z3 = tau*sh_eta_s[ieta];
-					dN_dypTdpTdphi_moments[dc_idx][0][ipt][iphi] += eta_even_factor*S_p_withweight;			//<1>
-					dN_dypTdpTdphi_moments[dc_idx][1][ipt][iphi] += eta_even_factor*S_p_withweight*z2;			//<x_s>
-					dN_dypTdpTdphi_moments[dc_idx][2][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
-					dN_dypTdpTdphi_moments[dc_idx][3][ipt][iphi] += eta_even_factor*S_p_withweight*z1;			//<x_o>
-					dN_dypTdpTdphi_moments[dc_idx][4][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z1;			//<x^2_o>
-					dN_dypTdpTdphi_moments[dc_idx][5][ipt][iphi] += eta_odd_factor*S_p_withweight*z3;			//<x_l>
-					dN_dypTdpTdphi_moments[dc_idx][6][ipt][iphi] += eta_even_factor*S_p_withweight*z3*z3;			//<x^2_l>
-					dN_dypTdpTdphi_moments[dc_idx][7][ipt][iphi] += eta_even_factor*S_p_withweight*z0;			//<t>
-					dN_dypTdpTdphi_moments[dc_idx][8][ipt][iphi] += eta_even_factor*S_p_withweight*z0*z0;			//<t^2>
-					dN_dypTdpTdphi_moments[dc_idx][9][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z1;			//<x_s x_o>
-					dN_dypTdpTdphi_moments[dc_idx][10][ipt][iphi] += eta_odd_factor*S_p_withweight*z2*z3;			//<x_s x_l>
-					dN_dypTdpTdphi_moments[dc_idx][11][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z0;		//<x_s t>
-					dN_dypTdpTdphi_moments[dc_idx][12][ipt][iphi] += eta_odd_factor*S_p_withweight*z1*z3;			//<x_o x_l>
-					dN_dypTdpTdphi_moments[dc_idx][13][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z0;		//<x_o t>
-					dN_dypTdpTdphi_moments[dc_idx][14][ipt][iphi] += eta_odd_factor*S_p_withweight*z3*z0;			//<x_l t>
+					dN_dypTdpTdphi_moments[local_reso_idx][0][ipt][iphi] += eta_even_factor*S_p_withweight;			//<1>
+					dN_dypTdpTdphi_moments[local_reso_idx][1][ipt][iphi] += eta_even_factor*S_p_withweight*z2;			//<x_s>
+					dN_dypTdpTdphi_moments[local_reso_idx][2][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
+					dN_dypTdpTdphi_moments[local_reso_idx][3][ipt][iphi] += eta_even_factor*S_p_withweight*z1;			//<x_o>
+					dN_dypTdpTdphi_moments[local_reso_idx][4][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z1;			//<x^2_o>
+					dN_dypTdpTdphi_moments[local_reso_idx][5][ipt][iphi] += eta_odd_factor*S_p_withweight*z3;			//<x_l>
+					dN_dypTdpTdphi_moments[local_reso_idx][6][ipt][iphi] += eta_even_factor*S_p_withweight*z3*z3;			//<x^2_l>
+					dN_dypTdpTdphi_moments[local_reso_idx][7][ipt][iphi] += eta_even_factor*S_p_withweight*z0;			//<t>
+					dN_dypTdpTdphi_moments[local_reso_idx][8][ipt][iphi] += eta_even_factor*S_p_withweight*z0*z0;			//<t^2>
+					dN_dypTdpTdphi_moments[local_reso_idx][9][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z1;			//<x_s x_o>
+					dN_dypTdpTdphi_moments[local_reso_idx][10][ipt][iphi] += eta_odd_factor*S_p_withweight*z2*z3;			//<x_s x_l>
+					dN_dypTdpTdphi_moments[local_reso_idx][11][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z0;		//<x_s t>
+					dN_dypTdpTdphi_moments[local_reso_idx][12][ipt][iphi] += eta_odd_factor*S_p_withweight*z1*z3;			//<x_o x_l>
+					dN_dypTdpTdphi_moments[local_reso_idx][13][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z0;		//<x_o t>
+					dN_dypTdpTdphi_moments[local_reso_idx][14][ipt][iphi] += eta_odd_factor*S_p_withweight*z3*z0;			//<x_l t>
 				}
 			}
 		}
@@ -593,9 +691,9 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	{
 		for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 		{
-			temp = dN_dypTdpTdphi_moments[dc_idx][wfi][ipt][iphi];
-			ln_dN_dypTdpTdphi_moments[dc_idx][wfi][ipt][iphi] = log(abs(temp));
-			sign_of_dN_dypTdpTdphi_moments[dc_idx][wfi][ipt][iphi] = sgn(temp);
+			temp = dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi];
+			ln_dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi] = log(abs(temp));
+			sign_of_dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi] = sgn(temp);
 		}
 		//cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
 		//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[dc_idx][0][ipt][iphi]
@@ -847,123 +945,6 @@ void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx, boo
    delete[] pz;
 
    return;
-}
-
-void SourceVariances::Set_current_particle_info(int dc_idx)
-{
-	if (VERBOSE > 0) *global_out_stream_ptr << "Setting information for dc_idx = " << dc_idx << endl;
-	if (dc_idx == 0)
-	{
-		muRES = particle_mu;
-		signRES = particle_sign;
-		gRES = particle_gspin;
-		
-		/*if (DEBUG)
-		{
-			cerr << "Working on resonance # = " << dc_idx << ":" << endl
-				<< "  --> muRES = " << muRES << endl
-				<< "  --> signRES = " << signRES << endl
-				<< "  --> gRES = " << gRES << endl;
-		}*/
-		
-		return;
-	}
-	else
-	{
-		if (dc_idx > 1)
-		{
-			//cerr << "Setting previous resonance information for dc_idx = " << dc_idx << endl;
-			previous_resonance_particle_id = current_resonance_particle_id;		//for look-up in all_particles
-			previous_decay_channel_idx = current_decay_channel_idx;				//different for each decay channel
-			previous_resonance_mass = current_resonance_mass;
-			previous_resonance_Gamma = current_resonance_Gamma;
-			previous_resonance_total_br = current_resonance_total_br;
-		}
-		//cerr << "Setting current resonance information for dc_idx = " << dc_idx << endl;
-		current_decay_channel_idx = dc_idx;
-		current_resonance_particle_id = decay_channels.resonance_particle_id[dc_idx-1];
-		current_resonance_mass = decay_channels.resonance_mass[dc_idx-1];
-		current_resonance_Gamma = decay_channels.resonance_Gamma[dc_idx-1];
-		current_resonance_total_br = decay_channels.resonance_total_br[dc_idx-1];
-		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
-		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
-		
-		// might want to rename these for notational consistency...
-		muRES = decay_channels.resonance_mu[dc_idx-1];
-		signRES = decay_channels.resonance_sign[dc_idx-1];
-		gRES = decay_channels.resonance_gspin[dc_idx-1];
-	
-	//cerr << "Made it to checkpoint #1" << endl;
-		
-		if (dc_idx > 1)
-		{
-			int similar_particle_idx = -1;
-			
-			// if this decay channel and the last one are for the same resonance, no need to recalculate space-time moments grid,
-			// since this only depends on Mres and muRES;
-			// otherwise, the grid DOES need to be calculated
-			if (previous_resonance_particle_id == current_resonance_particle_id)
-			{
-				//if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx
-				//		<< ": same parent resonance (" << current_resonance_particle_id
-				//		<< ") as previous decay channel --> reusing old dN_dypTdpTdphi_moments!" << endl;
-				recycle_previous_moments = true;
-				recycle_similar_moments = false;
-				dc_idx_of_moments_to_recycle = previous_decay_channel_idx;
-	//cerr << "Made it to checkpoint #2" << endl;
-			}
-			else if ( Search_for_similar_particle( dc_idx, &similar_particle_idx ) )
-			{
-				//previous resonance is not the same as this one BUT this one is sufficiently similar to some preceding one...
-				recycle_previous_moments = false;
-				recycle_similar_moments = true;
-				dc_idx_of_moments_to_recycle = similar_particle_idx;
-	//cerr << "Made it to checkpoint #3" << endl;
-			}
-			else
-			{
-				//if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx
-				//		<< ": different parent resonance (" << current_resonance_particle_id << ") from previous decay channel's parent resonance ("
-				//		<< previous_resonance_particle_id << ") --> calculating new dN_dypTdpTdphi_moments!" << endl;
-				recycle_previous_moments = false;
-				recycle_similar_moments = false;
-				dc_idx_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
-	//cerr << "Made it to checkpoint #4" << endl;
-			}
-		}
-	}
-	
-	return;
-}
-
-bool SourceVariances::Search_for_similar_particle(int dc_idx, int * result)
-{
-	// for the timebeing, just search from beginning of decay_channels until similar particle is found;
-	// should be more careful, since could lead to small numerical discrepancies if similar particle was
-	// already recycled by some other (dissimilar) particle, but ignore this complication for now...
-	//*result = -1;
-	
-	for (int local_idc = 1; local_idc < dc_idx; local_idc++)
-	{// only need to search decay_channels that have already been calculated
-		if (particles_are_the_same(local_idc, dc_idx))
-		{
-			*result = local_idc;
-			break;
-		}
-	}
-	
-	return (*result > 0);
-}
-
-void SourceVariances::Recycle_spacetime_moments()
-{
-	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
-		dN_dypTdpTdphi_moments[current_decay_channel_idx][wfi][ipt][iphi] = dN_dypTdpTdphi_moments[dc_idx_of_moments_to_recycle][wfi][ipt][iphi];
-		//N.B. - not dc_idx - 1, since spacetime moments for dc_idx = 0 are just thermal pions
-
-	return;
 }
 
 void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local)
@@ -1407,35 +1388,35 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int dc_idx)
 		double phi_K = K_phi[iKphi];
 		double KT = K_T[iKT];
 		double temp_factor = 1.0;
-		S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][0],
+		S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][1],
+		xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][2],
+		xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][3],
+		xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][3],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][4],
+		xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][4],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][5],
+		xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][5],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][6],
+		xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][6],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-		t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][7],
+		t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][7],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][8],
+		t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][8],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-		xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][9],
+		xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][9],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][10],
+		xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][10],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][11],
+		xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][11],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][12],
+		xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][12],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][13],
+		xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][13],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[dc_idx][14],
+		xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][14],
 							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 		if (DEBUG)		
 			cerr << "DEBUG: dc_idx = " << dc_idx << "  " << S_func[iKT][iKphi] << "  " << xs_S[iKT][iKphi] << "  " << xs2_S[iKT][iKphi] << endl;
@@ -1601,14 +1582,16 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 }
 
 //**********************************************************************************************
-bool SourceVariances::particles_are_the_same(int dc_idx1, int dc_idx2)
+bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
 {
-	if (decay_channels.resonance_sign[dc_idx1-1] != decay_channels.resonance_sign[dc_idx2-1])
+	int icr1 = chosen_resonances[reso_idx1];
+	int icr2 = chosen_resonances[reso_idx2];
+	if (all_particles[icr1].sign != all_particles[icr2].sign)
 		return false;
-	if (abs(decay_channels.resonance_mass[dc_idx1-1]-decay_channels.resonance_mass[dc_idx2-1]) / (decay_channels.resonance_mass[dc_idx2-1]+1.e-30) > PARTICLE_DIFF_TOLERANCE)
+	if (abs(all_particles[icr1].mass-all_particles[icr2].mass) / (all_particles[icr2].mass+1.e-30) > PARTICLE_DIFF_TOLERANCE)
 		return false;
 	//assume chemical potential mu is constant over entire FO surface
-	double chem1 = decay_channels.resonance_mu[dc_idx1-1], chem2 = decay_channels.resonance_mu[dc_idx2-1];
+	double chem1 = all_particles[icr1].mu, chem2 = all_particles[icr2].mu;
 	if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
 		return false;
 	
