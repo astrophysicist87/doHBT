@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
    Source_function.Output_dN_dypTdpTdphi(folderindex);
    Source_function.Output_dN_dypTdpT(folderindex);
    Source_function.Output_dN_dypTdpTdphi_grid(folderindex, 0);
-   //Source_function.Output_all_dN_dypTdpTdphi(folderindex);
+   Source_function.Output_all_dN_dypTdpTdphi(folderindex);
    Source_function.Output_results(folderindex);
    output << "Finished calculating HBT radii via source variances method" << endl;
 

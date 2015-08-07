@@ -246,12 +246,52 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 
-	for(int idc = 1; idc <= n_decay_channels; idc++)
+	//for(int idc = 1; idc <= n_decay_channels; idc++)
+	//{
+		//for(int iKT = 0; iKT < n_localp_T; iKT++)
+		//for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
+		//	output_all_dN_dypTdpTdphi << K_T[iKT] << "   " << K_phi[iKphi] << "   " << integrated_spacetime_moments[idc-1][0][iKT][iKphi] << endl;
+		//output_all_dN_dypTdpTdphi << endl;
+	//}
+
+	//for(int ir = 0; ir <= n_resonance; ir++)
+	for(int ii = 0; ii < Nparticle; ii++)
 	{
-		for(int iKT = 0; iKT < n_localp_T; iKT++)
-		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-			output_all_dN_dypTdpTdphi << K_T[iKT] << "   " << K_phi[iKphi] << "   " << integrated_spacetime_moments[idc-1][0][iKT][iKphi] << endl;
-		output_all_dN_dypTdpTdphi << endl;
+		//thermal only for timebeing...
+		std::vector<int>::iterator it = find (chosen_resonances.begin(), chosen_resonances.end(), ii);
+		//if (VERBOSE > 0) *global_out_stream_ptr << "particle_id = " << particle_id << endl;
+		if (ii == particle_id)
+		{
+			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+			{
+				for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+					output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[0][0][ipt][iphi] << "   ";
+				output_all_dN_dypTdpTdphi << endl;
+			}
+
+		}
+		else if (it != chosen_resonances.end())
+		{
+			int ir = it - chosen_resonances.begin() + 1;
+			if (VERBOSE > 0) *global_out_stream_ptr << "ir = " << ir << endl;
+
+			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+			{
+				for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+					output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ir][0][ipt][iphi] << "   ";
+				output_all_dN_dypTdpTdphi << endl;
+			}
+		}
+		else
+		{
+			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+			{
+				for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+					output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << 0.0 << "   ";
+				output_all_dN_dypTdpTdphi << endl;
+			}
+		}
+
 	}
 
 	output_all_dN_dypTdpTdphi.close();

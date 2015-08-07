@@ -75,6 +75,7 @@ class SourceVariances
 		particle_info * all_particles;
 		vector<int> chosen_resonances;
 		bool thermal_pions_only;
+		int Nparticle;
 
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;

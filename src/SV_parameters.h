@@ -32,7 +32,7 @@ using namespace std;
 							// 0 forces routine to exit only when number of iterations j = jmax = 4
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
-#define SPACETIME_MOMENTS_ONLY		false		// duh
+#define SPACETIME_MOMENTS_ONLY		true		// duh
 
 const double hbarC=0.197327053;  //GeV*fm
 const double twopi = 2.*M_PI;
@@ -81,7 +81,9 @@ const double Del1_y = (interp1_py_max - interp1_py_min) / (double)(n_interp1_py_
 //  - polar
 const int n_interp2_pT_pts = 77;
 const int n_interp2_pphi_pts = 11;
-const double interp2_pT_min = 0.01;
+//const int n_interp2_pT_pts = 15;
+//const int n_interp2_pphi_pts = 48;
+const double interp2_pT_min = 0.0;
 const double interp2_pphi_min = 0.0;
 const double interp2_pT_max = 4.05;
 const double interp2_pphi_max = 2.*M_PI;
@@ -112,7 +114,8 @@ const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULT
 
 //const double tol = 1e-15;  //tolarence
 const double tol = 0.0;  //tolerance
-const int flagneg = 1;     //neglect all points that are negative
+const int flagneg = 0;		//neglect all points that are negative
+				//choose flagneg == 0 to agree with iS.e
 
 const int MCint_calls = 5000;  //# of calls for monte carlo integration
 

@@ -312,7 +312,8 @@ bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
 	}
 	//assume chemical potential mu is constant over entire FO surface
 	double chem1 = all_particles[icr1].mu, chem2 = all_particles[icr2].mu;
-	if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
+	//if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
+	if (2.*abs(chem1 - chem2)/(chem1 + chem2 + 1.e-30) > PARTICLE_DIFF_TOLERANCE)
 	{
 		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> mus were not the same!" << endl
 				<< "\t\t --> mu: " << chem1 << "   " << chem2

@@ -22,7 +22,7 @@
 
 using namespace std;
 
-SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle,
+SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle_in,
 					FO_surf* FOsurf_ptr, vector<int> chosen_resonances_in, int particle_idx, ofstream& myout)
 {
 	//set ofstream for output file
@@ -39,6 +39,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	for (int icr = 0; icr < (int)chosen_resonances_in.size(); icr++)
 		chosen_resonances.push_back(chosen_resonances_in[icr]);
 	thermal_pions_only = false;
+	Nparticle = Nparticle_in;
 
 	//just need this for various dummy momentum calculations
 	P_eval = new double [4];
@@ -127,7 +128,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	else if (chosen_resonances.size() == 0)
 	{
 		n_decay_channels = 1;
-		n_resonance = n_decay_channels;
+		n_resonance = 0;
 		thermal_pions_only = true;
 		if (VERBOSE > 0) *global_out_stream_ptr << "Thermal pion(+) only!" << endl;
 		decay_channels.resonance_particle_id = new int [n_decay_channels];
@@ -416,18 +417,23 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	else
 	{
 		//try just gaussian points...
-		gauss_quadrature(n_interp1_px_pts, 1, 0.0, 1.0, interp1_px_min, interp1_px_max, SPinterp1_px, dummywts1);
-		gauss_quadrature(n_interp1_py_pts, 1, 0.0, 1.0, interp1_py_min, interp1_py_max, SPinterp1_py, dummywts2);
-		//gauss_quadrature(n_interp2_pT_pts, 5, 0.0, 0.0, 0.0, (double)n_interp2_pT_pts, SPinterp2_pT, dummywts3);
+		//syntax:
+		//int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[]) 
+		gauss_quadrature(n_interp1_px_pts, 1, 0.0, 0.0, interp1_px_min, interp1_px_max, SPinterp1_px, dummywts1);
+		gauss_quadrature(n_interp1_py_pts, 1, 0.0, 0.0, interp1_py_min, interp1_py_max, SPinterp1_py, dummywts2);
+		gauss_quadrature(n_interp2_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp2_pT, dummywts3);
+		//for(int ipT=0; ipT<n_interp2_pT_pts; ipT++)
+		//	if (VERBOSE > 0) *global_out_stream_ptr << "SPinterp2_pT[" << ipT << "] = " << SPinterp2_pT[ipT] << endl;
 		//logspace(SPinterp2_pT, interp2_pT_min, interp2_pT_max, n_interp2_pT_pts);
-		scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 0.25, n_interp2_pT_pts);
+		//scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 0.25, n_interp2_pT_pts);
 		//gauss_quadrature(n_interp2_pT_pts, 1, 0.0, 0.0, interp2_pT_min, interp2_pT_max, SPinterp2_pT, dummywts3);
 		//for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
 		//	cerr << SPinterp2_pT[ipt] << endl;
-		//gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, 2.*M_PI, 1.0, SPinterp2_pphi, dummywts4);
+		//gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, interp2_pphi_min, interp2_pphi_max, SPinterp2_pphi, dummywts4);
 		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
 		{
 			SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
+			//if (VERBOSE > 0) *global_out_stream_ptr << "SPinterp2_pphi[" << ipphi << "] = " << SPinterp2_pphi[ipphi] << endl;
 			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
 			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
 		}
