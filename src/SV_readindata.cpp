@@ -7,6 +7,7 @@
 #include<cstdlib>
 #include<gsl/gsl_sf_bessel.h>
 #include<vector>
+#include<algorithm>
 
 #include "SV_readindata.h"
 using namespace std;
@@ -618,6 +619,49 @@ void get_important_resonances(int chosen_target_particle_idx, vector<int> * chos
 	//END OF CODE SELECTING INCLUDED RESONANCES
 	//**********************************************************************************
 	
+	return;
+}
+
+void get_all_descendants(vector<int> * chosen_resonance_indices_ptr, particle_info * particle, int Nparticle, std::ofstream& output)
+{
+	// This function ensures that no particles are missing from the chosen_resonances vector,
+	// even if a truncated (threshold < 1.0) version is used
+	bool no_missing_descendants = false;
+	int original_size = (int)(*chosen_resonance_indices_ptr).size();
+	while (!no_missing_descendants)
+	{
+		int old_size = (int)(*chosen_resonance_indices_ptr).size();
+		int new_size = old_size;
+		for (int icr = 0; icr < old_size; icr++)
+		{
+			particle_info resonance = particle[(*chosen_resonance_indices_ptr)[icr]];
+			if (resonance.stable == 1) continue;
+			int number_of_decays = resonance.decays;
+			for (int k = 0; k < number_of_decays; k++)
+			{
+				int nb = abs(resonance.decays_Npart[k]);
+				for (int l = 0; l < nb; l++)
+				{
+					int pid = lookup_particle_id_from_monval(particle, Nparticle, resonance.decays_part[k][l]);
+					//if this decay particle is not in the list, include it
+					bool decay_particle_is_not_in_list = ( find ((*chosen_resonance_indices_ptr).begin(), (*chosen_resonance_indices_ptr).end(), pid)
+															==
+															(*chosen_resonance_indices_ptr).end() );
+					bool br_tot_is_not_small = ( particle[pid].effective_branchratio >= 1.e-12 );
+					if (decay_particle_is_not_in_list && br_tot_is_not_small)
+					{
+						(*chosen_resonance_indices_ptr).push_back(pid);
+						new_size++;
+					}
+				}
+			}
+		}
+		no_missing_descendants = ( old_size == new_size );
+		if (new_size == original_size)
+			output << "get_all_descendants(): No new particles added!" << endl;
+		else
+			output << "get_all_descendants(): " << new_size - original_size << " new particles added!" << endl;
+	}
 	return;
 }
 
