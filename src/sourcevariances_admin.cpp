@@ -147,8 +147,6 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	{
 		//n_decay_channels is actually total number of decay channels which can generate pions
 		//from chosen decay_channels
-		//cerr << all_particles[0].name << endl;
-		//cerr << all_particles[319].name << endl;
 		n_decay_channels = get_number_of_decay_channels(chosen_resonances, all_particles);
 		n_resonance = (int)chosen_resonances.size();
 //n_decay_channels--;

@@ -84,5 +84,6 @@ void print_particle_stability(particle_info * all_particles, int Nparticle);
 int get_number_of_decay_channels(vector<int> chosen_resonances, particle_info * particle);
 void get_important_resonances(int chosen_target_particle_idx, vector<int> * chosen_resonance_indices_ptr, particle_info * particle, int Nparticle, double threshold, std::ofstream& output);
 void get_all_descendants(vector<int> * chosen_resonance_indices_ptr, particle_info * particle, int Nparticle, std::ofstream& output);
+void sort_by_mass(vector<int> * chosen_resonance_indices_ptr, particle_info * particle, int Nparticle, std::ofstream& output);
 
 #endif

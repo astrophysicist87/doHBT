@@ -172,7 +172,7 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 	string local_name = "Thermal pion(+)";
 	if (dc_idx == 0)
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": doing this one." << endl;
 		return true;
 	}
 	else
@@ -181,17 +181,17 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 	{
 		if (dc_idx != 0 && dc_idx != 1 && dc_idx != 7)
 		{
-			if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping." << endl;
+			if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": skipping." << endl;
 			return false;
 		}
 	}
 	else if (decay_channels.include_channel[dc_idx-1])
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing this one (dc_idx = " << dc_idx << ")." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": doing this one (dc_idx = " << dc_idx << ")." << endl;
 	}
 	else
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": skipping this one (dc_idx = " << dc_idx << ")." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": skipping this one (dc_idx = " << dc_idx << ")." << endl;
 	}
 
 	return (decay_channels.include_channel[dc_idx-1]);
@@ -199,7 +199,7 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 
 void SourceVariances::Set_current_particle_info(int dc_idx)
 {
-	if (VERBOSE > 0) *global_out_stream_ptr << "Setting information for dc_idx = " << dc_idx << endl;
+	if (VERBOSE > 0) *global_out_stream_ptr << "Setting information for dc_idx = " << dc_idx << ":" << endl;
 	if (dc_idx == 0)
 	{
 		muRES = particle_mu;
@@ -214,7 +214,7 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 		{
 			//cerr << "Setting previous decay channel information for dc_idx = " << dc_idx << endl;
 			previous_resonance_particle_id = current_resonance_particle_id;		//for look-up in all_particles
-			previous_decay_channel_idx = current_decay_channel_idx;				//different for each decay channel
+			previous_decay_channel_idx = current_decay_channel_idx;			//different for each decay channel
 			previous_resonance_idx = current_resonance_idx;				//different for each decay channel
 			previous_resonance_mass = current_resonance_mass;
 			previous_resonance_Gamma = current_resonance_Gamma;
@@ -273,9 +273,9 @@ bool SourceVariances::Search_for_similar_particle(int reso_idx, int * result)
 	// for the timebeing, just search from beginning of decay_channels until similar particle is found;
 	// should be more careful, since could lead to small numerical discrepancies if similar particle was
 	// already recycled by some other (dissimilar) particle, but ignore this complication for now...
-	//*result = -1;
+	*result = -1;
 	
-	for (int local_ir = 1; local_ir < reso_idx; local_ir++)
+	for (int local_ir = 0; local_ir < reso_idx; local_ir++)
 	{// only need to search decay_channels that have already been calculated
 		if (particles_are_the_same(local_ir, reso_idx))
 		{
@@ -284,7 +284,45 @@ bool SourceVariances::Search_for_similar_particle(int reso_idx, int * result)
 		}
 	}
 	
-	return (*result > 0);
+	return (*result >= 0);
+}
+
+//**********************************************************************************************
+bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
+{
+	int icr1 = chosen_resonances[reso_idx1];
+	int icr2 = chosen_resonances[reso_idx2];
+	if (VERBOSE > 5) *global_out_stream_ptr << "\t\t * Comparing " << all_particles[icr1].name << "(reso_idx = " << reso_idx1
+					<< ") and " << all_particles[icr2].name << "(reso_idx = " << reso_idx2 << ")" << endl;
+	if (VERBOSE > 5) *global_out_stream_ptr << "\t\t * sign: " << all_particles[icr1].sign << "   " << all_particles[icr2].sign << endl
+				<< "\t\t * mass: " << all_particles[icr1].mass << "   " << all_particles[icr2].mass << endl
+				<< "\t\t * mu: " << all_particles[icr1].mu << "   " << all_particles[icr2].mu << endl;
+	if (all_particles[icr1].sign != all_particles[icr2].sign)
+	{
+		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> signs were not the same!" << endl
+				<< "\t\t --> sign: " << all_particles[icr1].mu << "   " << all_particles[icr2].mu << endl;
+		return false;
+	}
+	if (abs(all_particles[icr1].mass-all_particles[icr2].mass) / (all_particles[icr2].mass+1.e-30) > PARTICLE_DIFF_TOLERANCE)
+	{
+		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> masses were not the same!" << endl
+				<< "\t\t --> mass: " << all_particles[icr1].mass << "   " << all_particles[icr2].mass
+				<< "   " << abs(all_particles[icr1].mass-all_particles[icr2].mass) / (all_particles[icr2].mass+1.e-30) << endl;
+		return false;
+	}
+	//assume chemical potential mu is constant over entire FO surface
+	double chem1 = all_particles[icr1].mu, chem2 = all_particles[icr2].mu;
+	if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
+	{
+		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> mus were not the same!" << endl
+				<< "\t\t --> mu: " << chem1 << "   " << chem2
+				<< "   " << 2.*abs(chem1 - chem2)/(chem1 + chem2 + 1.e-30) << endl;
+		return false;
+	}
+	
+	if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> Particles are close enough!" << endl;
+
+	return true;
 }
 
 void SourceVariances::Recycle_spacetime_moments()
@@ -1579,23 +1617,6 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 		R2_outlong_S[iKT][Morder] = temp_sum_outlong_sin/(2.*M_PI);
 	}
 	return;
-}
-
-//**********************************************************************************************
-bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
-{
-	int icr1 = chosen_resonances[reso_idx1];
-	int icr2 = chosen_resonances[reso_idx2];
-	if (all_particles[icr1].sign != all_particles[icr2].sign)
-		return false;
-	if (abs(all_particles[icr1].mass-all_particles[icr2].mass) / (all_particles[icr2].mass+1.e-30) > PARTICLE_DIFF_TOLERANCE)
-		return false;
-	//assume chemical potential mu is constant over entire FO surface
-	double chem1 = all_particles[icr1].mu, chem2 = all_particles[icr2].mu;
-	if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
-		return false;
-	
-	return true;
 }
 
 //End of file
