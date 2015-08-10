@@ -40,7 +40,7 @@ WARNFLAGS= -ansi -pedantic -Wall -W \
    -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align \
    -Wwrite-strings -fshort-enums -fno-common 
 #LDFLAGS= -lgsl -lgslcblas -lgcov -coverage ^^ -fprofile-arcs -ftest-coverage
-LDFLAGS= -lgsl -lgslcblas
+LDFLAGS= -lgsl -lgslcblas -g
 LIBS= -L/sw/lib -I/sw/include
 
  

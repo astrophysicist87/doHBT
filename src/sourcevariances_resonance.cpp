@@ -326,6 +326,212 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 	return;
 }
 
+void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int daughter_particle_index, int decay_channel)
+{
+	time_t rawtime;
+  	struct tm * timeinfo;
+	//int reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
+	//double local_eta_s_wt = eta_s_weight[ieta];
+	double * ssum_vec = new double [n_weighting_functions];
+	double * vsum_vec = new double [n_weighting_functions];
+	double * zetasum_vec = new double [n_weighting_functions];
+	double * Csum_vec = new double [n_weighting_functions];
+	double * rap_indep_y_of_r = new double [n_weighting_functions];
+	double * y_of_r = new double [n_weighting_functions];
+	set_to_zero(ssum_vec, n_weighting_functions);
+	set_to_zero(vsum_vec, n_weighting_functions);
+	set_to_zero(zetasum_vec, n_weighting_functions);
+	set_to_zero(Csum_vec, n_weighting_functions);
+	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
+	set_to_zero(y_of_r, n_weighting_functions);
+	Qfunc = get_Q(decay_channel);
+
+	for (int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+	for (int ipphi = 0; ipphi < n_interp2_pphi_pts; ipphi++)
+	{
+		double local_pT = SPinterp2_pT[ipt];
+		double local_pphi = SPinterp2_pphi[ipphi];
+		set_to_zero(ssum_vec, n_weighting_functions);
+		set_to_zero(vsum_vec, n_weighting_functions);
+		set_to_zero(zetasum_vec, n_weighting_functions);
+		set_to_zero(Csum_vec, n_weighting_functions);
+		set_to_zero(rap_indep_y_of_r, n_weighting_functions);
+		set_to_zero(y_of_r, n_weighting_functions);
+		Load_decay_channel_info(decay_channel, local_pT, local_pphi);	// set decay channel information
+		if (n_body == 2)
+		{
+			//then g(s) is delta-function, skip s-integration entirely
+			//double s_loc = m2*m2;
+			set_to_zero(vsum_vec, n_weighting_functions);
+				for (int iv = 0; iv < n_v_pts; iv++)
+				{
+					double zetasum = 0.0;
+					time (&rawtime);
+					timeinfo = localtime (&rawtime);
+					set_to_zero(zetasum_vec, n_weighting_functions);
+					for (int izeta = 0; izeta < n_zeta_pts; izeta++)
+					{
+						double alpha_t = VEC_n2_alpha[iv][izeta][0];
+						double alpha_o = VEC_n2_alpha[iv][izeta][1];
+						double alpha_s = VEC_n2_alpha[iv][izeta][2];
+						double alpha_l = VEC_n2_alpha[iv][izeta][3];
+						set_to_zero(Csum_vec, n_weighting_functions);
+						double PKT = VEC_n2_PT[iv][izeta];
+						double PKY = VEC_n2_P_Y[iv];
+						double PKphi = VEC_n2_PPhi_tilde[iv][izeta];
+						for (int tempidx = 1; tempidx <= 2; tempidx++)
+						{
+							if (tempidx != 1)
+							{
+								//Phi only changes sign, does NOT get shifted by pi!
+								PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
+								alpha_s = VEC_n2_alpha_m[iv][izeta][2];
+								alpha_o = VEC_n2_alpha_m[iv][izeta][1];
+							}
+							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
+							//just interpolate table of single particle spectra...
+							//do interpolations
+							for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+								rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_index][iweight],
+											PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
+							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
+							//now compute appropriate linear combinations (maybe shift these into preceding function eventually?)
+							//[{1}_r]_{r-->\pi}
+							Csum_vec[0] += y_of_r[0];
+							//[{xs}_r]_{r-->\pi}
+							Csum_vec[1] += y_of_r[1] + alpha_s*y_of_r[0];
+							//[{xs2}_r]_{r-->\pi}
+							Csum_vec[2] += y_of_r[2] + 2.*alpha_s*y_of_r[1] + 2.*alpha_s*alpha_s*y_of_r[0];
+							//[{xo}_r]_{r-->\pi}
+							Csum_vec[3] += y_of_r[3] + alpha_o*y_of_r[0];
+							//[{xo2}_r]_{r-->\pi}
+							Csum_vec[4] += y_of_r[4] + 2.*alpha_o*y_of_r[3] + 2.*alpha_o*alpha_o*y_of_r[0];
+							//[{xl}_r]_{r-->\pi}
+							Csum_vec[5] += y_of_r[5] + alpha_l*y_of_r[0];
+							//[{xl2}_r]_{r-->\pi}
+							Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[5] + 2.*alpha_l*alpha_l*y_of_r[0];
+							//[{t}_r]_{r-->\pi}
+							Csum_vec[7] += y_of_r[7] + alpha_t*y_of_r[0];
+							//[{t2}_r]_{r-->\pi}
+							Csum_vec[8] += y_of_r[8] + 2.*alpha_t*y_of_r[7] + 2.*alpha_t*alpha_t*y_of_r[0];
+							//[{xs_xo}_r]_{r-->\pi}
+							Csum_vec[9] += y_of_r[9] + alpha_s*y_of_r[3] + alpha_o*y_of_r[1] + 2.*alpha_s*alpha_o*y_of_r[0];
+							//[{xs_xl}_r]_{r-->\pi}
+							Csum_vec[10] += y_of_r[10] + alpha_s*y_of_r[5] + alpha_l*y_of_r[1] + 2.*alpha_s*alpha_l*y_of_r[0];
+							//[{xs_t}_r]_{r-->\pi}
+							Csum_vec[11] += y_of_r[11] + alpha_s*y_of_r[7] + alpha_t*y_of_r[1] + 2.*alpha_s*alpha_t*y_of_r[0];
+							//[{xo_xl}_r]_{r-->\pi}
+							Csum_vec[12] += y_of_r[12] + alpha_o*y_of_r[5] + alpha_l*y_of_r[3] + 2.*alpha_o*alpha_l*y_of_r[0];
+							//[{xo_t}_r]_{r-->\pi}
+							Csum_vec[13] += y_of_r[13] + alpha_o*y_of_r[7] + alpha_t*y_of_r[3] + 2.*alpha_o*alpha_t*y_of_r[0];
+							//[{xl_t}_r]_{r-->\pi}
+							Csum_vec[14] += y_of_r[14] + alpha_l*y_of_r[7] + alpha_t*y_of_r[5] + 2.*alpha_l*alpha_t*y_of_r[0];
+						}// end of tempidx sum
+						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+							zetasum_vec[iweight] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[iweight];
+					}// end of zeta sum
+					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+						vsum_vec[iweight] += VEC_n2_v_factor[iv]*zetasum_vec[iweight];
+				}// end of v sum
+				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+					ssum_vec[iweight] += Mres*VEC_n2_s_factor*vsum_vec[iweight];
+		}// end of nbody == 2
+		else if (n_body == 3)
+		{
+			for (int is = 0; is < n_s_pts; is++)
+			{
+				double vsum = 0.0;
+ 		  			set_to_zero(vsum_vec, n_weighting_functions);
+				for (int iv = 0; iv < n_v_pts; iv++)
+				{
+					set_to_zero(zetasum_vec, n_weighting_functions);
+					for (int izeta = 0; izeta < n_zeta_pts; izeta++)
+					{
+						double alpha_t = VEC_alpha[is][iv][izeta][0];
+						double alpha_o = VEC_alpha[is][iv][izeta][1];
+						double alpha_s = VEC_alpha[is][iv][izeta][2];
+						double alpha_l = VEC_alpha[is][iv][izeta][3];
+						set_to_zero(Csum_vec, n_weighting_functions);
+						double PKT = VEC_PT[is][iv][izeta];
+						double PKY = VEC_P_Y[is][iv];
+						double PKphi = VEC_PPhi_tilde[is][iv][izeta];
+						for (int tempidx = 1; tempidx <= 2; tempidx++)
+						{
+							if (tempidx != 1)
+							{
+								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
+								//alpha_s *= -1.;
+								alpha_s = VEC_alpha_m[is][iv][izeta][2];
+								alpha_o = VEC_alpha_m[is][iv][izeta][1];
+							}
+							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
+							//just interpolate table of single particle spectra...
+							for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+								rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_index][iweight],
+											PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
+							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
+							//now compute appropriate linear combinations
+							//[{1}_r]_{r-->\pi}
+							Csum_vec[0] += y_of_r[0];
+							//[{xs}_r]_{r-->\pi}
+							Csum_vec[1] += y_of_r[1] + alpha_s*y_of_r[0];
+							//[{xs2}_r]_{r-->\pi}
+							Csum_vec[2] += y_of_r[2] + 2.*alpha_s*y_of_r[1] + 2.*alpha_s*alpha_s*y_of_r[0];
+							//[{xo}_r]_{r-->\pi}
+							Csum_vec[3] += y_of_r[3] + alpha_o*y_of_r[0];
+							//[{xo2}_r]_{r-->\pi}
+							Csum_vec[4] += y_of_r[4] + 2.*alpha_o*y_of_r[3] + 2.*alpha_o*alpha_o*y_of_r[0];
+							//[{xl}_r]_{r-->\pi}
+							Csum_vec[5] += y_of_r[5] + alpha_l*y_of_r[0];
+							//[{xl2}_r]_{r-->\pi}
+							Csum_vec[6] += y_of_r[6] + 2.*alpha_l*y_of_r[5] + 2.*alpha_l*alpha_l*y_of_r[0];
+							//[{t}_r]_{r-->\pi}
+							Csum_vec[7] += y_of_r[7] + alpha_t*y_of_r[0];
+							//[{t2}_r]_{r-->\pi}
+							Csum_vec[8] += y_of_r[8] + 2.*alpha_t*y_of_r[7] + 2.*alpha_t*alpha_t*y_of_r[0];
+							//[{xs_xo}_r]_{r-->\pi}
+							Csum_vec[9] += y_of_r[9] + alpha_s*y_of_r[3] + alpha_o*y_of_r[1] + 2.*alpha_s*alpha_o*y_of_r[0];
+							//[{xs_xl}_r]_{r-->\pi}
+							Csum_vec[10] += y_of_r[10] + alpha_s*y_of_r[5] + alpha_l*y_of_r[1] + 2.*alpha_s*alpha_l*y_of_r[0];
+							//[{xs_t}_r]_{r-->\pi}
+							Csum_vec[11] += y_of_r[11] + alpha_s*y_of_r[7] + alpha_t*y_of_r[1] + 2.*alpha_s*alpha_t*y_of_r[0];
+							//[{xo_xl}_r]_{r-->\pi}
+							Csum_vec[12] += y_of_r[12] + alpha_o*y_of_r[5] + alpha_l*y_of_r[3] + 2.*alpha_o*alpha_l*y_of_r[0];
+							//[{xo_t}_r]_{r-->\pi}
+							Csum_vec[13] += y_of_r[13] + alpha_o*y_of_r[7] + alpha_t*y_of_r[3] + 2.*alpha_o*alpha_t*y_of_r[0];
+							//[{xl_t}_r]_{r-->\pi}
+							Csum_vec[14] += y_of_r[14] + alpha_l*y_of_r[7] + alpha_t*y_of_r[5] + 2.*alpha_l*alpha_t*y_of_r[0];
+						}// end of tempidx sum
+						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+							zetasum_vec[iweight] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[iweight];
+					}// end of zeta sum
+					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+						vsum_vec[iweight] += VEC_v_factor[is][iv]*zetasum_vec[iweight];
+				}// end of v sum
+				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+					ssum_vec[iweight] += Mres*VEC_s_factor[is]*vsum_vec[iweight];
+			}// end of s sum
+		}// end of nbody == 3
+		else if (n_body == 4)
+		{
+			;
+		}// end of nbody == 4
+
+		for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+			dN_dypTdpTdphi_moments[daughter_particle_index][iweight][ipt][ipphi] += ssum_vec[iweight];
+	}//end of pt, pphi loops
+
+	//clean up
+	delete [] ssum_vec;
+	delete [] vsum_vec;
+	delete [] zetasum_vec;
+	delete [] Csum_vec;
+	delete [] rap_indep_y_of_r;
+	delete [] y_of_r;
+
+	return;
+}
+
 void SourceVariances::set_to_zero(double * array, int arraylength)
 {
 	for (int arrayidx=0; arrayidx<arraylength; arrayidx++) array[arrayidx] = 0.0;

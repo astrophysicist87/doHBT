@@ -671,7 +671,7 @@ void sort_by_mass(vector<int> * chosen_resonance_indices_ptr, particle_info * pa
 	int number_of_chosen_particles = (int)(*chosen_resonance_indices_ptr).size();
 	for (int m = 0; m < number_of_chosen_particles; m++)
 	for (int n = 0; n < number_of_chosen_particles - m - 1; n++)
-	if (particle[(*chosen_resonance_indices_ptr)[n]].mass > particle[(*chosen_resonance_indices_ptr)[n + 1]].mass)
+	if (particle[(*chosen_resonance_indices_ptr)[n]].mass < particle[(*chosen_resonance_indices_ptr)[n + 1]].mass)
 	{
 		// swap them
 		int particle_idx = (*chosen_resonance_indices_ptr)[n + 1];

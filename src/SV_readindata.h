@@ -2,7 +2,8 @@
 #define SV_READINDATA_H
 
 #include "SV_parameters.h"
-#include "../src/sorter.h"
+//#include "../src/sorter.h"
+#include "sorter.h"
 #include<fstream>
 #include<vector>
 using namespace std;

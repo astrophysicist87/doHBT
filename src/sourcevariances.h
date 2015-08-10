@@ -44,6 +44,7 @@ typedef struct
    double * resonance_gspin;
    double * resonance_Gamma;
    double * resonance_total_br;
+   double * resonance_direct_br;
    double ** resonance_decay_masses;
    string * resonance_name;
    bool * include_channel;
@@ -68,6 +69,7 @@ class SourceVariances
 		//particle information 
 		string particle_name;
 		double particle_mass;
+		int particle_monval;
 		int particle_id;     //particle id
 		double particle_sign;   //+/- 1 for Fermi/Bose statistics for baryon/meson
 		double particle_gspin;  //particle degeneracy 
@@ -87,11 +89,13 @@ class SourceVariances
 		
 		//array to hold previous and current resonance info
 		decay_info decay_channels;
-		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx;
-		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_resonance_total_br;
+		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx, current_reso_nbody;
+		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma;
+		double current_resonance_total_br, current_resonance_direct_br, current_daughter_mass;
 		double * current_resonance_decay_masses, * P_eval, * alpha_mu;
-		int previous_decay_channel_idx, previous_resonance_particle_id;
-		double previous_resonance_mu, previous_resonance_mass, previous_resonance_Gamma, previous_resonance_total_br;
+		int previous_decay_channel_idx, previous_resonance_particle_id, previous_reso_nbody;
+		double previous_resonance_mu, previous_resonance_mass, previous_resonance_Gamma;
+		double previous_resonance_total_br, previous_resonance_direct_br, previous_daughter_mass;
 		double * previous_resonance_decay_masses;
 
 		//*************************************************************
@@ -239,7 +243,9 @@ class SourceVariances
 
 		void Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx, bool thermal_particles_only = false);
 		void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
+		void Analyze_sourcefunction_V1(FO_surf* FOsurf_ptr);
 		void Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr);
+		void Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr);
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
 		bool fexists(const char *filename);
 
@@ -258,9 +264,12 @@ class SourceVariances
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void Do_resonance_integrals_V2(int iKT, int iKphi, int dc_idx);
+		void Do_resonance_integrals_NEW(int parent_resonance_index, int daughter_particle_index, int decay_channel);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
+		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
 		bool Do_this_decay_channel(int dc_idx);
+		bool Do_this_daughter_particle(int dc_idx, int daughter_idx);
 		void Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Recycle_spacetime_moments();
 		void Allocate_decay_channel_info();
