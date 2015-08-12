@@ -10,11 +10,11 @@ using namespace std;
 #define INTERPOLATION_FORMAT 		2		// 0 - no interpolation, calculate everything exactly (bad idea)
 							// 1 - Cartesian grid spacing in px - py
 							// 2 - polar grid spacing in pT - pphi
-#define INTERPOLATION_KIND		1		// selects kind of interpolation
+#define INTERPOLATION_KIND		0		// selects kind of interpolation
 							// 0 - linear
 							// 1 - cubic
 							// 2 - polynomial
-#define UNIFORM_SPACING			true		// specifies uniform or non-uniform grid spacing for interpolation
+#define UNIFORM_SPACING			false		// specifies uniform or non-uniform grid spacing for interpolation
 #define ASSUME_ETA_SYMMETRIC 		1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
 							// 0 means just integrate over given range of eta_s without worrying about symmetry
 #define CHECKING_RESONANCE_CALC		false		// true uses resonances defined in Heinz and Wiedemann (1997)
@@ -45,7 +45,7 @@ const int Maxdecaychannel=13;
 const int Maxdecaypart=5;
 
 //spatial rapidity information
-const int eta_s_npts = 25;
+const int eta_s_npts = 15;
 const double eta_s_i = 0.0;
 //const int eta_s_npts = 40;
 //const double eta_s_i = -5.0;
@@ -80,10 +80,10 @@ const double interp1_py_max = 0.05;
 const double Del1_x = (interp1_px_max - interp1_px_min) / (double)(n_interp1_px_pts-1);
 const double Del1_y = (interp1_py_max - interp1_py_min) / (double)(n_interp1_py_pts-1);
 //  - polar
-const int n_interp2_pT_pts = 77;
-const int n_interp2_pphi_pts = 11;
-//const int n_interp2_pT_pts = 15;
-//const int n_interp2_pphi_pts = 48;
+//const int n_interp2_pT_pts = 77;
+//const int n_interp2_pphi_pts = 11;
+const int n_interp2_pT_pts = 15;
+const int n_interp2_pphi_pts = 48;
 const double interp2_pT_min = 0.01;
 const double interp2_pphi_min = 0.0;
 const double interp2_pT_max = 4.05;
@@ -115,7 +115,7 @@ const string runfolder = "/home/plumberg.1/HBTwidths_viscosity_dependence/RESULT
 
 //const double tol = 1e-15;  //tolarence
 const double tol = 0.0;  //tolerance
-const int flagneg = 1;		//neglect all points that are negative
+const int flagneg = 0;		//neglect all points that are negative
 				//choose flagneg == 0 to agree with iS.e
 				//choose flagneg == 1 for the real world
 

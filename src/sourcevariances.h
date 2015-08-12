@@ -255,6 +255,7 @@ class SourceVariances
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int dc_idx);
+		void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int dc_idx);
 		//void Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FO_surf* FOsurf_ptr, int dc_idx);
 		//double loop_over_FO_surface(FO_surf* FOsurf_ptr, double p0, double px, double py, double pz, double mu);
 		//void interpolate_FO_loop(FO_surf* FOsurf_ptr);

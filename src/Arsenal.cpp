@@ -917,6 +917,7 @@ double interpolate1D(double * x, double * y, double x0, long size, int kind, boo
 			break;
 		}
 	}
+	return 0.0;
 }
 
 
@@ -960,6 +961,7 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 			break;
 		}
 	}
+	return 0.0;
 }
 
 

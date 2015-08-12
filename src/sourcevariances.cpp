@@ -18,6 +18,7 @@
 
 #include "sourcevariances.h"
 #include "Arsenal.h"
+#include "Stopwatch.h"
 #include "gauss_quadrature.h"
 
 using namespace std;
@@ -721,7 +722,8 @@ void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx
  		timeinfo = localtime (&starttime);
  		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ":" << endl << "   * Started setting spacetime moments at " << asctime(timeinfo);
 		//**************************************************************
-		Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, dc_idx);
+		//Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, dc_idx);
+		Cal_dN_dypTdpTdphi_with_weights_polar_V2(FOsurf_ptr, dc_idx);
 		//Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FOsurf_ptr, dc_idx);
 		//**************************************************************
 		time (&stoptime);
@@ -1020,6 +1022,114 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	return;
 }
 
+void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int dc_idx)
+{
+	int local_reso_idx;
+	//double z0, z1, z2, z3;
+	double sign, degen, localmass, mu;
+	if (dc_idx == 0)
+	{
+		local_reso_idx = 0;
+		sign = particle_sign;
+		degen = particle_gspin;
+		localmass = particle_mass;
+		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
+			mu = 0.0;
+		else
+			mu = FOsurf_ptr[0].particle_mu[particle_id];
+	}
+	else
+	{
+		local_reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
+		sign = decay_channels.resonance_sign[dc_idx - 1];
+		degen = decay_channels.resonance_gspin[dc_idx - 1];
+		localmass = decay_channels.resonance_mass[dc_idx - 1];
+		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
+			mu = 0.0;
+		else
+			mu = decay_channels.resonance_mu[dc_idx - 1];
+	}
+	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+	Tdec = (&FOsurf_ptr[0])->Tdec;
+	double one_by_Tdec = 1./Tdec;
+	Pdec = (&FOsurf_ptr[0])->Pdec;
+	Edec = (&FOsurf_ptr[0])->Edec;
+	double deltaf_prefactor = 0.;
+	if (use_delta_f) deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+	
+	//declare variables used below here to see if this speeds up code:
+	//double tau, vx, vy, da0, da1, da2;
+	//double pi00, pi01, pi02, pi11, pi12, pi22, pi33;
+	//double temp_r, temp_phi, xpt, ypt, zpt, tpt, sin_temp_phi, cos_temp_phi, gammaT, expon;
+	
+	//double pT, pphi;
+	//double px, py, p0, pz, f0, deltaf, S_p, S_p_withweight, dN_ptdptdphidy_tmp;
+	FO_surf* surf;
+	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC)
+	{
+		eta_odd_factor = 0.0;
+		eta_even_factor = 2.0;
+	}
+
+  Stopwatch sw;
+  sw.tic();
+	
+	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+	{
+		double pT = SPinterp2_pT[ipt];
+		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+		{
+			double px = pT*cos_SPinterp2_pphi[iphi];
+			double py = pT*sin_SPinterp2_pphi[iphi];
+			double dN_ptdptdphidy_tmp = 0.0;
+			for(int isurf = 0; isurf < FO_length; isurf++)
+			{
+				surf = &FOsurf_ptr[isurf];
+				double tau = surf->tau;
+				double vx = surf->vx;
+				double vy = surf->vy;
+				double da0 = surf->da0;
+				double da1 = surf->da1;
+				double da2 = surf->da2;
+				double pi00 = surf->pi00;
+				double pi01 = surf->pi01;
+				double pi02 = surf->pi02;
+				double pi11 = surf->pi11;
+				double pi12 = surf->pi12;
+				double pi22 = surf->pi22;
+				double pi33 = surf->pi33;
+				double gammaT = surf->gammaT;
+      
+				for(int ieta = 0; ieta < eta_s_npts; ieta++)
+				{
+					double p0 = SPinterp2_p0[ipt][ieta];
+					double pz = SPinterp2_pz[ipt][ieta];
+	
+					//now get distribution function, emission function, etc.
+					double f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
+	
+					//viscous corrections
+					double deltaf = deltaf_prefactor * (1. - sign*f0)
+							* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
+
+					//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+					double S_p_withweight = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf)*tau*eta_s_weight[ieta];
+					//ignore points where delta f is large or emission function goes negative from pdsigma
+					if (1. + deltaf < 0.0)
+						S_p_withweight = 0.0;
+
+					dN_ptdptdphidy_tmp += eta_even_factor*S_p_withweight;
+				}	//eta
+			}		//FOsurf
+			dN_dypTdpTdphi_moments[local_reso_idx][0][ipt][iphi] = dN_ptdptdphidy_tmp;
+		}			//pphi
+	}				//pT
+  sw.toc();
+  *global_out_stream_ptr << endl << "Finished " << sw.takeTime() << " seconds." << endl;
+
+	return;
+}
 
 void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py)
 {
