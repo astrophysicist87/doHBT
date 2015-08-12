@@ -7,6 +7,7 @@
 #include<vector>
 #include<stdio.h>
 #include<time.h>
+#include<algorithm>
 
 #include<gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
@@ -165,6 +166,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		decay_channels.resonance_gspin = new double [n_decay_channels];
 		decay_channels.resonance_sign = new int [n_decay_channels];
 		decay_channels.resonance_decay_masses = new double * [n_decay_channels];
+		decay_channels.resonance_decay_monvals = new double * [n_decay_channels];
 		decay_channels.resonance_name = new string [n_decay_channels];
 		decay_channels.include_channel = new bool [n_decay_channels];
 		int temp_idx = 0;
@@ -200,7 +202,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				decay_channels.resonance_gspin[temp_idx] = particle_temp.gspin;
 				decay_channels.resonance_sign[temp_idx] = particle_temp.sign;
 				decay_channels.resonance_mass[temp_idx] = particle_temp.mass;
-				decay_channels.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
+				decay_channels.nbody[temp_idx] = abs(particle_temp.decays_Npart[idecay]);
 				decay_channels.resonance_Gamma[temp_idx] = particle_temp.width;
 				decay_channels.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
 				decay_channels.resonance_direct_br[temp_idx] = particle_temp.decays_branchratio[idecay];
@@ -262,6 +264,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		decay_channels.resonance_gspin = new double [n_decay_channels];
 		decay_channels.resonance_sign = new int [n_decay_channels];
 		decay_channels.resonance_decay_masses = new double * [n_decay_channels];
+		decay_channels.resonance_decay_monvals = new double * [n_decay_channels];
+		decay_channels.resonance_decay_Gammas = new double * [n_decay_channels];
 		decay_channels.resonance_name = new string [n_decay_channels];
 		decay_channels.include_channel = new bool [n_decay_channels];
 		int temp_idx = 0;
@@ -285,24 +289,31 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				decay_channels.resonance_particle_id[temp_idx] = chosen_resonances[icr];	// set index of resonance in all_particles
 				decay_channels.resonance_idx[temp_idx] = icr;					// set index of resonance in chosen_resonances
 				decay_channels.resonance_decay_masses[temp_idx] = new double [Maxdecaypart];	// Maxdecaypart == 5
+				decay_channels.resonance_decay_monvals[temp_idx] = new double [Maxdecaypart];	// Maxdecaypart == 5
+				decay_channels.resonance_decay_Gammas[temp_idx] = new double [Maxdecaypart];	// Maxdecaypart == 5
 
 
 				//*** SETTING RESONANCE DECAY MASSES DIFFERENTLY FOR NEW ANALYZE SF
 				for (int ii = 0; ii < Maxdecaypart; ii++)
 				{
+					decay_channels.resonance_decay_monvals[temp_idx][ii] = particle_temp.decays_part[idecay][ii];
 					if (particle_temp.decays_part[idecay][ii] == 0)
+					{
 						decay_channels.resonance_decay_masses[temp_idx][ii] = 0.0;
+						decay_channels.resonance_decay_Gammas[temp_idx][ii] = 0.0;
+					}
 					else
 					{
 						int tempID = lookup_particle_id_from_monval(all_particles, Nparticle, particle_temp.decays_part[idecay][ii]);
 						decay_channels.resonance_decay_masses[temp_idx][ii] = all_particles[tempID].mass;
+						decay_channels.resonance_decay_Gammas[temp_idx][ii] = all_particles[tempID].width;
 					}
 				}
 				decay_channels.resonance_mu[temp_idx] = particle_temp.mu;
 				decay_channels.resonance_gspin[temp_idx] = particle_temp.gspin;
 				decay_channels.resonance_sign[temp_idx] = particle_temp.sign;
 				decay_channels.resonance_mass[temp_idx] = particle_temp.mass;
-				decay_channels.nbody[temp_idx] = particle_temp.decays_Npart[idecay];
+				decay_channels.nbody[temp_idx] = abs(particle_temp.decays_Npart[idecay]);
 				decay_channels.resonance_Gamma[temp_idx] = particle_temp.width;
 				decay_channels.resonance_total_br[temp_idx] = particle_temp.decays_effective_branchratio[idecay];
 				decay_channels.resonance_direct_br[temp_idx] = particle_temp.decays_branchratio[idecay];
@@ -327,7 +338,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				//set daughter particles masses for each decay channel
 				//currently assuming no more than nbody = 3
 
-				bool target_daughter_flag = false;
+				/*bool target_daughter_flag = false;
 				int additional_daughter_count = 0;
 				for (int decay_part_idx = 0; decay_part_idx < decay_channels.nbody[temp_idx]; decay_part_idx++)
 				{
@@ -340,13 +351,18 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 						decay_channels.resonance_decay_masses[temp_idx][additional_daughter_count] = all_particles[itemp].mass;
 						additional_daughter_count++;
 					}
-				}
+				}*/
+				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << decay_channels.resonance_name[temp_idx] << ": ";
+				for (int decay_part_idx = 0; decay_part_idx < decay_channels.nbody[temp_idx]; decay_part_idx++)
+					if (VERBOSE > 0) *global_out_stream_ptr << "m[" << decay_part_idx << "] = "
+						<< decay_channels.resonance_decay_masses[temp_idx][decay_part_idx] << "   "
+						<< decay_channels.resonance_decay_monvals[temp_idx][decay_part_idx] << "   ";
+				if (VERBOSE > 0) *global_out_stream_ptr << endl << endl;
 
 				// if decay channel parent resonance is not too long-lived
 				// and decay channel contains at least one target daughter particle,
 				// include channel
-				decay_channels.include_channel[temp_idx] = (target_daughter_flag
-										&& !lifetime_is_too_long
+				decay_channels.include_channel[temp_idx] = (!lifetime_is_too_long
 										&& !too_many_daughters
 										&& !effective_br_is_too_small);
 
@@ -903,6 +919,8 @@ void SourceVariances::Allocate_decay_channel_info()
 			VEC_n2_alpha_m[iv][izeta] = new double [4];
 		}
 	}
+	NEW_s_pts = new double [n_s_pts];
+	NEW_s_wts = new double [n_s_pts];
 	VEC_pstar = new double [n_s_pts];
 	VEC_Estar = new double [n_s_pts];
 	VEC_DeltaY = new double [n_s_pts];
@@ -1042,6 +1060,8 @@ void SourceVariances::Delete_decay_channel_info()
 		delete [] VEC_Pm[is];
 		delete [] VEC_alpha_m[is];
 	}
+	delete [] NEW_s_pts;
+	delete [] NEW_s_wts;
 	delete [] VEC_pstar;
 	delete [] VEC_Estar;
 	delete [] VEC_DeltaY;
@@ -1175,6 +1195,53 @@ void SourceVariances::Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr)
 	}*/
 	
 	return;
+}
+
+void SourceVariances::Get_current_decay_string(int dc_idx, string * decay_string)
+{
+	// N.B. - dc_idx == 0 is thermal pion(+)s in calling loop, dc_idx > 0 gives resonance decays
+	//      ==> need to use dc_idex - 1 here
+	*decay_string = decay_channels.resonance_name[dc_idx - 1] + " --->> ";
+	int temp_monval, tempID;
+	for (int decay_part_idx = 0; decay_part_idx < decay_channels.nbody[dc_idx - 1]; decay_part_idx++)
+	{
+		temp_monval = decay_channels.resonance_decay_monvals[dc_idx - 1][decay_part_idx];
+		//if (VERBOSE > 0) *global_out_stream_ptr << "Get_current_decay_string(): temp_monval = " << temp_monval << endl;
+		if (temp_monval == 0)
+			continue;
+		else
+		{
+			tempID = lookup_particle_id_from_monval(all_particles, Nparticle, temp_monval);
+			*decay_string += all_particles[tempID].name;
+			if (decay_part_idx < decay_channels.nbody[dc_idx - 1] - 1) *decay_string += " + ";
+		}
+	}
+	return;
+}
+
+int SourceVariances::lookup_resonance_idx_from_particle_id(int pid)
+{
+	// pid - particle index in all_particles array
+	// looks up location in chosen_resonances of given value particle_id
+	int result = -1;
+
+	for (int ii = 0; ii < (int)chosen_resonances.size(); ii++)
+	{
+		if (chosen_resonances[ii] == pid)
+		{
+			result = ii;
+			break;
+		}
+	}
+
+	// if pid is not one of the chosen_resonances, is not the target daughter (pion(+)), is not stable and has a non-zero effective branching ratio
+	if (result < 0 && pid != particle_id && all_particles[pid].stable == 0 && all_particles[pid].effective_branchratio >= 1.e-12)
+	{
+		*global_out_stream_ptr << " *** lookup_resonance_idx_from_particle_id(): Particle_id = " << pid
+					<< " (" << all_particles[pid].name <<") not found in chosen_resonances!" << endl
+					<< " *** br = " << all_particles[pid].effective_branchratio << endl;
+	}
+	return (result);
 }
 
 //End of file

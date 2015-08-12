@@ -46,6 +46,8 @@ typedef struct
    double * resonance_total_br;
    double * resonance_direct_br;
    double ** resonance_decay_masses;
+   double ** resonance_decay_monvals;
+   double ** resonance_decay_Gammas;
    string * resonance_name;
    bool * include_channel;
 }decay_info;
@@ -90,12 +92,12 @@ class SourceVariances
 		//array to hold previous and current resonance info
 		decay_info decay_channels;
 		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx, current_reso_nbody;
-		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma;
-		double current_resonance_total_br, current_resonance_direct_br, current_daughter_mass;
+		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_m2_Gamma, current_m3_Gamma;
+		double current_resonance_total_br, current_resonance_direct_br, current_daughter_mass, current_daughter_Gamma;
 		double * current_resonance_decay_masses, * P_eval, * alpha_mu;
 		int previous_decay_channel_idx, previous_resonance_particle_id, previous_reso_nbody;
-		double previous_resonance_mu, previous_resonance_mass, previous_resonance_Gamma;
-		double previous_resonance_total_br, previous_resonance_direct_br, previous_daughter_mass;
+		double previous_resonance_mu, previous_resonance_mass, previous_resonance_Gamma, previous_m2_Gamma, previous_m3_Gamma;
+		double previous_resonance_total_br, previous_resonance_direct_br, previous_daughter_mass, previous_daughter_Gamma;
 		double * previous_resonance_decay_masses;
 
 		//*************************************************************
@@ -125,7 +127,7 @@ class SourceVariances
 		double ch_p_y, sh_p_y;
 		//resonance momentum info
 		double P_Y, PT, PPhi, MT, Mres, PPhip, PPhim;
-		double m2, m3, Gamma, br;
+		double m2, m3, Gamma, br, m2Gamma, m3Gamma;
 		double * Pp;
 		double * Pm;
 		double * zvec;
@@ -165,8 +167,8 @@ class SourceVariances
 		double * eta_s, * ch_eta_s, * sh_eta_s, * eta_s_weight;
 
 		//points and weights for resonance integrals
-		double * zeta_pts, * v_pts, ** s_pts;
-		double * zeta_wts, * v_wts, ** s_wts;
+		double * zeta_pts, * v_pts, ** s_pts, * NEW_s_pts;
+		double * zeta_wts, * v_wts, ** s_wts, * NEW_s_wts;
 
 		//some arrays to save unnecessary multiple calculations for resonances
 		//use these for n_body = 2
@@ -269,7 +271,7 @@ class SourceVariances
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
 		bool Do_this_decay_channel(int dc_idx);
-		bool Do_this_daughter_particle(int dc_idx, int daughter_idx);
+		bool Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_index);
 		void Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Recycle_spacetime_moments();
 		void Allocate_decay_channel_info();
@@ -281,6 +283,7 @@ class SourceVariances
 		void combine_sourcevariances(double * output, double * input, double alpha_t, double alpha_o, double alpha_s, double alpha_l);
 		void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
 		void Update_source_variances(int iKT, int iKphi, int dc_idx);
+		void Compute_source_variances(int iKT, int iKphi);
 
 		void Get_source_variances(int, int);
 		void Calculate_R2_side(int, int);
@@ -305,6 +308,8 @@ class SourceVariances
 		void adaptive_simpson_integration(void (SourceVariances::*f) (double, double *), double a, double b, double * results);
 		double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi);
 		double place_in_range(double phi, double min, double max);
+		void Get_current_decay_string(int dc_idx, string * decay_string);
+		int lookup_resonance_idx_from_particle_id(int particle_id);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);

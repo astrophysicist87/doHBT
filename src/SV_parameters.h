@@ -24,7 +24,7 @@ using namespace std;
 							// will be considered to be identical (b/c Cooper-Frye)
 #define USE_PLANE_PSI_ORDER 		0		// specifies whether to do HBT relative to flow-plane angle,
 							// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle at given order
-#define TRUNCATE_COOPER_FRYE		true		// ignore contributions to CF integral which are extremely small --> speeds up code by factor of 3-4
+#define TRUNCATE_COOPER_FRYE		false		// ignore contributions to CF integral which are extremely small --> speeds up code by factor of 3-4
 #define VERBOSE 			1		// specifies level of output - 0 is lowest (no output)
 #define DEBUG				false		// flag for output of debugging statements
 #define USE_ANALYTIC_S			false		// use toy model for emission function instead of Cooper-Frye
@@ -33,7 +33,7 @@ using namespace std;
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
 #define SPACETIME_MOMENTS_ONLY		false		// duh
-#define USE_OLD_ANALYZE_SF		true		// temporary switch
+#define USE_OLD_ANALYZE_SF		false		// temporary switch
 
 const double hbarC=0.197327053;  //GeV*fm
 const double twopi = 2.*M_PI;

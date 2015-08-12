@@ -38,9 +38,9 @@ void sort_by_column(vector< vector<T> > * values)
 	return;
 }
 
-void inline debugger()
+void inline debugger(int cln, const char* cfn)
 {
-	cerr << "you made it to the debugger!" << endl;
+	cerr << "You made it to " << cfn << ":" << cln << "!" << endl;
 	return;
 }
 

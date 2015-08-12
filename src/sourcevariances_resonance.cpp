@@ -22,6 +22,8 @@
 
 using namespace std;
 
+int CPidx = 0;
+
 double SourceVariances::get_Q(int dc_idx)
 {
 	double smin = (m2+m3)*(m2+m3);
@@ -30,12 +32,14 @@ double SourceVariances::get_Q(int dc_idx)
 	
 	for (int is = 0; is < n_s_pts; is++)
 	{
-		double sp = s_pts[dc_idx-1][is];
+		//double sp = s_pts[dc_idx-1][is];
+		double sp = NEW_s_pts[is];
 		double f1 = (Mres+mass)*(Mres+mass) - sp;
 		double f2 = smax - sp;
 		double f3 = smin - sp;
 		double f4 = (m2-m3)*(m2-m3) - sp;
-		sum += s_wts[dc_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		//sum += s_wts[dc_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
 	}
 
 	return sum;
@@ -116,6 +120,7 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 
 void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 {
+	CPidx = 0;
 	//if (VERBOSE > 2) *global_out_stream_ptr << "   Made it to Do_resonance_integrals(): n_body = " << n_body << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
@@ -175,9 +180,10 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 						rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 									PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 					get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-//if (dc_idx==42) cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
+//if (dc_idx == 1 && CPidx < 100) cout << "-1   " << dc_idx << "   " << n_body << "   " << setw(8) << setprecision(15)
 //			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
 //			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
+//CPidx++;
 //if (0) cout << "-2   " << dc_idx << "   " << setw(8) << setprecision(15)
 //			<< PKT << "   " << PKY << "   " << PKphi << "   " << rap_indep_y_of_r[0] << "   " << rap_indep_y_of_r[7]
 //			<< "   " << rap_indep_y_of_r[8] << "   " << rap_indep_y_of_r[5] << "   " << rap_indep_y_of_r[6] << "   " << rap_indep_y_of_r[14] << endl;
@@ -266,9 +272,10 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 							rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[reso_idx][iweight],
 										PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-//if (dc_idx==42) cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
+//if (dc_idx == 1 && CPidx < 100) cout << "-1   " << dc_idx << "   " << n_body << "   " << setw(8) << setprecision(15)
 //			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
 //			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
+//CPidx++;
 						//now compute appropriate linear combinations
 						//[{1}_r]_{r-->\pi}
 						Csum_vec[0] += y_of_r[0];
@@ -328,6 +335,7 @@ void SourceVariances::Do_resonance_integrals(int iKT, int iKphi, int dc_idx)
 
 void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int daughter_particle_index, int decay_channel)
 {
+	CPidx = 0;
 	time_t rawtime;
   	struct tm * timeinfo;
 	//int reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
@@ -392,9 +400,13 @@ void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int
 							//just interpolate table of single particle spectra...
 							//do interpolations
 							for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-								rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_index][iweight],
+								rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_index+1][iweight],
 											PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
+//if (decay_channel == 1 && CPidx < 100) cout << "-1   " << decay_channel << "   " << n_body << "   " << setw(8) << setprecision(15)
+//			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
+//			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
+//CPidx++;
 							//now compute appropriate linear combinations (maybe shift these into preceding function eventually?)
 							//[{1}_r]_{r-->\pi}
 							Csum_vec[0] += y_of_r[0];
@@ -435,6 +447,7 @@ void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int
 				}// end of v sum
 				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 					ssum_vec[iweight] += Mres*VEC_n2_s_factor*vsum_vec[iweight];
+//if (1) cout << "nb = 2 (KT = " << local_pT << ", Kphi = " << local_pphi << "): " << ssum_vec[0] << endl;
 		}// end of nbody == 2
 		else if (n_body == 3)
 		{
@@ -460,16 +473,19 @@ void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int
 							if (tempidx != 1)
 							{
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
-								//alpha_s *= -1.;
 								alpha_s = VEC_alpha_m[is][iv][izeta][2];
 								alpha_o = VEC_alpha_m[is][iv][izeta][1];
 							}
 							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 							//just interpolate table of single particle spectra...
 							for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-								rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_index][iweight],
+								rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_index+1][iweight],
 											PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
+//if (decay_channel == 1 && CPidx < 100) cout << "-1   " << decay_channel << "   " << n_body << "   " << setw(8) << setprecision(15)
+//			<< PKT << "   " << PKY << "   " << PKphi << "   " << y_of_r[0] << "   " << y_of_r[7]
+//			<< "   " << y_of_r[8] << "   " << y_of_r[5] << "   " << y_of_r[6] << "   " << y_of_r[14] << endl;
+//CPidx++;
 							//now compute appropriate linear combinations
 							//[{1}_r]_{r-->\pi}
 							Csum_vec[0] += y_of_r[0];
@@ -511,6 +527,7 @@ void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int
 				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 					ssum_vec[iweight] += Mres*VEC_s_factor[is]*vsum_vec[iweight];
 			}// end of s sum
+//if (1) cout << "nb = 3 (KT = " << local_pT << ", Kphi = " << local_pphi << "): " << ssum_vec[0] << endl;
 		}// end of nbody == 3
 		else if (n_body == 4)
 		{
@@ -519,6 +536,26 @@ void SourceVariances::Do_resonance_integrals_NEW(int parent_resonance_index, int
 
 		for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 			dN_dypTdpTdphi_moments[daughter_particle_index][iweight][ipt][ipphi] += ssum_vec[iweight];
+		if (isnan(dN_dypTdpTdphi_moments[daughter_particle_index][0][ipt][ipphi]))
+		{
+			*global_out_stream_ptr << "ERROR: NaNs encountered!" << endl
+									<< "ipt = " << ipt << endl
+									<< "ipphi = " << ipphi << endl
+									<< "daughter_particle_index = " << daughter_particle_index << endl
+									<< "parent_resonance_index = " << parent_resonance_index << endl
+									<< "decay_channel = " << decay_channel << endl
+									<< "  --> muRES = " << muRES << endl
+									<< "  --> n_body = " << n_body << endl
+									<< "  --> signRES = " << signRES << endl
+									<< "  --> gRES = " << gRES << endl
+									<< "  --> Mres = " << Mres << endl
+									<< "  --> mass = " << mass << endl
+									<< "  --> Gamma = " << Gamma << endl
+									<< "  --> br = " << br << endl
+									<< "  --> m2 = " << m2 << endl
+									<< "  --> m3 = " << m3 << endl << endl;
+			exit(1);
+		}
 	}//end of pt, pphi loops
 
 	//clean up

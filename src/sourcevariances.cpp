@@ -27,6 +27,15 @@ bool recycle_previous_moments = false;
 bool recycle_similar_moments = false;
 int reso_idx_of_moments_to_recycle = -1;
 string reso_name_of_moments_to_recycle = "NULL";
+string current_decay_channel_string = "NULL";
+
+template < typename T >
+void check_for_NaNs(string variable_name, const T variable_value, ofstream& localout)
+{
+	if (isnan(variable_value))
+		localout << "ERROR: " << variable_name << " = " << variable_value << endl;
+	return;
+}
 
 //need to define some variables for quick evaluation of S_direct
 double Sdir_Y = 0.0, Sdir_R = 5., Sdir_Deltau = 1., Sdir_Deleta = 1.2;
@@ -215,6 +224,10 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 		else if (!Do_this_decay_channel(idc))
 			continue;
 
+//temporary
+//if (idc > 1 && idc < 24)
+//	continue;
+
 		// ************************************************************
 		// if so, set decay channel info
 		// ************************************************************
@@ -224,15 +237,15 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 		// decide whether to recycle old moments or calculate new moments
 		// ************************************************************
 		Get_spacetime_moments(FOsurf_ptr, idc);
-		if (SPACETIME_MOMENTS_ONLY)
-			continue;
 	}	//computing all resonances' spacetime moments here first
 		//THEN do phase-space integrals
 
 	if (VERBOSE > 0) *global_out_stream_ptr << endl << "************************************************************"
 											<< endl << "* Computed all (thermal) space-time moments!" << endl
 											<< "************************************************************" << endl << endl;
-
+	if (SPACETIME_MOMENTS_ONLY)
+		return ;
+	//debugger(__LINE__, __FILE__);
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
 	// ************************************************************
@@ -246,6 +259,10 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 		else if (!Do_this_decay_channel(idc))
 			continue;
 
+//temporary
+//if (idc > 1 && idc < 24)
+//	continue;
+
 		// ************************************************************
 		// if so, set decay channel info
 		// ************************************************************
@@ -257,10 +274,14 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 		Allocate_decay_channel_info();				// allocate needed memory
 		for (int idc_DI = 0; idc_DI < current_reso_nbody; idc_DI++)
 		{
-			if (!Do_this_daughter_particle(idc, idc_DI))
+			//debugger(__LINE__, __FILE__);
+			int daughter_resonance_idx = -1;
+			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_idx))
 				continue;
+			//debugger(__LINE__, __FILE__);
 			Set_current_daughter_info(idc, idc_DI);
-			Do_resonance_integrals_NEW(current_resonance_idx, idc_DI, idc);
+			Do_resonance_integrals_NEW(current_resonance_idx, daughter_resonance_idx, idc);
+			if (VERBOSE > 0) *global_out_stream_ptr << endl;
 		}
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
@@ -278,6 +299,7 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 
 		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
 		{
+			Compute_source_variances(iKT, iKphi);
 			Calculate_R2_side(iKT, iKphi);
 			Calculate_R2_out(iKT, iKphi);
 			Calculate_R2_long(iKT, iKphi);
@@ -301,7 +323,10 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 		return true;
 	}
 	else
+	{
 		local_name = decay_channels.resonance_name[dc_idx-1];
+		if (!CHECKING_RESONANCE_CALC && !USE_OLD_ANALYZE_SF) Get_current_decay_string(dc_idx, &current_decay_channel_string);
+	}
 	if (CHECKING_RESONANCE_CALC)
 	{
 		if (dc_idx != 0 && dc_idx != 1 && dc_idx != 7)
@@ -312,11 +337,12 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 	}
 	else if (decay_channels.include_channel[dc_idx-1])
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": doing this one (dc_idx = " << dc_idx << ")." << endl;
+		//if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": doing decay " << current_decay_channel_string << "." << endl;
+		;
 	}
 	else
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": skipping this one (dc_idx = " << dc_idx << ")." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": skipping decay " << current_decay_channel_string << "." << endl;
 	}
 
 	return (decay_channels.include_channel[dc_idx-1]);
@@ -325,34 +351,42 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 // ************************************************************
 // Checks whether to do daughter particle for given decay channel
 // ************************************************************
-bool SourceVariances::Do_this_daughter_particle(int dc_idx, int daughter_idx)
+bool SourceVariances::Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_index)
 {
 	// assume dc_idx > 0
-	string local_name = decay_channels.resonance_name[dc_idx-1];
+	string local_name = decay_channels.resonance_name[dc_idx - 1];
 
 	// look up daughter particle info
-	int temp_monval = decay_channels.resonance_decay_masses[dc_idx-1][daughter_idx];
+	int temp_monval = decay_channels.resonance_decay_monvals[dc_idx - 1][daughter_idx];
+
 	if (temp_monval == 0)
 		return false;
+
 	int temp_ID = lookup_particle_id_from_monval(all_particles, Nparticle, temp_monval);
+	*daughter_resonance_index = lookup_resonance_idx_from_particle_id(temp_ID) + 1;
+	// if daughter was found in chosen_resonances or is pion(+), this is correct
 	particle_info temp_daughter = all_particles[temp_ID];
 
+	if (*daughter_resonance_index == 0 && temp_daughter.monval != particle_monval && temp_daughter.effective_branchratio >= 1.e-12)
+		*global_out_stream_ptr << "Couldn't find " << temp_daughter.name << " in chosen_resonances!  Results are probably not reliable..." << endl;
+
+	bool daughter_does_not_contribute = ( (temp_daughter.stable == 1 || temp_daughter.effective_branchratio < 1.e-12) && temp_daughter.monval != particle_monval );
+
 	// if daughter particle gives no contribution to final pion spectra
-	if ((temp_daughter.stable == 1 || temp_daughter.effective_branchratio < 1.e-12) && temp_daughter.monval != particle_monval)
+	if (daughter_does_not_contribute)
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << " (dc_idx = " << dc_idx << "): skipping " << temp_daughter.name << "." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << local_name << ": in decay " << current_decay_channel_string << ", skipping " << temp_daughter.name << "." << endl;
 		return false;
 	}
 	else
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << " (dc_idx = " << dc_idx << "): doing " << temp_daughter.name << "." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << local_name << ": in decay " << current_decay_channel_string << ", doing " << temp_daughter.name << "." << endl;
 		return true;
 	}
 }
 
 void SourceVariances::Set_current_particle_info(int dc_idx)
 {
-	if (VERBOSE > 0) *global_out_stream_ptr << "Setting information for dc_idx = " << dc_idx << ":" << endl;
 	if (dc_idx == 0)
 	{
 		muRES = particle_mu;
@@ -363,6 +397,12 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 	}
 	else
 	{
+		// assume dc_idx > 0
+		string local_name = decay_channels.resonance_name[dc_idx - 1];
+
+		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ": doing decay " << current_decay_channel_string << "." << endl
+			<< "\t * " << local_name << ": setting information for this decay channel..." << endl;
+
 		if (dc_idx > 1)
 		{
 			//cerr << "Setting previous decay channel information for dc_idx = " << dc_idx << endl;
@@ -384,8 +424,8 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 		current_resonance_total_br = decay_channels.resonance_total_br[dc_idx-1];
 		current_resonance_direct_br = decay_channels.resonance_direct_br[dc_idx-1];
 		current_reso_nbody = decay_channels.nbody[dc_idx-1];
-		current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
-		current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
+		//current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
+		//current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
 		
 		// might want to rename these for notational consistency...
 		muRES = decay_channels.resonance_mu[dc_idx-1];
@@ -434,10 +474,13 @@ void SourceVariances::Set_current_daughter_info(int dc_idx, int daughter_idx)
 		previous_resonance_idx = current_resonance_idx;
 		previous_resonance_mass = current_resonance_mass;
 		previous_resonance_Gamma = current_resonance_Gamma;
+		previous_m2_Gamma = current_m2_Gamma;
+		previous_m3_Gamma = current_m3_Gamma;
 		previous_resonance_total_br = current_resonance_total_br;
 		previous_resonance_direct_br = current_resonance_direct_br;
 		previous_reso_nbody = current_reso_nbody;
 		previous_daughter_mass = current_daughter_mass;
+		previous_daughter_Gamma = current_daughter_Gamma;
 	}
 	current_decay_channel_idx = dc_idx;
 	current_resonance_idx = decay_channels.resonance_idx[dc_idx-1];
@@ -448,32 +491,51 @@ void SourceVariances::Set_current_daughter_info(int dc_idx, int daughter_idx)
 	current_resonance_direct_br = decay_channels.resonance_direct_br[dc_idx-1];
 	current_reso_nbody = decay_channels.nbody[dc_idx-1];
 	current_daughter_mass = decay_channels.resonance_decay_masses[dc_idx-1][daughter_idx];
+	current_daughter_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][daughter_idx];
+
+	// might want to rename these for notational consistency...
+	muRES = decay_channels.resonance_mu[dc_idx-1];
+	signRES = decay_channels.resonance_sign[dc_idx-1];
+	gRES = decay_channels.resonance_gspin[dc_idx-1];
 
 	// set non-daughter decay masses for computing contributions to spectra of daughter
 	switch(current_reso_nbody)
 	{
 		case 2:
 			current_resonance_decay_masses[1] = 0.0;
+			current_m3_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][0];
 			if (daughter_idx == 0)
+			{
 				current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][1];
+				current_m2_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][1];
+			}
 			else
+			{
 				current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
+				current_m2_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][0];
+			}
 			break;
 		case 3:
 			if (daughter_idx == 0)
 			{
 				current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][1];
 				current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][2];
+				current_m2_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][1];
+				current_m3_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][2];
 			}
 			else if (daughter_idx == 1)
 			{
 				current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
 				current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][2];
+				current_m2_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][0];
+				current_m3_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][2];
 			}
 			else
 			{
 				current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
 				current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
+				current_m2_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][0];
+				current_m3_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][1];
 			}
 			break;
 		default:
@@ -949,8 +1011,8 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 			sign_of_dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi] = sgn(temp);
 		}
 		//cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
-		//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[dc_idx][0][ipt][iphi]
-		//			<< "   " << dN_dypTdpTdphi_moments[dc_idx][5][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[dc_idx][6][ipt][iphi] << endl;
+		//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[local_reso_idx][0][ipt][iphi]
+		//			<< "   " << dN_dypTdpTdphi_moments[local_reso_idx][5][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[local_reso_idx][6][ipt][iphi] << endl;
 	}
 	//cerr << "***Checkpoint #3" << endl;
 	//cout << "***Exited Cal_dN_dypTdpTdphi_with_weights_polar" << endl;
@@ -1217,7 +1279,7 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 	}
 	m2 = current_resonance_decay_masses[0];
 	m3 = current_resonance_decay_masses[1];
-	mT = sqrt(mass*mass + K_T_local*K_T_local);
+	//mT = sqrt(mass*mass + K_T_local*K_T_local);
 	pT = K_T_local;
 	current_K_phi = K_phi_local;
 	cos_cKphi = cos(K_phi_local);
@@ -1225,11 +1287,23 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 	n_body = current_reso_nbody;
 	if (n_body == 2)
 	{
+		// some particles may decay to particles with more total mass than originally
+		// --> broaden with resonance widths
+		while ((mass + m2) > Mres)
+		{
+			Mres += 0.25 * current_resonance_Gamma;
+		    mass -= 0.5 * current_daughter_Gamma;
+		    m2 -= 0.5 * current_m2_Gamma;
+		}
+
+		mT = sqrt(mass*mass + pT*pT);
+
 		//set up vectors of points to speed-up integrals...
 		double s_loc = m2*m2;
 		VEC_n2_spt = s_loc;
 		double pstar_loc = sqrt( ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc) )/(2.0*Mres);
 		VEC_n2_pstar = pstar_loc;
+		check_for_NaNs("pstar_loc", pstar_loc, *global_out_stream_ptr);
 		//double g_s_loc = g(s_loc)/pstar_loc;	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
 		double g_s_loc = g(s_loc);	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
 		VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);	//==g_s_loc
@@ -1244,6 +1318,15 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 		p_y = 0.0;
 		VEC_n2_Yp = p_y + DeltaY_loc;
 		VEC_n2_Ym = p_y - DeltaY_loc;
+		check_for_NaNs("DeltaY_loc", DeltaY_loc, *global_out_stream_ptr);
+/*if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << dc_idx << ":" << endl
+			<< setw(8) << setprecision(15)
+			<< "  --> s_loc = " << s_loc << endl
+			<< "  --> pstar_loc = " << pstar_loc << endl
+			<< "  --> g_s_loc = " << g_s_loc << endl
+			<< "  --> Estar_loc = " << Estar_loc << endl
+			<< "  --> psBmT = " << psBmT << endl
+			<< "  --> DeltaY_loc = " << DeltaY_loc << endl;*/
 		for(int iv = 0; iv < n_v_pts; iv++)
 		{
 			//cerr << "In v loop# = " << iv << endl;
@@ -1252,6 +1335,12 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 			VEC_n2_P_Y[iv] = P_Y_loc;
 			double mT_ch_P_Y_p_y = mT*cosh(v_loc*DeltaY_loc);
 			double x2 = mT_ch_P_Y_p_y*mT_ch_P_Y_p_y - pT*pT;
+			//if (x2 < 1e-15)
+			//{
+				//*global_out_stream_ptr << "Load_decay_channel_info(" << dc_idx << ", " << K_T_local << ", " << K_phi_local
+				//	<< "): x2 = " << x2 << ", v = " << v_pts[iv] << endl;
+				//x2 = 0.0;
+			//}
 			VEC_n2_v_factor[iv] = v_wts[iv]*DeltaY_loc/sqrt(x2);
 			double MTbar_loc = Estar_loc*Mres*mT_ch_P_Y_p_y/x2;
 			VEC_n2_MTbar[iv] = MTbar_loc;
@@ -1259,6 +1348,14 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 			VEC_n2_DeltaMT[iv] = DeltaMT_loc;
 			VEC_n2_MTp[iv] = MTbar_loc + DeltaMT_loc;
 			VEC_n2_MTm[iv] = MTbar_loc - DeltaMT_loc;
+			check_for_NaNs("MTbar_loc", MTbar_loc, *global_out_stream_ptr);
+			check_for_NaNs("DeltaMT_loc", DeltaMT_loc, *global_out_stream_ptr);
+			//if (Estar_loc*Estar_loc - x2 < 1e-15)
+			//{
+				//*global_out_stream_ptr << "Load_decay_channel_info(" << dc_idx << ", " << K_T_local << ", " << K_phi_local
+				//	<< "): Estar_loc*Estar_loc - x2 = " << Estar_loc*Estar_loc - x2 << ", v = " << v_pts[iv] << endl;
+				//DeltaMT_loc = 0.0;
+			//}
 
 			for(int izeta = 0; izeta < n_zeta_pts; izeta++)
 			{
@@ -1274,6 +1371,8 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 				VEC_n2_PPhi_tilde[iv][izeta] = place_in_range( K_phi_local + PPhi_tilde_loc, interp2_pphi_min, interp2_pphi_max);
 				VEC_n2_PPhi_tildeFLIP[iv][izeta] = place_in_range( K_phi_local - PPhi_tilde_loc, interp2_pphi_min, interp2_pphi_max);
 				VEC_n2_PT[iv][izeta] = PT_loc;
+				check_for_NaNs("PT_loc", PT_loc, *global_out_stream_ptr);
+				check_for_NaNs("PPhi_tilde_loc", PPhi_tilde_loc, *global_out_stream_ptr);
 				//probably not the most elegant set-up, but does the job for now...
 				VEC_n2_Pp[iv][izeta][0] = MT_loc * cosh(P_Y_loc);
 				VEC_n2_Pp[iv][izeta][1] = PT_loc * cos(K_phi_local + PPhi_tilde_loc);
@@ -1293,16 +1392,22 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 	}
 	else
 	{
+		mT = sqrt(mass*mass + pT*pT);
+		double s_min_temp = (m2 + m3)*(m2 + m3);
+		double s_max_temp = (Mres - mass)*(Mres - mass);
+		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, NEW_s_pts, NEW_s_wts);
 		Qfunc = get_Q(dc_idx);
 		//set up vectors of points to speed-up integrals...
 		//cerr << "Entering loops now..." << endl;
 		for (int is = 0; is < n_s_pts; is++)
 		{
 			//cerr << "In s loop# = " << is << endl;
-			double s_loc = s_pts[dc_idx-1][is];
+			//double s_loc = s_pts[dc_idx-1][is];
+			double s_loc = NEW_s_pts[is];
 			double g_s_loc = g(s_loc);
 			VEC_g_s[is] = g_s_loc;
-			VEC_s_factor[is] = s_wts[dc_idx-1][is]*g_s_loc;
+			//VEC_s_factor[is] = s_wts[dc_idx-1][is]*g_s_loc;
+			VEC_s_factor[is] = NEW_s_wts[is]*g_s_loc;
 			double pstar_loc = sqrt(((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc))/(2.0*Mres);
 			VEC_pstar[is] = pstar_loc;
 			double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
@@ -1549,7 +1654,6 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int dc_idx)
 	else
 	{
 		S_func[iKT][iKphi] += integrated_spacetime_moments[dc_idx][0][iKT][iKphi];
-		//cerr << "dc_idx = 1: " << integrated_spacetime_moments[dc_idx-1][0][iKT][iKphi] << endl;
 		xs_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][1][iKT][iKphi];
 		xs2_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][2][iKT][iKphi];
 		xo_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][3][iKT][iKphi];
@@ -1575,6 +1679,44 @@ void SourceVariances::Update_source_variances(int iKT, int iKphi, int dc_idx)
 	}
 
 	//if (VERBOSE > 0) *global_out_stream_ptr << "\t\t\t...finished that." << endl;
+	return;
+}
+
+void SourceVariances::Compute_source_variances(int iKT, int iKphi)
+{
+	double phi_K = K_phi[iKphi];
+	double KT = K_T[iKT];
+	double temp_factor = 1.0;
+	S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][3],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][4],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][5],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][6],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
+	t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][7],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][8],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
+	xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][9],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][10],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][11],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][12],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][13],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
+	xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][14],
+						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 	return;
 }
 
