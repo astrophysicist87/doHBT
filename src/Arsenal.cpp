@@ -395,57 +395,69 @@ bool do_x2_first = true;
 
 
 //**********************************************************************
-double interpLinearDirect(double * x, double * y, double x0, long size)
+double interpLinearDirect(double * x, double * y, double x0, long size, bool returnflag /*= false*/)
 // Returns the interpreted value of y=y(x) at x=x0 using linear interpolation method.
 // -- x,y: the independent and dependent tables; x is assumed to be equal spaced and increasing
 // -- x0: where the interpolation should be performed
 {
-  //long size = x->size();
-  if (size==1) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return y[0];}
-  double dx = x[1]-x[0]; // increment in x
+	//long size = x->size();
+	if (size==1) {cout<<"interpLinearDirect warning: table size = 1"<<endl; return y[0];}
+	double dx = x[1]-x[0]; // increment in x
 
-  // if close to left end:
-  if (abs(x0-x[0])<dx*1e-30) return y[0];
+	// if close to left end:
+	if (abs(x0-x[0])<dx*1e-30) return y[0];
 
-  // find x's integer index
-  long idx = floor((x0-x[0])/dx);
+	double def = 0.0;
 
-  if (idx<0 || idx>=size-1)
-  {
-    cout    << "interpLinearDirect: x0 out of bounds." << endl
-            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
-            << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
-    exit(1);
-  }
+	// find x's integer index
+	long idx = floor((x0-x[0])/dx);
+
+	if (idx<0 || idx>=size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cout    << "interpLinearDirect: x0 out of bounds." << endl
+				<< "x ranges from " << x[0] << " to " << x[size-1] << ", "
+				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+			exit(1);
+		}
+		else return def;
+	}
 
   return y[idx] + (y[idx+1]-y[idx])/dx*(x0-x[idx]);
 }
 
 //**********************************************************************
-double interpLinearNondirect(double * x, double * y, double x0, long size)
+double interpLinearNondirect(double * x, double * y, double x0, long size, bool returnflag /*= false*/)
 // Returns the interpreted value of y=y(x) at x=x0 using linear interpolation method.
 // -- x,y: the independent and dependent tables; x is assumed to be increasing but not equal spaced
 // -- x0: where the interpolation should be performed
 {
-  //long size = x->size();
-  if (size==1) {cout<<"interpLinearNondirect warning: table size = 1"<<endl; return y[0];}
-  double dx = x[1]-x[0]; // increment in x
+	//long size = x->size();
+	if (size==1) {cout<<"interpLinearNondirect warning: table size = 1"<<endl; return y[0];}
+	double dx = x[1]-x[0]; // increment in x
 
-  // if close to left end:
-  if (abs(x0-x[0])<dx*1e-30) return y[0];
+	// if close to left end:
+	if (abs(x0-x[0])<dx*1e-30) return y[0];
 
-  // find x's integer index
-  //long idx = floor((x0-x[0])/dx);
-  long idx = binarySearch(x, size, x0, true);
-  if (idx<0 || idx>=size-1)
-  {
-    cout    << "interpLinearNondirect: x0 out of bounds." << endl
-            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
-            << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
-    exit(1);
-  }
+	double def = 0.0;
 
-  return y[idx] + (y[idx+1]-y[idx])/(x[idx+1]-x[idx])*(x0-x[idx]);
+	// find x's integer index
+	//long idx = floor((x0-x[0])/dx);
+	long idx = binarySearch(x, size, x0, true);
+	if (idx<0 || idx>=size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cout    << "interpLinearNondirect: x0 out of bounds." << endl
+				<< "x ranges from " << x[0] << " to " << x[size-1] << ", "
+				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+			exit(1);
+		}
+		else return def;
+	}
+
+	return y[idx] + (y[idx+1]-y[idx])/(x[idx+1]-x[idx])*(x0-x[idx]);
 }
 
 
@@ -473,83 +485,103 @@ double interpBiLinearDirect(double * x, double * y, double ** z, double x0, doub
 		else return (def);
 	}
 
-  double xidxINT = interpLinearDirect(y, z[xidx], y0, y_size);
-  double xidxp1INT = interpLinearDirect(y, z[xidx+1], y0, y_size);
+	double xidxINT = interpLinearDirect(y, z[xidx], y0, y_size);
+	double xidxp1INT = interpLinearDirect(y, z[xidx+1], y0, y_size);
 
-  return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
+	return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
 }
 
 
 //**********************************************************************
-double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size)
+double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/)
 {
-  //long size = x->size();
-  if (x_size==1 && y_size==1) {cout<<"interpBiLinearNondirect warning: table size = 1"<<endl; return z[0][0];}
-  double dx = x[1]-x[0]; // increment in x
-  //double dy = y[1]-y[0]; // increment in y
+	//long size = x->size();
+	if (x_size==1 && y_size==1) {cout<<"interpBiLinearNondirect warning: table size = 1"<<endl; return z[0][0];}
+	double dx = x[1]-x[0]; // increment in x
+	//double dy = y[1]-y[0]; // increment in y
 
-  // assume not close to edges for now...
-  // find x's integer index
-  //long xidx = floor((x0-x[0])/dx);
-  long xidx = binarySearch(x, x_size, x0, true);
-  if (xidx < 0 || xidx >= x_size-1)
-  {
-	cerr << "interpBiLinearNondirect(): index out of range!  Aborting!" << endl;
-	exit(1);
-  }
+	double def = 0.0;
 
-  double xidxINT = interpLinearNondirect(y, z[xidx], y0, y_size);
-  double xidxp1INT = interpLinearNondirect(y, z[xidx+1], y0, y_size);
+	// assume not close to edges for now...
+	// find x's integer index
+	//long xidx = floor((x0-x[0])/dx);
+	long xidx = binarySearch(x, x_size, x0, true);
+	if (xidx < 0 || xidx >= x_size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cerr << "interpBiLinearNondirect(): index out of range!  Aborting!" << endl
+				<< "interpBiLinearNonDirect(): x_size = " << x_size << ", x0 = " << x0 << ", xidx = " << xidx << endl;
+			exit(1);
+		}
+		else return (def);
+	}
 
-  //return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
-  return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
+	double xidxINT = interpLinearNondirect(y, z[xidx], y0, y_size);
+	double xidxp1INT = interpLinearNondirect(y, z[xidx+1], y0, y_size);
+
+	//return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
+	return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
 }
 
 
 //**********************************************************************
-double interpTriLinearDirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size)
+double interpTriLinearDirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size, bool returnflag /*= false*/)
 {
-  //long size = x->size();
-  if (x_size==1 && y_size==1) {cout<<"interpTriLinearDirect warning: table size = 1"<<endl; return f[0][0][0];}
-  double dx = x[1]-x[0]; // increment in x
+	//long size = x->size();
+	if (x_size==1 && y_size==1) {cout<<"interpTriLinearDirect warning: table size = 1"<<endl; return f[0][0][0];}
+	double dx = x[1]-x[0]; // increment in x
 
-  // assume not close to edges for now...
-  // find x's integer index
-  long xidx = floor((x0-x[0])/dx);
+	// assume not close to edges for now...
+	// find x's integer index
+	long xidx = floor((x0-x[0])/dx);
 
-  if (xidx < 0 || xidx >= x_size-1)
-  {
-	cerr << "interpTriLinearDirect(): index out of range!  Aborting!" << endl;
-	exit(1);
-  }
+	double def = 0.0;
 
-  double xidxINT = interpBiLinearDirect(y, z, f[xidx], y0, z0, y_size, z_size);
-  double xidxp1INT = interpBiLinearDirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
+	if (xidx < 0 || xidx >= x_size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cerr << "interpTriLinearDirect(): index out of range!  Aborting!" << endl
+				<< "interpTriLinearDirect(): x_size = " << x_size << ", x0 = " << x0 << ", xidx = " << xidx << endl;
+			exit(1);
+		}
+		else return (def);
+	}
 
-  return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
+	double xidxINT = interpBiLinearDirect(y, z, f[xidx], y0, z0, y_size, z_size);
+	double xidxp1INT = interpBiLinearDirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
+
+	return xidxINT + (xidxp1INT-xidxINT)/dx*(x0-x[xidx]);
 }
 
 
 //**********************************************************************
-double interpTriLinearNondirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size)
+double interpTriLinearNondirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size, bool returnflag /*= false*/)
 {
-  //long size = x->size();
-  if (x_size==1 && y_size==1 && z_size==1) {cout<<"interpTriLinearNondirect warning: table size = 1"<<endl; return f[0][0][0];}
+	//long size = x->size();
+	if (x_size==1 && y_size==1 && z_size==1) {cout<<"interpTriLinearNondirect warning: table size = 1"<<endl; return f[0][0][0];}
 
-  // assume not close to edges for now...
-  // find x's integer index
-  //long xidx = floor((x0-x[0])/dx);
-  long xidx = binarySearch(x, x_size, x0, true);
-  if (xidx < 0 || xidx >= x_size-1)
-  {
-	cerr << "interpTriLinearNondirect(): index out of range!  Aborting!" << endl;
-	exit(1);
-  }
+	// assume not close to edges for now...
+	// find x's integer index
+	//long xidx = floor((x0-x[0])/dx);
+	long xidx = binarySearch(x, x_size, x0, true);
+	double def = 0.0;
+	if (xidx < 0 || xidx >= x_size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cerr << "interpTriLinearNonDirect(): index out of range!  Aborting!" << endl
+				<< "interpTriLinearNonDirect(): x_size = " << x_size << ", x0 = " << x0 << ", xidx = " << xidx << endl;
+			exit(1);
+		}
+		else return (def);
+	}
 
-  double xidxINT = interpBiLinearNondirect(y, z, f[xidx], y0, z0, y_size, z_size);
-  double xidxp1INT = interpBiLinearNondirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
+	double xidxINT = interpBiLinearNondirect(y, z, f[xidx], y0, z0, y_size, z_size);
+	double xidxp1INT = interpBiLinearNondirect(y, z, f[xidx+1], y0, z0, y_size, z_size);
 
-  return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
+	return xidxINT + (xidxp1INT-xidxINT)/(x[xidx+1]-x[xidx])*(x0-x[xidx]);
 }
 
 
@@ -591,7 +623,7 @@ double interpNewtonDirect(double * x, double * y, double x0, long size)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
-double interpCubicDirect(double * x, double * y, double x0, long size)
+double interpCubicDirect(double * x, double * y, double x0, long size, bool returnflag /*= false*/)
 // Returns the interpreted value of y=y(x) at x=x0 using cubic polynomial interpolation method.
 // -- x,y: the independent and dependent tables; x is assumed to be equal spaced and increasing
 // -- x0: where the interpolation should be performed
@@ -879,7 +911,7 @@ double interpBiPolyDirect(double * x, double * y, double ** z, double x0, double
 
 
 //**********************************************************************
-double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing)
+double interpolate1D(double * x, double * y, double x0, long size, int kind, bool uniform_spacing, bool returnflag /*= false*/)
 {
 // kind == 0: linear interpolation
 // kind == 1: cubic interpolation
@@ -889,15 +921,15 @@ double interpolate1D(double * x, double * y, double x0, long size, int kind, boo
 		case 0:
 		{
 			if (uniform_spacing)
-				return interpLinearDirect(x, y, x0, size);
+				return interpLinearDirect(x, y, x0, size, returnflag);
 			else
-				return interpLinearNondirect(x, y, x0, size);
+				return interpLinearNondirect(x, y, x0, size, returnflag);
 			break;
 		}
 		case 1:
 		{
 			if (uniform_spacing)
-				return interpCubicDirect(x, y, x0, size);
+				return interpCubicDirect(x, y, x0, size, returnflag);
 			else
 				cerr << "Error (interpolate1D): cubic interpolation with non-uniform spacing not supported!" << endl;
 			break;
@@ -932,9 +964,9 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 		case 0:
 		{
 			if (uniform_spacing)
-				return interpBiLinearDirect(x, y, z, x0, y0, x_size, y_size);
+				return interpBiLinearDirect(x, y, z, x0, y0, x_size, y_size, returnflag);
 			else
-				return interpBiLinearNondirect(x, y, z, x0, y0, x_size, y_size);
+				return interpBiLinearNondirect(x, y, z, x0, y0, x_size, y_size, returnflag);
 			break;
 		}
 		case 1:
@@ -978,9 +1010,9 @@ double interpolate3D(double * x, double * y, double * z, double *** f, double x0
 		case 0:
 		{
 			if (uniform_spacing)
-				return interpTriLinearDirect(x, y, z, f, x0, y0, z0, x_size, y_size, z_size);
+				return interpTriLinearDirect(x, y, z, f, x0, y0, z0, x_size, y_size, z_size, returnflag);
 			else
-				return interpTriLinearNondirect(x, y, z, f, x0, y0, z0, x_size, y_size, z_size);
+				return interpTriLinearNondirect(x, y, z, f, x0, y0, z0, x_size, y_size, z_size, returnflag);
 			break;
 		}
 		case 1:
@@ -997,7 +1029,7 @@ double interpolate3D(double * x, double * y, double * z, double *** f, double x0
 		}
 		default:
 		{
-			cerr << "Error (interpolate2D): interpolation kind not supported!" << endl;
+			cerr << "Error (interpolate3D): interpolation kind not supported!" << endl;
 			exit(1);
 			break;
 		}

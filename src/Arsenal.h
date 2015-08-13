@@ -20,13 +20,13 @@ void polint(double xa[], double ya[], long n, double x, double *y, double *dy);
 void polin2(double * x1a, double * x2a, double ** ya, long m, long n, double x1, double x2, double *y, double *dy);
 
 //individual interpolation routines
-double interpLinearDirect(double * x, double * y, double x0, long size);
-double interpLinearNondirect(double * x, double * y, double x0, long size);
+double interpLinearDirect(double * x, double * y, double x0, long size, bool returnflag = false);
+double interpLinearNondirect(double * x, double * y, double x0, long size, bool returnflag = false);
 double interpBiLinearDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag = false);
-double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
-double interpTriLinearDirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size);
-double interpTriLinearNondirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size);
-double interpCubicDirect(double * x, double * y, double x0, long size);
+double interpBiLinearNondirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag = false);
+double interpTriLinearDirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size, bool returnflag = false);
+double interpTriLinearNondirect(double * x, double * y, double * z, double *** f, double x0, double y0, double z0, long x_size, long y_size, long z_size, bool returnflag = false);
+double interpCubicDirect(double * x, double * y, double x0, long size, bool returnflag = false);
 double interpCubicNondirect(double * x, double * y, double xx, long size);
 double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag = false);
