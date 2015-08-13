@@ -128,8 +128,8 @@ int main(int argc, char *argv[])
 	output << "Working with threshold = " << threshold << endl;
 	vector<int> chosen_resonance_indices;
 	get_important_resonances(particle_idx, &chosen_resonance_indices, particle, Nparticle, threshold, output);
-	if (abs(threshold - 1.0) > 1.e-12)
-		get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
+	//if (abs(threshold - 1.0) > 1.e-12)
+	get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
 	sort_by_mass(&chosen_resonance_indices, particle, Nparticle, output);
 	for (int ii = 0; ii < (int)chosen_resonance_indices.size(); ii++)
 		output << ii << "   " << chosen_resonance_indices[ii] << "   " << particle[chosen_resonance_indices[ii]].name << endl;

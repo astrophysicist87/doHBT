@@ -270,10 +270,10 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 			}
 
 		}
-		else if (it != chosen_resonances.end())
+		else if (it != chosen_resonances.end())	// if particle was one of chosen resonances
 		{
 			int ir = it - chosen_resonances.begin() + 1;
-			if (VERBOSE > 0) *global_out_stream_ptr << "ir = " << ir << endl;
+			//if (VERBOSE > 0) *global_out_stream_ptr << "ir = " << ir << endl;
 
 			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
 			{
@@ -298,5 +298,29 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 
 	return;
 }
+
+/*void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
+{
+	ostringstream filename_stream_all_dN_dypTdpTdphi;
+	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	ifstream input_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+
+	int local_filelength = get_filelength(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+	int local_filewidth = get_filewidth(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+	if ((Nparticle * n_interp2_pphi_pts != local_filelength) || (n_interp2_pT_pts != local_filewidth))
+	{
+		cerr << "Read_in_all_dN_dypTdpTdphi(): Mismatch in dimensions!
+		exit(1);
+	}
+
+	for(int ii = 0; ii < Nparticle; ii++)
+	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+		input_all_dN_dypTdpTdphi >> all_particles_dN_dypTdpTdphi[ii][0][ipt][iphi];
+
+	output_all_dN_dypTdpTdphi.close();
+
+	return;
+}*/
 
 //End of file

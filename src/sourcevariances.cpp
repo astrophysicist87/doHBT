@@ -261,74 +261,74 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 	// ************************************************************
 	for (int idc = 1; idc <= decay_channel_loop_cutoff; idc++)
 	{
-		*global_out_stream_ptr << "Computing phase-space integrals for dc_idx = " << idc << "..." << endl;
-		SMALLsw.tic();
+		//*global_out_stream_ptr << "Computing phase-space integrals for dc_idx = " << idc << "..." << endl;
+		//SMALLsw.tic();
 		// ************************************************************
 		// check whether to do this decay channel
 		// ************************************************************
-		*global_out_stream_ptr << "Checking whether to do decay channel..." << endl;
-		SMALLERsw.tic();
+		//*global_out_stream_ptr << "Checking whether to do decay channel..." << endl;
+		//SMALLERsw.tic();
 		if (thermal_pions_only)
 			break;
 		else if (!Do_this_decay_channel(idc))
 			continue;
-		SMALLERsw.toc();
-		*global_out_stream_ptr << "\t ...finished checking whether to do decay channel in " << SMALLERsw.takeTime() << " seconds." << endl;
+		//SMALLERsw.toc();
+		//*global_out_stream_ptr << "\t ...finished checking whether to do decay channel in " << SMALLERsw.takeTime() << " seconds." << endl;
 
 		// ************************************************************
 		// if so, set decay channel info
 		// ************************************************************
-		*global_out_stream_ptr << "Setting decay channel info..." << endl;
-		SMALLERsw.tic();
+		//*global_out_stream_ptr << "Setting decay channel info..." << endl;
+		//SMALLERsw.tic();
 		Set_current_particle_info(idc);
-		SMALLERsw.toc();
-		*global_out_stream_ptr << "\t ...finished setting decay channel info in " << SMALLERsw.takeTime() << " seconds." << endl;
+		//SMALLERsw.toc();
+		//*global_out_stream_ptr << "\t ...finished setting decay channel info in " << SMALLERsw.takeTime() << " seconds." << endl;
 
 		// ************************************************************
 		// begin source variances calculations here...
 		// ************************************************************
-		*global_out_stream_ptr << "Allocating memory..." << endl;
-		SMALLERsw.tic();
+		//*global_out_stream_ptr << "Allocating memory..." << endl;
+		//SMALLERsw.tic();
 		Allocate_decay_channel_info();				// allocate needed memory
-		SMALLERsw.toc();
-		*global_out_stream_ptr << "\t ...finished allocating memory in " << SMALLERsw.takeTime() << " seconds." << endl;
-		*global_out_stream_ptr << "Looping over daughter particles..." << endl;
-		SMALLERsw.tic();
+		//SMALLERsw.toc();
+		//*global_out_stream_ptr << "\t ...finished allocating memory in " << SMALLERsw.takeTime() << " seconds." << endl;
+		//*global_out_stream_ptr << "Looping over daughter particles..." << endl;
+		//SMALLERsw.tic();
 		for (int idc_DI = 0; idc_DI < current_reso_nbody; idc_DI++)
 		{
 			//debugger(__LINE__, __FILE__);
 			int daughter_resonance_idx = -1;
-*global_out_stream_ptr << "Deciding whether to do daughter particle #" << idc_DI << "..." << endl;
-SMALLESTsw.tic();
+//*global_out_stream_ptr << "Deciding whether to do daughter particle #" << idc_DI << "..." << endl;
+//SMALLESTsw.tic();
 			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_idx))
 				continue;
-SMALLESTsw.toc();
-*global_out_stream_ptr << "\t ...finished deciding whether to do this daughter particle in " << SMALLESTsw.takeTime() << " seconds." << endl;
+//SMALLESTsw.toc();
+//*global_out_stream_ptr << "\t ...finished deciding whether to do this daughter particle in " << SMALLESTsw.takeTime() << " seconds." << endl;
 			//debugger(__LINE__, __FILE__);
-*global_out_stream_ptr << "Setting current daughter particle info..." << endl;
-SMALLESTsw.tic();
+//*global_out_stream_ptr << "Setting current daughter particle info..." << endl;
+//SMALLESTsw.tic();
 			Set_current_daughter_info(idc, idc_DI);
-SMALLESTsw.toc();
-*global_out_stream_ptr << "\t ...finished setting current daughter particle info in " << SMALLESTsw.takeTime() << " seconds." << endl;
-*global_out_stream_ptr << "Doing resonance integrals here..." << endl;
-SMALLESTsw.tic();
+//SMALLESTsw.toc();
+//*global_out_stream_ptr << "\t ...finished setting current daughter particle info in " << SMALLESTsw.takeTime() << " seconds." << endl;
+//*global_out_stream_ptr << "Doing resonance integrals here..." << endl;
+//SMALLESTsw.tic();
 			Do_resonance_integrals_NEW(current_resonance_idx, daughter_resonance_idx, idc);
-SMALLESTsw.toc();
-*global_out_stream_ptr << "\t ...finished doing resonance integrals in " << SMALLESTsw.takeTime() << " seconds." << endl;
+//SMALLESTsw.toc();
+//*global_out_stream_ptr << "\t ...finished doing resonance integrals in " << SMALLESTsw.takeTime() << " seconds." << endl;
 			if (VERBOSE > 0) *global_out_stream_ptr << endl;
 		}
-		SMALLERsw.toc();
-		*global_out_stream_ptr << "\t ...finished looping over daughter particles in " << SMALLERsw.takeTime() << " seconds." << endl;
-		*global_out_stream_ptr << "Deleting memory..." << endl;
-		SMALLERsw.tic();
+		//SMALLERsw.toc();
+		//*global_out_stream_ptr << "\t ...finished looping over daughter particles in " << SMALLERsw.takeTime() << " seconds." << endl;
+		//*global_out_stream_ptr << "Deleting memory..." << endl;
+		//SMALLERsw.tic();
 		Delete_decay_channel_info();				// free up memory
-		SMALLERsw.toc();
-		*global_out_stream_ptr << "\t ...finished deleting memory in " << SMALLERsw.takeTime() << " seconds." << endl;
-		SMALLsw.toc();
-		*global_out_stream_ptr << "\t ...finished all phase-space integrals for dc_idx = " << idc << " in " << SMALLsw.takeTime() << " seconds." << endl;
+		//SMALLERsw.toc();
+		//*global_out_stream_ptr << "\t ...finished deleting memory in " << SMALLERsw.takeTime() << " seconds." << endl;
+		//SMALLsw.toc();
+		//*global_out_stream_ptr << "\t ...finished all phase-space integrals for dc_idx = " << idc << " in " << SMALLsw.takeTime() << " seconds." << endl;
 	}											// END of decay channel loop
-	BIGsw.toc();
-	*global_out_stream_ptr << "\t ...finished all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
+	//BIGsw.toc();
+	//*global_out_stream_ptr << "\t ...finished all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
 
 	// ************************************************************
 	// now get HBT radii from source integrals and Fourier transform
@@ -360,6 +360,8 @@ SMALLESTsw.toc();
 
 bool SourceVariances::Do_this_decay_channel(int dc_idx)
 {
+	if (DO_ALL_DECAY_CHANNELS)
+		return true;
 	string local_name = "Thermal pion(+)";
 	if (dc_idx == 0)
 	{
@@ -483,13 +485,13 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 			
 			if ( current_resonance_idx == previous_resonance_idx )
 			{
-				//previous resonance is not the same as this one BUT this one is sufficiently similar to some preceding one...
+				//previous resonance is the same as this one...
 				recycle_previous_moments = true;
 				recycle_similar_moments = false;
 			}
 			else if ( Search_for_similar_particle( temp_reso_idx, &similar_particle_idx ) )
 			{
-				//previous resonance is not the same as this one BUT this one is sufficiently similar to some preceding one...
+				//previous resonance is NOT the same as this one BUT this one is sufficiently similar to some preceding one...
 				recycle_previous_moments = false;
 				recycle_similar_moments = true;
 				reso_idx_of_moments_to_recycle = similar_particle_idx;

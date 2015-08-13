@@ -111,6 +111,24 @@ int get_filelength(string filepath)
    return(length);
 }
 
+int get_filewidth(string filepath)
+{
+	ostringstream filepath_stream;
+	filepath_stream << filepath;
+	ifstream infile(filepath_stream.str().c_str());
+	string line, temp;
+	stringstream ss;
+	int ncols=0;
+	getline(infile, line);
+	ss.clear();
+	ss << line;
+    
+	while (ss >> temp)
+		ncols++;
+
+	return ncols;
+}
+
 void read_decdat(int length, FO_surf* surf_ptr, string localpath, bool include_bulk_pi /* = false*/)
 { 
   //cout<<"read in information on freeze out surface...";

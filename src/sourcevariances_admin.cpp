@@ -209,7 +209,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				
 				//check if particle lifetime is too long for inclusion in source variances
 				bool lifetime_is_too_long = false;
-				if (decay_channels.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
+				if (CHECK_FOR_LIFETIME && decay_channels.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
 					lifetime_is_too_long = true;		//i.e., for lifetimes longer than 100 fm/c, skip decay channel
 
 				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << decay_channels.resonance_name[temp_idx] << ", decay channel " << idecay + 1
@@ -240,7 +240,10 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				// if decay channel parent resonance is not too long-lived
 				// and decay channel contains at least one target daughter particle,
 				// include channel
-				decay_channels.include_channel[temp_idx] = (target_daughter_flag && !lifetime_is_too_long && !effective_br_is_too_small);
+				if (DO_ALL_DECAY_CHANNELS)
+					decay_channels.include_channel[temp_idx] = true;
+				else
+					decay_channels.include_channel[temp_idx] = (target_daughter_flag && !lifetime_is_too_long && !effective_br_is_too_small);
 
 				temp_idx++;
 			}
@@ -252,7 +255,8 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		//from chosen decay_channels
 		n_decay_channels = get_number_of_decay_channels(chosen_resonances, all_particles);
 		n_resonance = (int)chosen_resonances.size();
-		if (VERBOSE > 0) *global_out_stream_ptr << "Computed n_decay_channels = " << n_decay_channels << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "Computed n_decay_channels = " << n_decay_channels << endl
+							<< "Computed n_resonance = " << n_resonance << endl;
 		decay_channels.resonance_particle_id = new int [n_decay_channels];
 		decay_channels.resonance_idx = new int [n_decay_channels];
 		decay_channels.resonance_mass = new double [n_decay_channels];
@@ -320,7 +324,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				
 				//check if particle lifetime is too long for inclusion in source variances
 				bool lifetime_is_too_long = false;
-				if (decay_channels.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
+				if (CHECK_FOR_LIFETIME && decay_channels.resonance_Gamma[temp_idx] < hbarC / max_lifetime)
 					lifetime_is_too_long = true;		//i.e., for lifetimes longer than 100 fm/c, skip decay channel
 
 				//check if decay channel has too many daughters (nbody >= 4)
@@ -362,9 +366,12 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 				// if decay channel parent resonance is not too long-lived
 				// and decay channel contains at least one target daughter particle,
 				// include channel
-				decay_channels.include_channel[temp_idx] = (!lifetime_is_too_long
-										&& !too_many_daughters
-										&& !effective_br_is_too_small);
+				if (DO_ALL_DECAY_CHANNELS)
+					decay_channels.include_channel[temp_idx] = true;
+				else
+					decay_channels.include_channel[temp_idx] = (!lifetime_is_too_long
+											&& !too_many_daughters
+											&& !effective_br_is_too_small);
 
 				temp_idx++;
 			}

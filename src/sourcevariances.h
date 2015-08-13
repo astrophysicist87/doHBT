@@ -116,6 +116,7 @@ class SourceVariances
 		double **** dN_dypTdpTdphi_moments;
 		double **** ln_dN_dypTdpTdphi_moments;
 		double **** sign_of_dN_dypTdpTdphi_moments;
+		double **** all_particles_dN_dypTdpTdphi_moments;
 	
 		//needed for resonance calculations
 		//kinematic info

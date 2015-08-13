@@ -68,6 +68,7 @@ typedef struct
 
 void read_hydropar(hydropara* hp, string localpath);
 int get_filelength(string filepath);
+int get_filewidth(string filepath);
 void read_decdat(int length, FO_surf* surf_ptr, string localpath, bool include_bulk_pi = false);
 void read_surfdat(int length, FO_surf* surf_ptr, string localpath);
 void read_decdat_mu(int FO_length, int N_stable, double** particle_mu, string localpath);
