@@ -246,6 +246,25 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
 	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 
+	for(int ii = 0; ii < Nparticle; ii++)
+	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	{
+		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+			output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ii][0][ipt][iphi] << "   ";
+		output_all_dN_dypTdpTdphi << endl;
+	}
+
+	output_all_dN_dypTdpTdphi.close();
+
+	return;
+}
+
+/*void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
+{
+	ostringstream filename_stream_all_dN_dypTdpTdphi;
+	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+
 	//for(int idc = 1; idc <= n_decay_channels; idc++)
 	//{
 		//for(int iKT = 0; iKT < n_localp_T; iKT++)
@@ -297,9 +316,9 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 	output_all_dN_dypTdpTdphi.close();
 
 	return;
-}
+}*/
 
-/*void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
+void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 {
 	ostringstream filename_stream_all_dN_dypTdpTdphi;
 	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
@@ -307,20 +326,21 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 
 	int local_filelength = get_filelength(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 	int local_filewidth = get_filewidth(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+	if (VERBOSE > 0) *global_out_stream_ptr << "Read_in_all_dN_dypTdpTdphi(): nrows = " << local_filelength << " and ncols = " << local_filewidth << endl;
 	if ((Nparticle * n_interp2_pphi_pts != local_filelength) || (n_interp2_pT_pts != local_filewidth))
 	{
-		cerr << "Read_in_all_dN_dypTdpTdphi(): Mismatch in dimensions!
+		cerr << "Read_in_all_dN_dypTdpTdphi(): Mismatch in dimensions!" << endl;
 		exit(1);
 	}
 
 	for(int ii = 0; ii < Nparticle; ii++)
 	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
 	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-		input_all_dN_dypTdpTdphi >> all_particles_dN_dypTdpTdphi[ii][0][ipt][iphi];
+		input_all_dN_dypTdpTdphi >> dN_dypTdpTdphi_moments[ii][0][ipt][iphi];
 
-	output_all_dN_dypTdpTdphi.close();
+	input_all_dN_dypTdpTdphi.close();
 
 	return;
-}*/
+}
 
 //End of file

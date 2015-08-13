@@ -9,7 +9,6 @@ $(SRCDIR)/SV_readindata.cpp \
 $(SRCDIR)/sourcevariances.cpp \
 $(SRCDIR)/sourcevariances_admin.cpp \
 $(SRCDIR)/sourcevariances_resonance.cpp \
-$(SRCDIR)/sourcevariances_extension.cpp \
 $(SRCDIR)/sourcevariances_IO.cpp \
 $(SRCDIR)/Arsenal.cpp \
 $(SRCDIR)/gauss_quadrature.cpp

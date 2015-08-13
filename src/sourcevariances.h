@@ -80,6 +80,7 @@ class SourceVariances
 		vector<int> chosen_resonances;
 		bool thermal_pions_only;
 		int Nparticle;
+		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
 
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
@@ -254,37 +255,24 @@ class SourceVariances
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int dc_idx);
-		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int dc_idx);
-		void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int dc_idx);
-		//void Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FO_surf* FOsurf_ptr, int dc_idx);
-		//double loop_over_FO_surface(FO_surf* FOsurf_ptr, double p0, double px, double py, double pz, double mu);
-		//void interpolate_FO_loop(FO_surf* FOsurf_ptr);
-		//void set_FOinterp_gridpoints();
-		//void fill_out_FOinterp_grid(FO_surf* FOsurf_ptr);
-		void Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py);
+		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int local_pid);
+		void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int local_pid);
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
-		void Do_resonance_integrals_V2(int iKT, int iKphi, int dc_idx);
-		void Do_resonance_integrals_NEW(int parent_resonance_index, int daughter_particle_index, int decay_channel);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
 		bool Do_this_decay_channel(int dc_idx);
-		bool Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_index);
+		bool Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_pid);
 		void Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Recycle_spacetime_moments();
 		void Allocate_decay_channel_info();
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
-		void s_loop(double s_loc, double * ssum_vec);
-		void v_loop(double v_loc, double * vsum_vec);
-		void zeta_loop(double zeta_loc, double * zetasum_vec);
 		void combine_sourcevariances(double * output, double * input, double alpha_t, double alpha_o, double alpha_s, double alpha_l);
 		void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
-		void Update_source_variances(int iKT, int iKphi, int dc_idx);
 		void Compute_source_variances(int iKT, int iKphi);
 
 		void Get_source_variances(int, int);
@@ -322,13 +310,15 @@ class SourceVariances
 		void Output_all_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);
+		void Read_in_all_dN_dypTdpTdphi(int folderindex);
 
 		//parameters that the user is free to define
 		double plumberg_test_variable;
 		bool use_delta_f;
 		bool append_output;
 		int n_events;
-		int initial_event;
+		int initial_event, currentfolderindex;
+		bool read_in_all_dN_dypTdpTdphi, output_all_dN_dypTdpTdphi;
 };
 
 #endif

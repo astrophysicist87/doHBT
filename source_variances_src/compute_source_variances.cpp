@@ -134,16 +134,17 @@ int main(int argc, char *argv[])
 	for (int ii = 0; ii < (int)chosen_resonance_indices.size(); ii++)
 		output << ii << "   " << chosen_resonance_indices[ii] << "   " << particle[chosen_resonance_indices[ii]].name << endl;
 
-//if (1) return (0);
 
    SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output);
+   Source_function.read_in_all_dN_dypTdpTdphi = false;
+   Source_function.output_all_dN_dypTdpTdphi = !(Source_function.read_in_all_dN_dypTdpTdphi);
+   Source_function.currentfolderindex = folderindex;
    Source_function.Set_path(currentworkingdirectory);
    Source_function.Set_use_delta_f(true);
    Source_function.Set_ofstream(output);
 
    Source_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
 	
-	//if (1) exit(1);
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
    //Source_function.Analyze_sourcefunction_V2(FOsurf_ptr);
@@ -152,7 +153,6 @@ int main(int argc, char *argv[])
    Source_function.Output_dN_dypTdpTdphi(folderindex);
    Source_function.Output_dN_dypTdpT(folderindex);
    Source_function.Output_dN_dypTdpTdphi_grid(folderindex, 0);
-   Source_function.Output_all_dN_dypTdpTdphi(folderindex);
    Source_function.Output_results(folderindex);
    output << "Finished calculating HBT radii via source variances method" << endl;
 

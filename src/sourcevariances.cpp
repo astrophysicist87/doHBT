@@ -26,7 +26,7 @@ using namespace std;
 // only need to calculated interpolation grid of spacetime moments for each resonance, NOT each decay channel!
 bool recycle_previous_moments = false;
 bool recycle_similar_moments = false;
-int reso_idx_of_moments_to_recycle = -1;
+int reso_particle_id_of_moments_to_recycle = -1;
 string reso_name_of_moments_to_recycle = "NULL";
 string current_decay_channel_string = "NULL";
 
@@ -74,127 +74,12 @@ double SourceVariances::place_in_range(double phi, double min, double max)
 	return (phi);
 }
 
-//wrapper for new option to use old method
-//old method is not correct!  need to use new method...
-void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
-{
-	if (USE_OLD_ANALYZE_SF)
-		Analyze_sourcefunction_V1(FOsurf_ptr);
-	else
-		Analyze_sourcefunction_V3(FOsurf_ptr);
-
-	return;
-}
-
-// this is the driver function for all source-variances-with-decay_channels calculations
-void SourceVariances::Analyze_sourcefunction_V1(FO_surf* FOsurf_ptr)
-{
-	double plane_psi = 0.0;
-	int iorder = USE_PLANE_PSI_ORDER;
-	if (USE_PLANE_PSI_ORDER)
-	{
-		if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
-		Determine_plane_angle(current_FOsurf_ptr, 0, true);	//uses only thermal pions...
-		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
-		if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
-		plane_psi = plane_angle[iorder];
-	}
-	else
-	{
-		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. psi_0 = " << plane_psi << endl;
-	}
-	global_plane_psi = plane_psi;
-
-	//int decay_channel_loop_cutoff = 0;				//loop over direct pions only
-	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
-	//int decay_channel_loop_cutoff = 1;					//other
-	
-	// ************************************************************
-	// loop over decay_channels (idc == 0 corresponds to thermal pions)
-	// ************************************************************
-	for (int idc = 0; idc <= decay_channel_loop_cutoff; idc++)
-	{
-		// ************************************************************
-		// check whether to do this decay channel
-		// ************************************************************
-		if (idc > 0 && thermal_pions_only)
-			break;
-		else if (!Do_this_decay_channel(idc))
-			continue;
-
-		// ************************************************************
-		// if so, set decay channel info
-		// ************************************************************
-		Set_current_particle_info(idc);
-
-		// ************************************************************
-		// decide whether to recycle old moments or calculate new moments
-		// ************************************************************
-		Get_spacetime_moments(FOsurf_ptr, idc);
-		if (SPACETIME_MOMENTS_ONLY)
-			continue;
-
-		// ************************************************************
-		// compute flow plane angle and thermal spectra for given resonance decay channel
-		// ************************************************************
-		Determine_plane_angle(FOsurf_ptr, idc);						// for idc==0, just gives thermal pions (as above)
-		if (INTERPOLATION_FORMAT == 0)
-			return;									// if calculating everything exactly, only do E_p * dN_d3p
-
-		// ************************************************************
-		// begin source variances calculations here...
-		// ************************************************************
-		for(int iKT = 0; iKT < n_localp_T; iKT++)					// loop over KT
-		{
-			if (abs(K_T[iKT]) < 1.e-10)						// KT == 0 not currently supported
-				continue;
-			for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)			// loop over Kphi
-			{
-				if (idc > 0)							// don't need to do any resonance integrals for thermal pions
-				{
-					Allocate_decay_channel_info();				// allocate needed memory
-					Load_decay_channel_info(idc, K_T[iKT], K_phi[iKphi]);	// set decay channel information
-					Do_resonance_integrals(iKT, iKphi, idc);		// interpolate thermal resonance spectra to do phase-space integrals
-					Delete_decay_channel_info();				// free up memory
-				}
-				Update_source_variances(iKT, iKphi, idc);			// include results in source integrals
-			}									// END of KT loop
-		}										// END of Kphi loop
-	}											// END of decay channel loop
-
-	// ************************************************************
-	// now get HBT radii from source integrals and Fourier transform
-	// ************************************************************
-	for(int iKT = 0; iKT < n_localp_T; iKT++)
-	{
-		if (abs(K_T[iKT]) < 1.e-10)
-			continue;
-
-		double m_perp = sqrt(K_T[iKT]*K_T[iKT] + particle_mass*particle_mass);
-		beta_perp = K_T[iKT]/(m_perp*cosh(K_y));
-
-		for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-		{
-			Calculate_R2_side(iKT, iKphi);
-			Calculate_R2_out(iKT, iKphi);
-			Calculate_R2_long(iKT, iKphi);
-			Calculate_R2_outside(iKT, iKphi);
-			Calculate_R2_sidelong(iKT, iKphi);
-			Calculate_R2_outlong(iKT, iKphi);
-		}
-
-		R2_Fourier_transform(iKT, plane_psi);
-	}
-
-   return;
-}
-
 // ************************************************************
 // NEW AND IMPROVED version of Analyze_sourcefunction()
 // ************************************************************
-void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
+void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 {
-	Stopwatch BIGsw, SMALLsw, SMALLERsw, SMALLESTsw;
+	Stopwatch BIGsw;
 	*global_out_stream_ptr << "Plane angle calculations..." << endl;
 	BIGsw.tic();
 	double plane_psi = 0.0;
@@ -216,119 +101,97 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 	*global_out_stream_ptr << "\t ...finished in " << BIGsw.takeTime() << " seconds." << endl;
 
 	int decay_channel_loop_cutoff = n_decay_channels;			//loop over direct pions and decay_channels
-	
-	*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
-	BIGsw.tic();
-	// ************************************************************
-	// loop over decay_channels (idc == 0 corresponds to thermal pions)
-	// ************************************************************
-	for (int idc = 0; idc <= decay_channel_loop_cutoff; idc++)				//this is inefficient, but will do the job for now
+
+	if (read_in_all_dN_dypTdpTdphi)
 	{
-		// ************************************************************
-		// check whether to do this decay channel
-		// ************************************************************
-		if (idc > 0 && thermal_pions_only)
-			break;
-		else if (!Do_this_decay_channel(idc))
-			continue;
+		//if (VERBOSE > 0) *global_out_stream_ptr << "currentfolderindex = " << currentfolderindex << endl;
+		Read_in_all_dN_dypTdpTdphi(currentfolderindex);
+		if (VERBOSE > 0) *global_out_stream_ptr << "************************************************************" << endl
+												<< "* Read in all (thermal) space-time moments!" << endl
+												<< "************************************************************" << endl << endl;
 
+	}
+	else
+	{
+		*global_out_stream_ptr << "Setting spacetime moments grid..." << endl;
+		BIGsw.tic();
 		// ************************************************************
-		// if so, set decay channel info
+		// loop over decay_channels (idc == 0 corresponds to thermal pions)
 		// ************************************************************
-		Set_current_particle_info(idc);
-
-		// ************************************************************
-		// decide whether to recycle old moments or calculate new moments
-		// ************************************************************
-		Get_spacetime_moments(FOsurf_ptr, idc);
-	}	//computing all resonances' spacetime moments here first
-		//THEN do phase-space integrals
-
-	if (VERBOSE > 0) *global_out_stream_ptr << endl << "************************************************************"
-											<< endl << "* Computed all (thermal) space-time moments!" << endl
-											<< "************************************************************" << endl << endl;
-	BIGsw.toc();
-	*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
+		for (int idc = 0; idc <= decay_channel_loop_cutoff; idc++)				//this is inefficient, but will do the job for now
+		{
+			// ************************************************************
+			// check whether to do this decay channel
+			// ************************************************************
+			if (idc > 0 && thermal_pions_only)
+				break;
+			else if (!Do_this_decay_channel(idc))
+				continue;
+	
+			// ************************************************************
+			// if so, set decay channel info
+			// ************************************************************
+			Set_current_particle_info(idc);
+	
+			// ************************************************************
+			// decide whether to recycle old moments or calculate new moments
+			// ************************************************************
+			Get_spacetime_moments(FOsurf_ptr, idc);
+		}	//computing all resonances' spacetime moments here first
+			//THEN do phase-space integrals
+	
+		if (VERBOSE > 0) *global_out_stream_ptr << endl << "************************************************************"
+												<< endl << "* Computed all (thermal) space-time moments!" << endl
+												<< "************************************************************" << endl << endl;
+		BIGsw.toc();
+		*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;	}
+	if (output_all_dN_dypTdpTdphi)
+	{
+		Output_all_dN_dypTdpTdphi(currentfolderindex);
+		if (VERBOSE > 0) *global_out_stream_ptr << endl << "************************************************************"
+												<< endl << "* Output all (thermal) space-time moments!" << endl
+												<< "************************************************************" << endl << endl;
+	}
 
 	if (SPACETIME_MOMENTS_ONLY)
-		return ;
+		return;
+
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	BIGsw.tic();
-	//debugger(__LINE__, __FILE__);
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
 	// ************************************************************
 	for (int idc = 1; idc <= decay_channel_loop_cutoff; idc++)
 	{
-		//*global_out_stream_ptr << "Computing phase-space integrals for dc_idx = " << idc << "..." << endl;
-		//SMALLsw.tic();
 		// ************************************************************
 		// check whether to do this decay channel
 		// ************************************************************
-		//*global_out_stream_ptr << "Checking whether to do decay channel..." << endl;
-		//SMALLERsw.tic();
 		if (thermal_pions_only)
 			break;
 		else if (!Do_this_decay_channel(idc))
 			continue;
-		//SMALLERsw.toc();
-		//*global_out_stream_ptr << "\t ...finished checking whether to do decay channel in " << SMALLERsw.takeTime() << " seconds." << endl;
 
 		// ************************************************************
 		// if so, set decay channel info
 		// ************************************************************
-		//*global_out_stream_ptr << "Setting decay channel info..." << endl;
-		//SMALLERsw.tic();
 		Set_current_particle_info(idc);
-		//SMALLERsw.toc();
-		//*global_out_stream_ptr << "\t ...finished setting decay channel info in " << SMALLERsw.takeTime() << " seconds." << endl;
 
 		// ************************************************************
 		// begin source variances calculations here...
 		// ************************************************************
-		//*global_out_stream_ptr << "Allocating memory..." << endl;
-		//SMALLERsw.tic();
 		Allocate_decay_channel_info();				// allocate needed memory
-		//SMALLERsw.toc();
-		//*global_out_stream_ptr << "\t ...finished allocating memory in " << SMALLERsw.takeTime() << " seconds." << endl;
-		//*global_out_stream_ptr << "Looping over daughter particles..." << endl;
-		//SMALLERsw.tic();
 		for (int idc_DI = 0; idc_DI < current_reso_nbody; idc_DI++)
 		{
-			//debugger(__LINE__, __FILE__);
-			int daughter_resonance_idx = -1;
-//*global_out_stream_ptr << "Deciding whether to do daughter particle #" << idc_DI << "..." << endl;
-//SMALLESTsw.tic();
-			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_idx))
+			int daughter_resonance_particle_id = -1;
+			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
 				continue;
-//SMALLESTsw.toc();
-//*global_out_stream_ptr << "\t ...finished deciding whether to do this daughter particle in " << SMALLESTsw.takeTime() << " seconds." << endl;
-			//debugger(__LINE__, __FILE__);
-//*global_out_stream_ptr << "Setting current daughter particle info..." << endl;
-//SMALLESTsw.tic();
 			Set_current_daughter_info(idc, idc_DI);
-//SMALLESTsw.toc();
-//*global_out_stream_ptr << "\t ...finished setting current daughter particle info in " << SMALLESTsw.takeTime() << " seconds." << endl;
-//*global_out_stream_ptr << "Doing resonance integrals here..." << endl;
-//SMALLESTsw.tic();
-			Do_resonance_integrals_NEW(current_resonance_idx, daughter_resonance_idx, idc);
-//SMALLESTsw.toc();
-//*global_out_stream_ptr << "\t ...finished doing resonance integrals in " << SMALLESTsw.takeTime() << " seconds." << endl;
-			if (VERBOSE > 0) *global_out_stream_ptr << endl;
+			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+			//if (VERBOSE > 0) *global_out_stream_ptr << endl;
 		}
-		//SMALLERsw.toc();
-		//*global_out_stream_ptr << "\t ...finished looping over daughter particles in " << SMALLERsw.takeTime() << " seconds." << endl;
-		//*global_out_stream_ptr << "Deleting memory..." << endl;
-		//SMALLERsw.tic();
 		Delete_decay_channel_info();				// free up memory
-		//SMALLERsw.toc();
-		//*global_out_stream_ptr << "\t ...finished deleting memory in " << SMALLERsw.takeTime() << " seconds." << endl;
-		//SMALLsw.toc();
-		//*global_out_stream_ptr << "\t ...finished all phase-space integrals for dc_idx = " << idc << " in " << SMALLsw.takeTime() << " seconds." << endl;
 	}											// END of decay channel loop
-	//BIGsw.toc();
-	//*global_out_stream_ptr << "\t ...finished all phase-space integrals in " << BIGsw.takeTime() << " seconds." << endl;
 
 	// ************************************************************
 	// now get HBT radii from source integrals and Fourier transform
@@ -360,8 +223,6 @@ void SourceVariances::Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr)
 
 bool SourceVariances::Do_this_decay_channel(int dc_idx)
 {
-	if (DO_ALL_DECAY_CHANNELS)
-		return true;
 	string local_name = "Thermal pion(+)";
 	if (dc_idx == 0)
 	{
@@ -371,19 +232,12 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 	else
 	{
 		local_name = decay_channels.resonance_name[dc_idx-1];
-		if (!CHECKING_RESONANCE_CALC && !USE_OLD_ANALYZE_SF) Get_current_decay_string(dc_idx, &current_decay_channel_string);
+		Get_current_decay_string(dc_idx, &current_decay_channel_string);
 	}
-	if (CHECKING_RESONANCE_CALC)
-	{
-		if (dc_idx != 0 && dc_idx != 1 && dc_idx != 7)
-		{
-			if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": skipping." << endl;
-			return false;
-		}
-	}
+	if (DO_ALL_DECAY_CHANNELS)
+		return true;
 	else if (decay_channels.include_channel[dc_idx-1])
 	{
-		//if (VERBOSE > 0) *global_out_stream_ptr << endl << local_name << ": doing decay " << current_decay_channel_string << "." << endl;
 		;
 	}
 	else
@@ -397,7 +251,7 @@ bool SourceVariances::Do_this_decay_channel(int dc_idx)
 // ************************************************************
 // Checks whether to do daughter particle for given decay channel
 // ************************************************************
-bool SourceVariances::Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_index)
+bool SourceVariances::Do_this_daughter_particle(int dc_idx, int daughter_idx, int * daughter_resonance_pid)
 {
 	// assume dc_idx > 0
 	string local_name = decay_channels.resonance_name[dc_idx - 1];
@@ -409,11 +263,12 @@ bool SourceVariances::Do_this_daughter_particle(int dc_idx, int daughter_idx, in
 		return false;
 
 	int temp_ID = lookup_particle_id_from_monval(all_particles, Nparticle, temp_monval);
-	*daughter_resonance_index = lookup_resonance_idx_from_particle_id(temp_ID) + 1;
+	//*daughter_resonance_idx = lookup_resonance_idx_from_particle_id(temp_ID) + 1;
+	*daughter_resonance_pid = temp_ID;
 	// if daughter was found in chosen_resonances or is pion(+), this is correct
 	particle_info temp_daughter = all_particles[temp_ID];
 
-	if (*daughter_resonance_index == 0 && temp_daughter.monval != particle_monval && temp_daughter.effective_branchratio >= 1.e-12)
+	if (*daughter_resonance_pid < 0 && temp_daughter.monval != particle_monval && temp_daughter.effective_branchratio >= 1.e-12)
 		*global_out_stream_ptr << "Couldn't find " << temp_daughter.name << " in chosen_resonances!  Results are probably not reliable..." << endl;
 
 	bool daughter_does_not_contribute = ( (temp_daughter.stable == 1 || temp_daughter.effective_branchratio < 1.e-12) && temp_daughter.monval != particle_monval );
@@ -421,12 +276,14 @@ bool SourceVariances::Do_this_daughter_particle(int dc_idx, int daughter_idx, in
 	// if daughter particle gives no contribution to final pion spectra
 	if (daughter_does_not_contribute)
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << local_name << ": in decay " << current_decay_channel_string << ", skipping " << temp_daughter.name << "." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << local_name << ": in decay " << current_decay_channel_string << ", skipping " << temp_daughter.name
+												<< " (daughter_resonance_pid = " << *daughter_resonance_pid << ")." << endl;
 		return false;
 	}
 	else
 	{
-		if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << local_name << ": in decay " << current_decay_channel_string << ", doing " << temp_daughter.name << "." << endl;
+		if (VERBOSE > 0) *global_out_stream_ptr << "\t * " << local_name << ": in decay " << current_decay_channel_string << ", doing " << temp_daughter.name
+												<< " (daughter_resonance_pid = " << *daughter_resonance_pid << ")." << endl;
 		return true;
 	}
 }
@@ -438,6 +295,7 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 		muRES = particle_mu;
 		signRES = particle_sign;
 		gRES = particle_gspin;
+		current_resonance_particle_id = target_particle_id;
 		
 		return;
 	}
@@ -470,8 +328,6 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 		current_resonance_total_br = decay_channels.resonance_total_br[dc_idx-1];
 		current_resonance_direct_br = decay_channels.resonance_direct_br[dc_idx-1];
 		current_reso_nbody = decay_channels.nbody[dc_idx-1];
-		//current_resonance_decay_masses[0] = decay_channels.resonance_decay_masses[dc_idx-1][0];
-		//current_resonance_decay_masses[1] = decay_channels.resonance_decay_masses[dc_idx-1][1];
 		
 		// might want to rename these for notational consistency...
 		muRES = decay_channels.resonance_mu[dc_idx-1];
@@ -483,7 +339,7 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 			int similar_particle_idx = -1;
 			int temp_reso_idx = decay_channels.resonance_idx[dc_idx-1];
 			
-			if ( current_resonance_idx == previous_resonance_idx )
+			if ( current_resonance_particle_id == previous_resonance_particle_id )
 			{
 				//previous resonance is the same as this one...
 				recycle_previous_moments = true;
@@ -494,16 +350,13 @@ void SourceVariances::Set_current_particle_info(int dc_idx)
 				//previous resonance is NOT the same as this one BUT this one is sufficiently similar to some preceding one...
 				recycle_previous_moments = false;
 				recycle_similar_moments = true;
-				reso_idx_of_moments_to_recycle = similar_particle_idx;
+				reso_particle_id_of_moments_to_recycle = chosen_resonances[similar_particle_idx];
 			}
 			else
 			{
-				//if (VERBOSE > 0) *global_out_stream_ptr << "dc_idx = " << dc_idx
-				//		<< ": different parent resonance (" << current_resonance_particle_id << ") from previous decay channel's parent resonance ("
-				//		<< previous_resonance_particle_id << ") --> calculating new dN_dypTdpTdphi_moments!" << endl;
 				recycle_previous_moments = false;
 				recycle_similar_moments = false;
-				reso_idx_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
+				reso_particle_id_of_moments_to_recycle = -1;	//guarantees it won't be used spuriously
 			}
 		}
 	}
@@ -614,36 +467,16 @@ bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
 {
 	int icr1 = chosen_resonances[reso_idx1];
 	int icr2 = chosen_resonances[reso_idx2];
-	if (VERBOSE > 5) *global_out_stream_ptr << "\t\t * Comparing " << all_particles[icr1].name << "(reso_idx = " << reso_idx1
-					<< ") and " << all_particles[icr2].name << "(reso_idx = " << reso_idx2 << ")" << endl;
-	if (VERBOSE > 5) *global_out_stream_ptr << "\t\t * sign: " << all_particles[icr1].sign << "   " << all_particles[icr2].sign << endl
-				<< "\t\t * mass: " << all_particles[icr1].mass << "   " << all_particles[icr2].mass << endl
-				<< "\t\t * mu: " << all_particles[icr1].mu << "   " << all_particles[icr2].mu << endl;
+	//int icr1 = reso_idx1;
+	//int icr2 = reso_idx2;
 	if (all_particles[icr1].sign != all_particles[icr2].sign)
-	{
-		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> signs were not the same!" << endl
-				<< "\t\t --> sign: " << all_particles[icr1].mu << "   " << all_particles[icr2].mu << endl;
 		return false;
-	}
 	if (abs(all_particles[icr1].mass-all_particles[icr2].mass) / (all_particles[icr2].mass+1.e-30) > PARTICLE_DIFF_TOLERANCE)
-	{
-		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> masses were not the same!" << endl
-				<< "\t\t --> mass: " << all_particles[icr1].mass << "   " << all_particles[icr2].mass
-				<< "   " << abs(all_particles[icr1].mass-all_particles[icr2].mass) / (all_particles[icr2].mass+1.e-30) << endl;
 		return false;
-	}
 	//assume chemical potential mu is constant over entire FO surface
 	double chem1 = all_particles[icr1].mu, chem2 = all_particles[icr2].mu;
-	//if (abs(chem1-chem2)/(chem2+1.e-30) > PARTICLE_DIFF_TOLERANCE)
 	if (2.*abs(chem1 - chem2)/(chem1 + chem2 + 1.e-30) > PARTICLE_DIFF_TOLERANCE)
-	{
-		if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> mus were not the same!" << endl
-				<< "\t\t --> mu: " << chem1 << "   " << chem2
-				<< "   " << 2.*abs(chem1 - chem2)/(chem1 + chem2 + 1.e-30) << endl;
 		return false;
-	}
-	
-	if (VERBOSE > 5) *global_out_stream_ptr << "\t\t --> Particles are close enough!" << endl;
 
 	return true;
 }
@@ -653,7 +486,7 @@ void SourceVariances::Recycle_spacetime_moments()
 	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
 	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
 	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
-		dN_dypTdpTdphi_moments[current_resonance_idx + 1][wfi][ipt][iphi] = dN_dypTdpTdphi_moments[reso_idx_of_moments_to_recycle + 1][wfi][ipt][iphi];
+		dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
 		//N.B. - not dc_idx - 1, since spacetime moments for dc_idx = 0 are just thermal pions
 
 	return;
@@ -664,11 +497,11 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 //**************************************************************
 //Set resonance name
 //**************************************************************
-
+//debugger(__LINE__,__FILE__);
 	string local_name = "Thermal pion(+)";
 	if (dc_idx > 0)
 		local_name = decay_channels.resonance_name[dc_idx-1];
-
+//debugger(__LINE__,__FILE__);
 //**************************************************************
 //Decide what to do with this resonance / decay channel
 //**************************************************************
@@ -683,8 +516,8 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
 			<< ": new parent resonance (" << decay_channels.resonance_name[current_decay_channel_idx-1] << ", dc_idx = " << current_decay_channel_idx
-			<< ") sufficiently close to preceding parent resonance (" << all_particles[chosen_resonances[reso_idx_of_moments_to_recycle]].name
-			<< ", reso_idx = " << reso_idx_of_moments_to_recycle << ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
+			<< ") sufficiently close to preceding parent resonance (" << all_particles[reso_particle_id_of_moments_to_recycle].name
+			<< ", reso_particle_id = " << reso_particle_id_of_moments_to_recycle << ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
 		Recycle_spacetime_moments();
 	}
 	else
@@ -710,8 +543,8 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 				exit(1);
 			}
 		}
-
-		Set_dN_dypTdpTdphi_moments(FOsurf_ptr, dc_idx);
+//debugger(__LINE__,__FILE__);
+		Set_dN_dypTdpTdphi_moments(FOsurf_ptr, current_resonance_particle_id);
 	}
 //**************************************************************
 //Spacetime moments now set
@@ -719,18 +552,15 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 	return;
 }
 
-void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx)
+void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int local_pid)
 {
 	time_t starttime, stoptime;
    	struct tm * timeinfo;
 
-	double localmass = particle_mass;
+	double localmass = all_particles[local_pid].mass;
 	string local_name = "Thermal pion(+)";
-	if (dc_idx > 0)
-	{
-		localmass = decay_channels.resonance_mass[dc_idx-1];
-		local_name = decay_channels.resonance_name[dc_idx-1];
-	}
+	if (local_pid != target_particle_id)
+		local_name = all_particles[local_pid].name;
 
 	for(int i=0; i<eta_s_npts; i++)
 	{
@@ -738,196 +568,65 @@ void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx
 		double local_cosh = cosh(SP_p_y - local_eta_s);
 		double local_sinh = sinh(SP_p_y - local_eta_s);
 
-		for(int ipx=0; ipx<n_interp1_px_pts; ipx++)
-		for(int ipy=0; ipy<n_interp1_py_pts; ipy++)
-		{
-			double mT = sqrt(localmass*localmass + SPinterp1_px[ipx]*SPinterp1_px[ipx] + SPinterp1_py[ipy]*SPinterp1_py[ipy]);
-			SPinterp1_p0[ipx][ipy][i] = mT*local_cosh;
-			SPinterp1_pz[ipx][ipy][i] = mT*local_sinh;
-		}
-
 		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
 		{
 			double mT = sqrt(localmass*localmass + SPinterp2_pT[ipt]*SPinterp2_pT[ipt]);
 			SPinterp2_p0[ipt][i] = mT*local_cosh;
 			SPinterp2_pz[ipt][i] = mT*local_sinh;
-			//cerr << SPinterp2_p0[ipt][i] << "    " << SPinterp2_pz[ipt][i] << "    " << SPinterp2_pT[ipt] << endl;
 		}
 	}
-	//if (1) exit(1);
-	//cerr << "Made it inside Set_dN_dypTdpTdphi_moments" << endl;
-	if (INTERPOLATION_FORMAT == 1)	//using cartesian grid for interpolation (px, py)
-		Cal_dN_dypTdpTdphi_with_weights_cartesian(FOsurf_ptr, dc_idx);
-	else if (INTERPOLATION_FORMAT == 2)	//using polar grid for interpolation (pT, pphi)
-	{
-		//**************************************************************
-		//Timing checks
-		//**************************************************************
-		time (&starttime);
- 		timeinfo = localtime (&starttime);
- 		if (VERBOSE > 0) *global_out_stream_ptr << local_name << ":" << endl << "   * Started setting spacetime moments at " << asctime(timeinfo);
-		//**************************************************************
-		Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, dc_idx);
-		//Cal_dN_dypTdpTdphi_with_weights_polar_V2(FOsurf_ptr, dc_idx);
-		//Cal_dN_dypTdpTdphi_with_weights_polar_NEW(FOsurf_ptr, dc_idx);
-		//**************************************************************
-		time (&stoptime);
- 		timeinfo = localtime (&stoptime);
- 		if (VERBOSE > 0) *global_out_stream_ptr << "   * Finished setting spacetime moments at " << asctime(timeinfo)
-							<< "   * Took " << difftime(stoptime, starttime) << " seconds." << endl;
-		//**************************************************************
-	}
+//debugger(__LINE__,__FILE__);
+	//**************************************************************
+	//Timing checks
+	//**************************************************************
+	time (&starttime);
+ 	timeinfo = localtime (&starttime);
+ 	if (VERBOSE > 0) *global_out_stream_ptr << local_name << ":" << endl << "   * Started setting spacetime moments at " << asctime(timeinfo);
+	//**************************************************************
+	Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, local_pid);
+	//**************************************************************
+	time (&stoptime);
+ 	timeinfo = localtime (&stoptime);
+ 	if (VERBOSE > 0) *global_out_stream_ptr << "   * Finished setting spacetime moments at " << asctime(timeinfo)
+						<< "   * Took " << difftime(stoptime, starttime) << " seconds." << endl;
+	//**************************************************************
+
 
 	return;
 }
 
-void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_cartesian(FO_surf* FOsurf_ptr, int dc_idx)
+void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int local_pid)
 {
-int reso_idx = decay_channels.resonance_idx[dc_idx-1] + 1;
-//CURRENTLY USING WRONG DEFINITIONS OF SIGN AND DEGEN
-//NEED TO FIX BEFORE VERSION IS STABLE
-   double sign = particle_sign;
-   double degen = particle_gspin;
-   double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
-//assume dc_idx >= 1
-//double mu = 0.0;
-
-   for(int isurf=0; isurf<FO_length; isurf++)
-   {
-      FO_surf* surf = &FOsurf_ptr[isurf];
-      double mu = surf->particle_mu[particle_id];
-      double tau = surf->tau;
-      double vx = surf->vx;
-      double vy = surf->vy;
-      double Tdec = surf->Tdec;
-      double Pdec = surf->Pdec;
-      double Edec = surf->Edec;
-      double da0 = surf->da0;
-      double da1 = surf->da1;
-      double da2 = surf->da2;
-      double pi00 = surf->pi00;
-      double pi01 = surf->pi01;
-      double pi02 = surf->pi02;
-      double pi11 = surf->pi11;
-      double pi12 = surf->pi12;
-      double pi22 = surf->pi22;
-      double pi33 = surf->pi33;
-	
-	double x = surf->xpt;
-	double y = surf->ypt;
-	double temp_r = sqrt(x*x+y*y);
-	double temp_phi = atan2(y,x);
-
-      double vT = sqrt(vx*vx + vy*vy);
-      double gammaT = 1./sqrt(1. - vT*vT);
-
-      double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-      
-      //for(int ipt = 0; ipt < n_SP_pT; ipt++)
-      for(int ipx = 0; ipx < n_interp1_px_pts; ipx++)
-      {
-      //for(int iphi = 0; iphi < n_SP_pphi; iphi++)
-      for(int ipy = 0; ipy < n_interp1_py_pts; ipy++)
-      {
-         double px = SPinterp1_px[ipx];
-         double py = SPinterp1_py[ipy];
-	double pphi = atan2(py, px);
-	//if (pphi < 0.) pphi += 2.*M_PI;
-      for(int ieta=0; ieta < eta_s_npts; ieta++)
-      {
-         //double p0 = SP_p0[ipt][ieta];
-         //double pz = SP_pz[ipt][ieta];
-	double p0 = SPinterp1_p0[ipx][ipy][ieta];
-	double pz = SPinterp1_pz[ipx][ipy][ieta];
-         double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
-         double f0 = 1./(exp(expon)+sign);
-         //if(expon > 20) f0 = 0.0e0;
-         //else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
-
-         //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-         double pdsigma = p0*da0 + px*da1 + py*da2;
-
-         //viscous corrections
-         double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
-         double deltaf = 0.;
-	 if (use_delta_f)
-	 {
-		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
-	 }
-
-         double S_p = prefactor*pdsigma*f0*(1.+deltaf);
-	double symmetry_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
-	//ignore points where delta f is large
-	 if (1. + deltaf < 0.0) S_p = 0.0;
-        if (flagneg == 1 && S_p < tol)
-        {//neglect points where emission function goes negative from pdsigma
-           S_p = 0.0e0;
-        }
-         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
-	double sin_phi = sin(temp_phi - pphi);
-	double cos_phi = cos(temp_phi - pphi);
-	zvec[0] = tau*ch_eta_s[ieta];
-	zvec[1] = temp_r * cos_phi;
-	zvec[2] = temp_r * sin_phi;
-	zvec[3] = tau*sh_eta_s[ieta];
-	for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-		dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy] += S_p_withweight*weight_function(zvec, wfi);
-      }
-      }
-      }
-   }
-	for(int ipx = 0; ipx < n_interp1_px_pts; ipx++)
-	for(int ipy = 0; ipy < n_interp1_py_pts; ipy++)
-	{
-	cout << SPinterp1_px[ipx] << "  " << SPinterp1_py[ipy] << "  " << dN_dypTdpTdphi_moments[dc_idx][1][ipx][ipy] << endl;
-	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
-	{
-		double temp = dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy];
-		ln_dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy] = log(abs(temp));
-		sign_of_dN_dypTdpTdphi_moments[reso_idx][wfi][ipx][ipy] = sgn(temp);
-	}
-	}
-   return;
-}
-
-void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int dc_idx)
-{
-	int local_reso_idx;
+cout << "local_pid = " << local_pid << endl;
+//debugger(__LINE__,__FILE__);
+	//int local_reso_idx;
 	double z0, z1, z2, z3;
 	double sign, degen, localmass, mu;
-	if (dc_idx == 0)
+	if (local_pid == target_particle_id)
 	{
-		local_reso_idx = 0;
+//debugger(__LINE__,__FILE__);
 		sign = particle_sign;
 		degen = particle_gspin;
 		localmass = particle_mass;
-		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-			mu = 0.0;
-		else
-			mu = FOsurf_ptr[0].particle_mu[particle_id];
+		mu = FOsurf_ptr[0].particle_mu[particle_id];
 	}
 	else
 	{
-		local_reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
-		sign = decay_channels.resonance_sign[dc_idx - 1];
-		degen = decay_channels.resonance_gspin[dc_idx - 1];
-		localmass = decay_channels.resonance_mass[dc_idx - 1];
-		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-			mu = 0.0;
-		else
-			mu = decay_channels.resonance_mu[dc_idx - 1];
+//debugger(__LINE__,__FILE__);
+		sign = all_particles[local_pid].sign;
+		degen = all_particles[local_pid].gspin;
+		localmass = all_particles[local_pid].mass;
+		mu = all_particles[local_pid].mu;
 	}
+//debugger(__LINE__,__FILE__);
 	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
-	//these are constants along the FO surface,
-	//so don't waste time updating them for each cell
 	Tdec = (&FOsurf_ptr[0])->Tdec;
 	double one_by_Tdec = 1./Tdec;
 	Pdec = (&FOsurf_ptr[0])->Pdec;
 	Edec = (&FOsurf_ptr[0])->Edec;
 	double deltaf_prefactor = 0.;
 	if (use_delta_f) deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-	
+//debugger(__LINE__,__FILE__);
 	//declare variables used below here to see if this speeds up code:
 	double tau, vx, vy, da0, da1, da2;
 	double pi00, pi01, pi02, pi11, pi12, pi22, pi33;
@@ -942,12 +641,9 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 		eta_odd_factor = 0.0;
 		eta_even_factor = 2.0;
 	}
-	
-	//cerr << "***Checkpoint #2" << endl;
+//debugger(__LINE__,__FILE__);
 	for(int isurf=0; isurf<FO_length ; isurf++)
 	{
-		//if (VERBOSE > 5) *global_out_stream_ptr << "\tCal_dN_dypTdpTdphi_with_weights_polar(): dc_idx = "
-		//				<< dc_idx << ", cell = " << isurf + 1 << " of " << FO_length 	<< endl;
 		surf = &FOsurf_ptr[isurf];
 		tau = surf->tau;
 		vx = surf->vx;
@@ -963,21 +659,19 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 		pi22 = surf->pi22;
 		pi33 = surf->pi33;
 		temp_r = surf->r;
-		//temp_phi = place_in_range(surf->phi, 0.0, 2.0*M_PI);
-		//xpt = surf->xpt;
-		//ypt = surf->ypt;
 		sin_temp_phi = surf->sin_phi;
 		cos_temp_phi = surf->cos_phi;
 		gammaT = surf->gammaT;
-      
+//debugger(__LINE__,__FILE__);
 		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
 		{
 			pT = SPinterp2_pT[ipt];
+//debugger(__LINE__,__FILE__);
 			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
 			{
+//debugger(__LINE__,__FILE__);
 				sin_pphi = sin_SPinterp2_pphi[iphi];
 				cos_pphi = cos_SPinterp2_pphi[iphi];
-				//pphi = SPinterp2_pphi[iphi];
 				px = pT*cos_pphi;
 				py = pT*sin_pphi;
 				sin_phi_m_pphi = sin_temp_phi * cos_pphi - cos_temp_phi * sin_pphi;
@@ -986,10 +680,9 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 				z2 = temp_r * sin_phi_m_pphi;
 				for(int ieta=0; ieta < eta_s_npts; ieta++)
 				{
+//debugger(__LINE__,__FILE__);
 					p0 = SPinterp2_p0[ipt][ieta];
 					pz = SPinterp2_pz[ipt][ieta];
-					//zpt = tau*sh_eta_s[ieta];
-					//tpt = tau*ch_eta_s[ieta];
 	
 					//now get distribution function, emission function, etc.
 					if (TRUNCATE_COOPER_FRYE)
@@ -1004,232 +697,54 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 					//viscous corrections
 					deltaf = 0.;
 					if (use_delta_f)
-						deltaf = deltaf_prefactor * (1. - sign*f0)
-								* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
-					if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-					{
-						S_p = prefactor * S_direct(temp_r, eta_s[ieta], tau, sqrt(pT*pT + localmass*localmass), pT, cos_phi_m_pphi);
-						if (flagneg == 1 && S_p < tol)
-						{
-							S_p = 0.0e0;
-						}
-					}
-					else
-					{
-						//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-						S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
-						//ignore points where delta f is large or emission function goes negative from pdsigma
-						if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
-							S_p = 0.0;
-					}
+					deltaf = deltaf_prefactor * (1. - sign*f0)
+							* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
+					//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+					S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
+					//ignore points where delta f is large or emission function goes negative from pdsigma
+					if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
+						S_p = 0.0;
 
 					S_p_withweight = S_p*tau*eta_s_weight[ieta];
 					z0 = tau*ch_eta_s[ieta];
 					z3 = tau*sh_eta_s[ieta];
-					dN_dypTdpTdphi_moments[local_reso_idx][0][ipt][iphi] += eta_even_factor*S_p_withweight;			//<1>
-					dN_dypTdpTdphi_moments[local_reso_idx][1][ipt][iphi] += eta_even_factor*S_p_withweight*z2;			//<x_s>
-					dN_dypTdpTdphi_moments[local_reso_idx][2][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
-					dN_dypTdpTdphi_moments[local_reso_idx][3][ipt][iphi] += eta_even_factor*S_p_withweight*z1;			//<x_o>
-					dN_dypTdpTdphi_moments[local_reso_idx][4][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z1;			//<x^2_o>
-					dN_dypTdpTdphi_moments[local_reso_idx][5][ipt][iphi] += eta_odd_factor*S_p_withweight*z3;			//<x_l>
-					dN_dypTdpTdphi_moments[local_reso_idx][6][ipt][iphi] += eta_even_factor*S_p_withweight*z3*z3;			//<x^2_l>
-					dN_dypTdpTdphi_moments[local_reso_idx][7][ipt][iphi] += eta_even_factor*S_p_withweight*z0;			//<t>
-					dN_dypTdpTdphi_moments[local_reso_idx][8][ipt][iphi] += eta_even_factor*S_p_withweight*z0*z0;			//<t^2>
-					dN_dypTdpTdphi_moments[local_reso_idx][9][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z1;			//<x_s x_o>
-					dN_dypTdpTdphi_moments[local_reso_idx][10][ipt][iphi] += eta_odd_factor*S_p_withweight*z2*z3;			//<x_s x_l>
-					dN_dypTdpTdphi_moments[local_reso_idx][11][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z0;		//<x_s t>
-					dN_dypTdpTdphi_moments[local_reso_idx][12][ipt][iphi] += eta_odd_factor*S_p_withweight*z1*z3;			//<x_o x_l>
-					dN_dypTdpTdphi_moments[local_reso_idx][13][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z0;		//<x_o t>
-					dN_dypTdpTdphi_moments[local_reso_idx][14][ipt][iphi] += eta_odd_factor*S_p_withweight*z3*z0;			//<x_l t>
+					dN_dypTdpTdphi_moments[local_pid][0][ipt][iphi] += eta_even_factor*S_p_withweight;			//<1>
+					dN_dypTdpTdphi_moments[local_pid][1][ipt][iphi] += eta_even_factor*S_p_withweight*z2;			//<x_s>
+					dN_dypTdpTdphi_moments[local_pid][2][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
+					dN_dypTdpTdphi_moments[local_pid][3][ipt][iphi] += eta_even_factor*S_p_withweight*z1;			//<x_o>
+					dN_dypTdpTdphi_moments[local_pid][4][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z1;			//<x^2_o>
+					dN_dypTdpTdphi_moments[local_pid][5][ipt][iphi] += eta_odd_factor*S_p_withweight*z3;			//<x_l>
+					dN_dypTdpTdphi_moments[local_pid][6][ipt][iphi] += eta_even_factor*S_p_withweight*z3*z3;			//<x^2_l>
+					dN_dypTdpTdphi_moments[local_pid][7][ipt][iphi] += eta_even_factor*S_p_withweight*z0;			//<t>
+					dN_dypTdpTdphi_moments[local_pid][8][ipt][iphi] += eta_even_factor*S_p_withweight*z0*z0;			//<t^2>
+					dN_dypTdpTdphi_moments[local_pid][9][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z1;			//<x_s x_o>
+					dN_dypTdpTdphi_moments[local_pid][10][ipt][iphi] += eta_odd_factor*S_p_withweight*z2*z3;			//<x_s x_l>
+					dN_dypTdpTdphi_moments[local_pid][11][ipt][iphi] += eta_even_factor*S_p_withweight*z2*z0;		//<x_s t>
+					dN_dypTdpTdphi_moments[local_pid][12][ipt][iphi] += eta_odd_factor*S_p_withweight*z1*z3;			//<x_o x_l>
+					dN_dypTdpTdphi_moments[local_pid][13][ipt][iphi] += eta_even_factor*S_p_withweight*z1*z0;		//<x_o t>
+					dN_dypTdpTdphi_moments[local_pid][14][ipt][iphi] += eta_odd_factor*S_p_withweight*z3*z0;			//<x_l t>
 				}
 			}
 		}
 	}
 
-	double temp;
-	//set log of dN_dypTdpTdphi_moments...
-	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-	{
-		for(int wfi = 0; wfi < n_weighting_functions; wfi++)
-		{
-			temp = dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi];
-			ln_dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi] = log(abs(temp));
-			sign_of_dN_dypTdpTdphi_moments[local_reso_idx][wfi][ipt][iphi] = sgn(temp);
-		}
-		//cout << "-1   " << dc_idx << "   " << setw(8) << setprecision(15)
-		//			<< SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi] << "   " << dN_dypTdpTdphi_moments[local_reso_idx][0][ipt][iphi]
-		//			<< "   " << dN_dypTdpTdphi_moments[local_reso_idx][5][ipt][iphi] << "   " << dN_dypTdpTdphi_moments[local_reso_idx][6][ipt][iphi] << endl;
-	}
-	//cerr << "***Checkpoint #3" << endl;
-	//cout << "***Exited Cal_dN_dypTdpTdphi_with_weights_polar" << endl;
-
 	return;
 }
-
-void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int dc_idx)
-{
-	int local_reso_idx;
-	//double z0, z1, z2, z3;
-	double sign, degen, localmass, mu;
-	if (dc_idx == 0)
-	{
-		local_reso_idx = 0;
-		sign = particle_sign;
-		degen = particle_gspin;
-		localmass = particle_mass;
-		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-			mu = 0.0;
-		else
-			mu = FOsurf_ptr[0].particle_mu[particle_id];
-	}
-	else
-	{
-		local_reso_idx = decay_channels.resonance_idx[dc_idx - 1] + 1;
-		sign = decay_channels.resonance_sign[dc_idx - 1];
-		degen = decay_channels.resonance_gspin[dc_idx - 1];
-		localmass = decay_channels.resonance_mass[dc_idx - 1];
-		if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-			mu = 0.0;
-		else
-			mu = decay_channels.resonance_mu[dc_idx - 1];
-	}
-	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
-	Tdec = (&FOsurf_ptr[0])->Tdec;
-	double one_by_Tdec = 1./Tdec;
-	Pdec = (&FOsurf_ptr[0])->Pdec;
-	Edec = (&FOsurf_ptr[0])->Edec;
-	double deltaf_prefactor = 0.;
-	if (use_delta_f) deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-	
-	//declare variables used below here to see if this speeds up code:
-	//double tau, vx, vy, da0, da1, da2;
-	//double pi00, pi01, pi02, pi11, pi12, pi22, pi33;
-	//double temp_r, temp_phi, xpt, ypt, zpt, tpt, sin_temp_phi, cos_temp_phi, gammaT, expon;
-	
-	//double pT, pphi;
-	//double px, py, p0, pz, f0, deltaf, S_p, S_p_withweight, dN_ptdptdphidy_tmp;
-	FO_surf* surf;
-	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC)
-	{
-		eta_odd_factor = 0.0;
-		eta_even_factor = 2.0;
-	}
-
-  Stopwatch sw;
-  sw.tic();
-	
-	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-	{
-		double pT = SPinterp2_pT[ipt];
-		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-		{
-			double px = pT*cos_SPinterp2_pphi[iphi];
-			double py = pT*sin_SPinterp2_pphi[iphi];
-			double dN_ptdptdphidy_tmp = 0.0;
-			for(int isurf = 0; isurf < FO_length; isurf++)
-			{
-				surf = &FOsurf_ptr[isurf];
-				double tau = surf->tau;
-				double vx = surf->vx;
-				double vy = surf->vy;
-				double da0 = surf->da0;
-				double da1 = surf->da1;
-				double da2 = surf->da2;
-				double pi00 = surf->pi00;
-				double pi01 = surf->pi01;
-				double pi02 = surf->pi02;
-				double pi11 = surf->pi11;
-				double pi12 = surf->pi12;
-				double pi22 = surf->pi22;
-				double pi33 = surf->pi33;
-				double gammaT = surf->gammaT;
-      
-				for(int ieta = 0; ieta < eta_s_npts; ieta++)
-				{
-					double p0 = SPinterp2_p0[ipt][ieta];
-					double pz = SPinterp2_pz[ipt][ieta];
-	
-					//now get distribution function, emission function, etc.
-					double f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
-	
-					//viscous corrections
-					double deltaf = deltaf_prefactor * (1. - sign*f0)
-							* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
-
-					//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-					double S_p_withweight = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf)*tau*eta_s_weight[ieta];
-					//ignore points where delta f is large or emission function goes negative from pdsigma
-					if (1. + deltaf < 0.0)
-						S_p_withweight = 0.0;
-
-					dN_ptdptdphidy_tmp += eta_even_factor*S_p_withweight;
-				}	//eta
-			}		//FOsurf
-			dN_dypTdpTdphi_moments[local_reso_idx][0][ipt][iphi] = dN_ptdptdphidy_tmp;
-		}			//pphi
-	}				//pT
-  sw.toc();
-  *global_out_stream_ptr << endl << "Finished " << sw.takeTime() << " seconds." << endl;
-
-	return;
-}
-
-void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(double** SP_px, double** SP_py)
-{
-	//cout << "Starting interpolated values: " << endl;
-	for(int ipt = 0; ipt < n_SP_pT; ipt++)
-	for(int iphi = 0; iphi < n_SP_pphi; iphi++)
-	{
-		double px = SP_px[ipt][iphi];
-		double py = SP_py[ipt][iphi];
-		//dN_dypTdpTdphi[ipt][iphi] = exp(interpolate2D(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[0][0],
-		//					px, py, n_interp1_px_pts, n_interp1_py_pts, INTERPOLATION_KIND, UNIFORM_SPACING));
-		SV_dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp1_px, SPinterp1_py, dN_dypTdpTdphi_moments[0][0],
-							px, py, n_interp1_px_pts, n_interp1_py_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		//cout << SP_pT[ipt] << "  " << SP_pphi[iphi] << "  " << px << "  " << py << "  " << dN_dypTdpTdphi[ipt][iphi] << endl;
-	}
-	//cout << endl;
-	//cout << "Starting gridded values: " << endl;
-	//for(int ipx = 0; ipx < n_interp1_px_pts; ipx++)
-	//for(int ipy = 0; ipy < n_interp1_py_pts; ipy++)
-	//	cout << SPinterp1_px[ipx] << "  " << SPinterp1_py[ipy] << "  " << dN_dypTdpTdphi_moments[0][0][ipx][ipy] << endl;
-
-   return;
-}
-
 
 void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi)
 {
-	//cout << "Starting interpolated values: " << endl;
 	for(int ipt = 0; ipt < n_SP_pT; ipt++)
-	{
 	for(int iphi = 0; iphi < n_SP_pphi; iphi++)
 	{
 		double pT = SP_pT[ipt];
 		double pphi = SP_pphi[iphi];
-		//dN_dypTdpTdphi[ipt][iphi] = exp(interpolate2D(SPinterp2_pT, SPinterp2_pphi, ln_dN_dypTdpTdphi_moments[0][0],
-		//					pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING));
 		SV_dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
 							pT, pphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 		if (0) cout << "-2   " << pT << "  " << pphi << "  " << pT*cos(pphi) << "  " << pT*sin(pphi) << "  " << dN_dypTdpTdphi[ipt][iphi] << endl;
 	}
-	//cout << endl;
-	}
-	//cout << endl;
-	//cout << "Starting gridded values: " << endl;
-	//for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-	//{
-	//	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-	//		cout << SPinterp2_pT[ipt] << "  " << SPinterp2_pphi[iphi] << "  " << dN_dypTdpTdphi_moments[0][0][ipt][iphi] << endl;
-	//	cout << endl;
-	//}
 
    return;
 }
-
-
 
 void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx, bool thermal_particles_only /*= false*/)
 {
@@ -1275,146 +790,136 @@ void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx, boo
        }
    }
 
-	if (INTERPOLATION_FORMAT == 0 || thermal_particles_only)	//no interpolation at all; calculate everything exactly
+	if (thermal_particles_only)	//no interpolation at all; calculate everything exactly
 	{
 		Cal_dN_dypTdpTdphi(p0, px, py, pz, FOsurf_ptr);
 		if (VERBOSE > 0) *global_out_stream_ptr << "  --> No interpolation!  Calculating everything exactly..." << endl;
 	}
-	else if (INTERPOLATION_FORMAT == 1)				//using cartesian grid for interpolation (px, py)
-	{
-		Cal_dN_dypTdpTdphi_interpolate_cartesian_grid(px, py);
-		if (VERBOSE > 0) *global_out_stream_ptr << "  --> Interpolating on a Cartesian grid..." << endl;
-	}
-	else if (INTERPOLATION_FORMAT == 2)				//using polar grid for interpolation (pT, pphi)
+	else						//using polar grid for interpolation (pT, pphi)
 	{
    		Cal_dN_dypTdpTdphi_interpolate_polar_grid(SP_pT, SP_pphi);
 		if (VERBOSE > 0) *global_out_stream_ptr << "  --> Interpolating on a polar grid..." << endl;
 	}
-	else
-	{
-		if (VERBOSE > 0) cerr << "Determine_plane_angle: Options not supported!  Exiting..." << endl;
-		exit(1);
-	}
    
-   if (INTERPOLATION_FORMAT == 0 || thermal_particles_only)
-   {
-   	for(int ipt=0; ipt<n_SP_pT; ipt++)
-   	{
-		for(int iphi=0; iphi<n_SP_pphi; iphi++)
-		{
-			dN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
-			pTdN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
-			dN_dypTdpT[ipt] += dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
+	if (thermal_particles_only)
+	{
+		for(int ipt=0; ipt<n_SP_pT; ipt++)
+ 	  	{
+			for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			{
+				dN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
+				pTdN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
+				dN_dypTdpT[ipt] += dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
+			}
 		}
-	}
-   	double norm = 0.0e0;
-   	for(int iphi=0; iphi<n_SP_pphi; iphi++)
-   	   norm += dN_dydphi[iphi]*SP_pphi_weight[iphi];
-   	for(int iorder=0; iorder < n_order; iorder++)
-   	{
-   	   double cosine = 0.0e0;
-   	   double sine = 0.0e0;
-   	   for(int iphi=0; iphi<n_SP_pphi; iphi++)
-   	   {
-   	      cosine += dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	      sine += dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	      //get pT-differential v_n here
-   	      for(int ipt=0; ipt<n_SP_pT; ipt++)
-   	      {
-   	          cosine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	          sine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	      }
-   	   }
-   	   for(int ipt=0; ipt<n_SP_pT; ipt++)
-   	   {
-   	      cosine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
-   	      sine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
-   	   }
-   	   cosine = cosine/norm;
-   	   sine = sine/norm;
-   	   if( sqrt(sine*sine + cosine*cosine) < 1e-8)
-   	      plane_angle[iorder] = 0.0e0;
-   	   else
-   	      plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
-   	}
-	
-	   for(int ipt=0; ipt<n_SP_pT; ipt++)
-		dN_dypTdpT[ipt] /= (2.*M_PI);
-	//cout << "Currently getting <p_T> stuff..." << endl;
-	
-	   mean_pT = 0.;
-	   for(int iphi=0; iphi<n_SP_pphi; iphi++)
-	      mean_pT += pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
-	   mean_pT /= norm;
-	   plane_angle[0] = norm;
-   }
-   else
-   {
-   	for(int ipt=0; ipt<n_SP_pT; ipt++)
-   	{
+	   	double norm = 0.0e0;
+	   	for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			norm += dN_dydphi[iphi]*SP_pphi_weight[iphi];
+	   	for(int iorder=0; iorder < n_order; iorder++)
+	   	{
+			double cosine = 0.0e0;
+			double sine = 0.0e0;
+			for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			{
+				cosine += dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				sine += dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				//get pT-differential v_n here
+				for(int ipt=0; ipt<n_SP_pT; ipt++)
+				{
+					cosine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+					sine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				}
+			}
+			for(int ipt=0; ipt<n_SP_pT; ipt++)
+			{
+				cosine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
+				sine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
+			}
+			cosine = cosine/norm;
+			sine = sine/norm;
+			if( sqrt(sine*sine + cosine*cosine) < 1e-8)
+				plane_angle[iorder] = 0.0e0;
+			else
+				plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
+	   	}
+		
+		for(int ipt=0; ipt<n_SP_pT; ipt++)
+			dN_dypTdpT[ipt] /= (2.*M_PI);
+		//cout << "Currently getting <p_T> stuff..." << endl;
+		
+		mean_pT = 0.;
 		for(int iphi=0; iphi<n_SP_pphi; iphi++)
-		{
-			SV_dN_dydphi[iphi] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
-			SV_pTdN_dydphi[iphi] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
-			SV_dN_dypTdpT[ipt] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
-		}
+			mean_pT += pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
+		mean_pT /= norm;
+		plane_angle[0] = norm;
 	}
-   	double norm = 0.0e0;
-   	for(int iphi=0; iphi<n_SP_pphi; iphi++)
-   	   norm += SV_dN_dydphi[iphi]*SP_pphi_weight[iphi];
-   	for(int iorder=0; iorder < n_order; iorder++)
-   	{
-   	   double cosine = 0.0e0;
-   	   double sine = 0.0e0;
-   	   for(int iphi=0; iphi<n_SP_pphi; iphi++)
-   	   {
-   	      cosine += SV_dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	      sine += SV_dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	      //get pT-differential v_n here
-   	      for(int ipt=0; ipt<n_SP_pT; ipt++)
-   	      {
-   	          cosine_iorder[ipt][iorder] += SV_dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	          sine_iorder[ipt][iorder] += SV_dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-   	      }
-   	   }
-   	   for(int ipt=0; ipt<n_SP_pT; ipt++)
-   	   {
-   	      cosine_iorder[ipt][iorder] /= SV_dN_dypTdpT[ipt];
-   	      sine_iorder[ipt][iorder] /= SV_dN_dypTdpT[ipt];
-   	   }
-   	   cosine = cosine/norm;
-   	   sine = sine/norm;
-   	   if( sqrt(sine*sine + cosine*cosine) < 1e-8)
-   	      plane_angle[iorder] = 0.0e0;
-   	   else
-   	      plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
-   	}
+	else	// if not doing thermal particles only
+	{
+		for(int ipt=0; ipt<n_SP_pT; ipt++)
+	   	{
+			for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			{
+				SV_dN_dydphi[iphi] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
+				SV_pTdN_dydphi[iphi] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
+				SV_dN_dypTdpT[ipt] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
+			}
+		}
+	   	double norm = 0.0e0;
+	   	for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			norm += SV_dN_dydphi[iphi]*SP_pphi_weight[iphi];
+	   	for(int iorder=0; iorder < n_order; iorder++)
+		{
+			double cosine = 0.0e0;
+			double sine = 0.0e0;
+			for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			{
+				cosine += SV_dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				sine += SV_dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				//get pT-differential v_n here
+				for(int ipt=0; ipt<n_SP_pT; ipt++)
+				{
+					cosine_iorder[ipt][iorder] += SV_dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+					sine_iorder[ipt][iorder] += SV_dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				}
+			}
+			for(int ipt=0; ipt<n_SP_pT; ipt++)
+			{
+				cosine_iorder[ipt][iorder] /= SV_dN_dypTdpT[ipt];
+				sine_iorder[ipt][iorder] /= SV_dN_dypTdpT[ipt];
+			}
+			cosine = cosine/norm;
+			sine = sine/norm;
+			if( sqrt(sine*sine + cosine*cosine) < 1e-8)
+				plane_angle[iorder] = 0.0e0;
+			else
+				plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
+		}
+		
+		for(int ipt=0; ipt<n_SP_pT; ipt++)
+			SV_dN_dypTdpT[ipt] /= (2.*M_PI);
+		//cout << "Currently getting <p_T> stuff..." << endl;
+		
+		mean_pT = 0.;
+		for(int iphi=0; iphi<n_SP_pphi; iphi++)
+			mean_pT += SV_pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
+		mean_pT /= norm;
+		plane_angle[0] = norm;
+	}
 	
-	   for(int ipt=0; ipt<n_SP_pT; ipt++)
-		SV_dN_dypTdpT[ipt] /= (2.*M_PI);
-	//cout << "Currently getting <p_T> stuff..." << endl;
-	
-	   mean_pT = 0.;
-	   for(int iphi=0; iphi<n_SP_pphi; iphi++)
-	      mean_pT += SV_pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
-	   mean_pT /= norm;
-	   plane_angle[0] = norm;
-   }
-	
-   delete[] mT;
-   for(int ipt=0; ipt<n_SP_pT; ipt++)
-   {
-      delete[] px[ipt];
-      delete[] py[ipt];
-      delete[] p0[ipt];
-      delete[] pz[ipt];
-   }
-   delete[] px;
-   delete[] py;
-   delete[] p0;
-   delete[] pz;
+	delete[] mT;
+	for(int ipt=0; ipt<n_SP_pT; ipt++)
+	{
+		delete[] px[ipt];
+		delete[] py[ipt];
+		delete[] p0[ipt];
+		delete[] pz[ipt];
+	}
+	delete[] px;
+	delete[] py;
+	delete[] p0;
+	delete[] pz;
 
-   return;
+	return;
 }
 
 void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local)
@@ -1422,19 +927,10 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 	Mres = current_resonance_mass;
 	Gamma = current_resonance_Gamma;
 	double one_by_Gamma_Mres = hbarC/(Gamma*Mres);
-	if (USE_OLD_ANALYZE_SF)
-	{
-		mass = particle_mass;
-		br = current_resonance_total_br;
-	}
-	else
-	{
-		mass = current_daughter_mass;
-		br = current_resonance_direct_br;	//doesn't depend on target daughter particle, just parent resonance and decay channel
-	}
+	mass = current_daughter_mass;
+	br = current_resonance_direct_br;	//doesn't depend on target daughter particle, just parent resonance and decay channel
 	m2 = current_resonance_decay_masses[0];
 	m3 = current_resonance_decay_masses[1];
-	//mT = sqrt(mass*mass + K_T_local*K_T_local);
 	pT = K_T_local;
 	current_K_phi = K_phi_local;
 	cos_cKphi = cos(K_phi_local);
@@ -1459,11 +955,8 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 		double pstar_loc = sqrt( ((Mres+mass)*(Mres+mass) - s_loc)*((Mres-mass)*(Mres-mass) - s_loc) )/(2.0*Mres);
 		VEC_n2_pstar = pstar_loc;
 		check_for_NaNs("pstar_loc", pstar_loc, *global_out_stream_ptr);
-		//double g_s_loc = g(s_loc)/pstar_loc;	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
 		double g_s_loc = g(s_loc);	//for n_body == 2, doesn't actually use s_loc since result is just a factor * delta(...); just returns factor
 		VEC_n2_s_factor = br/(4.*M_PI*VEC_n2_pstar);	//==g_s_loc
-		//VEC_n2_g_s = g_s_loc;
-		//VEC_n2_s_factor = VEC_n2_g_s;
 		double Estar_loc = sqrt(mass*mass + pstar_loc*pstar_loc);
 		VEC_n2_Estar = Estar_loc;
 		double psBmT = pstar_loc / mT;
@@ -1474,7 +967,7 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 		VEC_n2_Yp = p_y + DeltaY_loc;
 		VEC_n2_Ym = p_y - DeltaY_loc;
 		check_for_NaNs("DeltaY_loc", DeltaY_loc, *global_out_stream_ptr);
-/*if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << dc_idx << ":" << endl
+/*if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_resonance_idx << ":" << endl
 			<< setw(8) << setprecision(15)
 			<< "  --> s_loc = " << s_loc << endl
 			<< "  --> pstar_loc = " << pstar_loc << endl
@@ -1541,6 +1034,7 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 				{
 					VEC_n2_alpha[iv][izeta][ii] = one_by_Gamma_Mres * VEC_n2_Pp[iv][izeta][ii];
 					VEC_n2_alpha_m[iv][izeta][ii] = one_by_Gamma_Mres * VEC_n2_Pm[iv][izeta][ii];
+					check_for_NaNs("VEC_n2_alpha[iv][izeta][ii]", VEC_n2_alpha[iv][izeta][ii], *global_out_stream_ptr);
 				}
 			}
 		}
@@ -1569,6 +1063,14 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 			VEC_Estar[is] = Estar_loc;
 			double psBmT = pstar_loc / mT;
 			double DeltaY_loc = log(psBmT + sqrt(1.+psBmT*psBmT));
+/*if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+			<< setw(8) << setprecision(15)
+			<< "  --> s_loc = " << s_loc << endl
+			<< "  --> pstar_loc = " << pstar_loc << endl
+			<< "  --> g_s_loc = " << g_s_loc << endl
+			<< "  --> Estar_loc = " << Estar_loc << endl
+			<< "  --> psBmT = " << psBmT << endl
+			<< "  --> DeltaY_loc = " << DeltaY_loc << endl;*/
 			VEC_DeltaY[is] = DeltaY_loc;
 			p_y = 0.0;
 			VEC_Yp[is] = p_y + DeltaY_loc;
@@ -1614,6 +1116,7 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 					{
 						VEC_alpha[is][iv][izeta][ii] = one_by_Gamma_Mres * VEC_Pp[is][iv][izeta][ii];
 						VEC_alpha_m[is][iv][izeta][ii] = one_by_Gamma_Mres * VEC_Pm[is][iv][izeta][ii];
+						check_for_NaNs("VEC_alpha[iv][izeta][ii]", VEC_alpha[is][iv][izeta][ii], *global_out_stream_ptr);
 					}
 				}
 			}
@@ -1626,106 +1129,91 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 
 void SourceVariances::Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr)
 {
-if (VERBOSE > 0) *global_out_stream_ptr << "Entering Cal_dN_dypTdpTdphi as expected..." << endl;
-   double sign = particle_sign;
-   double degen = particle_gspin;
-   double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+	double sign = particle_sign;
+	double degen = particle_gspin;
+	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
 	double localmass = particle_mass;
 
-   for(int isurf=0; isurf<FO_length ; isurf++)
-   {
-      FO_surf* surf = &FOsurf_ptr[isurf];
-      double tau = surf->tau;
-	double mu;
-	if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-		mu = 0.0;
-	else
-		mu = FOsurf_ptr[0].particle_mu[particle_id];
-//	cerr << mu << "   " << sign << "   " << degen << "   " << endl;
+	for(int isurf=0; isurf<FO_length ; isurf++)
+	{
+		FO_surf* surf = &FOsurf_ptr[isurf];
+		double tau = surf->tau;
+		double mu = surf->particle_mu[particle_id];
 
-      double vx = surf->vx;
-      double vy = surf->vy;
-      double Tdec = surf->Tdec;
-      double Pdec = surf->Pdec;
-      double Edec = surf->Edec;
-      double da0 = surf->da0;
-      double da1 = surf->da1;
-      double da2 = surf->da2;
-      double pi00 = surf->pi00;
-      double pi01 = surf->pi01;
-      double pi02 = surf->pi02;
-      double pi11 = surf->pi11;
-      double pi12 = surf->pi12;
-      double pi22 = surf->pi22;
-      double pi33 = surf->pi33;
-      double vT = sqrt(vx*vx + vy*vy);
-      double gammaT = 1./sqrt(1. - vT*vT);
-	double temp_r = surf->r;
-	double temp_phi = surf->phi;
+		double vx = surf->vx;
+		double vy = surf->vy;
+		double Tdec = surf->Tdec;
+		double one_by_Tdec = 1./Tdec;
+		double Pdec = surf->Pdec;
+		double Edec = surf->Edec;
+		double da0 = surf->da0;
+		double da1 = surf->da1;
+		double da2 = surf->da2;
+		double pi00 = surf->pi00;
+		double pi01 = surf->pi01;
+		double pi02 = surf->pi02;
+		double pi11 = surf->pi11;
+		double pi12 = surf->pi12;
+		double pi22 = surf->pi22;
+		double pi33 = surf->pi33;
+		double vT = sqrt(vx*vx + vy*vy);
+		double gammaT = 1./sqrt(1. - vT*vT);
+		double temp_r = surf->r;
+		double temp_phi = surf->phi;
 
-      double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+		double deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
       
-      for(int ipt = 0; ipt < n_SP_pT; ipt++)
-      {
-	double pT = SP_pT[ipt];
-      for(int iphi = 0; iphi < n_SP_pphi; iphi++)
-      {
-         double px = SP_px[ipt][iphi];
-         double py = SP_py[ipt][iphi];
-	double cos_phi_m_pphi = cos(temp_phi - SP_pphi[iphi]);
-      for(int ieta=0; ieta < eta_s_npts; ieta++)
-      {
-         double p0 = SP_p0[ipt][ieta];
-         double pz = SP_pz[ipt][ieta];
-         double expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)/Tdec;
-         double f0;
-         if(expon > 20) f0 = 0.0e0;
-         else f0 = 1./(exp(expon)+sign);       //thermal equilibrium distributions
+		for(int ipt = 0; ipt < n_SP_pT; ipt++)
+		{
+			double pT = SP_pT[ipt];
+			for(int iphi = 0; iphi < n_SP_pphi; iphi++)
+			{
+				double px = SP_px[ipt][iphi];
+				double py = SP_py[ipt][iphi];
+				double cos_phi_m_pphi = cos(temp_phi - SP_pphi[iphi]);
+				for(int ieta=0; ieta < eta_s_npts; ieta++)
+				{
+					double p0 = SP_p0[ipt][ieta];
+					double pz = SP_pz[ipt][ieta];
 
-         //p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-         double pdsigma = p0*da0 + px*da1 + py*da2;
+					double expon = 0.0, f0 = 0.0;
+					//now get distribution function, emission function, etc.
+					if (TRUNCATE_COOPER_FRYE)
+					{
+						expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
+						if (expon > 20.) continue;
+						f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
+					}
+					else
+						f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
 
-         //viscous corrections
-         double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
-         double deltaf = 0.;
-	 if (use_delta_f)
-	 {
-		deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
-	 }
+					//p^mu d^3sigma_mu: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+					double pdsigma = p0*da0 + px*da1 + py*da2;
 
-	double S_p;
+					//viscous corrections
+					double Wfactor = p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33;
+					double deltaf = 0.;
+					if (use_delta_f)
+						deltaf = (1. - sign*f0)*Wfactor*deltaf_prefactor;
 
-	if (CHECKING_RESONANCE_CALC || USE_ANALYTIC_S)
-	{
-		S_p = prefactor * S_direct(temp_r, eta_s[ieta], tau, sqrt(pT*pT + localmass*localmass), pT, cos_phi_m_pphi);
-	}
-	else
-	{
-		//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-		S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
-		//ignore points where delta f is large or emission function goes negative from pdsigma
-		//if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol)) S_p = 0.0;
-        if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
-        //if (1. + deltaf < 0.0)
-		S_p = 0.0e0;
-	}
+					//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+					double S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
+
+					//ignore points where delta f is large or emission function goes negative from pdsigma
+					if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
+						S_p = 0.0e0;
 
 
-         //double S_p = prefactor*pdsigma*f0*(1.+deltaf);
-	double symmetry_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
-	 //if (1. + deltaf < 0.0) S_p = 0.0;
-         double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
-//cout << "(ipt, iphi, ieta) = (" << ipt << ", " << iphi << ", " << ieta << "): " << "dN_dypTdpTdphi[ipt][iphi] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
-//JUST COMPARING ANALYTIC RESONANCES WITH SV.S CALCULATIONS: WRONG OTHERWISE
-	//S_p_withweight = (1.)*eta_s_weight[ieta]*symmetry_factor;
-         dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
-      }
-//cout << "dN_dydphi[" << ipt << "][" << iphi << "] = " << dN_dypTdpTdphi[ipt][iphi] << endl;
-      }
-      }
-   }
-   return;
+					//double S_p = prefactor*pdsigma*f0*(1.+deltaf);
+					double symmetry_factor = 1.0;
+					if (ASSUME_ETA_SYMMETRIC) symmetry_factor = 2.0;
+					double S_p_withweight = S_p*tau*eta_s_weight[ieta]*symmetry_factor; //symmetry_factor accounts for the assumed reflection symmetry along eta direction
+					dN_dypTdpTdphi[ipt][iphi] += S_p_withweight;
+				}	//end of ieta loop
+			}		//end of iphi loop
+		}			//end of ipt loop
+	}				//end of isurf loop
+	return;
 }
 
 double SourceVariances::weight_function(double zvec[], int weight_function_index)
@@ -1766,112 +1254,40 @@ double SourceVariances::weight_function(double zvec[], int weight_function_index
 	return 0.0;
 }
 
-void SourceVariances::Update_source_variances(int iKT, int iKphi, int dc_idx)
-{
-	//if (VERBOSE > 0) *global_out_stream_ptr << "\t\t\tAdding correction from dc_idx = " << dc_idx << " to source integrals..." << endl;
-	if (dc_idx == 0)
-	{
-		double phi_K = K_phi[iKphi];
-		double KT = K_T[iKT];
-		double temp_factor = 1.0;
-		S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][3],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][4],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][5],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][6],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-		t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][7],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][8],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-		xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][9],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][10],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][11],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][12],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][13],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][14],
-							KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		if (DEBUG)		
-			cerr << "DEBUG: dc_idx = " << dc_idx << "  " << S_func[iKT][iKphi] << "  " << xs_S[iKT][iKphi] << "  " << xs2_S[iKT][iKphi] << endl;
-	}
-	else
-	{
-		S_func[iKT][iKphi] += integrated_spacetime_moments[dc_idx][0][iKT][iKphi];
-		xs_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][1][iKT][iKphi];
-		xs2_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][2][iKT][iKphi];
-		xo_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][3][iKT][iKphi];
-		xo2_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][4][iKT][iKphi];
-		xl_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][5][iKT][iKphi];
-		xl2_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][6][iKT][iKphi];
-		t_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][7][iKT][iKphi];
-		t2_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][8][iKT][iKphi];
-		xo_xs_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][9][iKT][iKphi];
-		xl_xs_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][10][iKT][iKphi];
-		xs_t_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][11][iKT][iKphi];
-		xo_xl_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][12][iKT][iKphi];
-		xo_t_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][13][iKT][iKphi];
-		xl_t_S[iKT][iKphi] += integrated_spacetime_moments[dc_idx][14][iKT][iKphi];
-		if (DEBUG)		
-			cerr << "DEBUG: dc_idx = " << dc_idx << "  " << integrated_spacetime_moments[dc_idx][0][iKT][iKphi]
-				<< "  " << integrated_spacetime_moments[dc_idx][1][iKT][iKphi]
-				<< "  " << integrated_spacetime_moments[dc_idx][2][iKT][iKphi] << endl;
-	}
-	if (isnan(S_func[iKT][iKphi]))
-	{
-		cerr << "Failed during resonance = " << dc_idx << " of " << n_decay_channels << ": " << decay_channels.resonance_name[dc_idx-1] << endl;
-	}
-
-	//if (VERBOSE > 0) *global_out_stream_ptr << "\t\t\t...finished that." << endl;
-	return;
-}
-
 void SourceVariances::Compute_source_variances(int iKT, int iKphi)
 {
 	double phi_K = K_phi[iKphi];
 	double KT = K_T[iKT];
 	double temp_factor = 1.0;
-	S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][0],
+	S_func[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][0],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][1],
+	xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][1],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][2],
+	xs2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][2],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][3],
+	xo_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][3],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][4],
+	xo2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][4],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][5],
+	xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][5],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][6],
+	xl2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][6],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-	t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][7],
+	t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][7],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][8],
+	t2_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][8],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);		
-	xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][9],
+	xo_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][9],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][10],
+	xl_xs_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][10],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][11],
+	xs_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][11],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][12],
+	xo_xl_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][12],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][13],
+	xo_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][13],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-	xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[0][14],
+	xl_t_S[iKT][iKphi] = temp_factor * interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[target_particle_id][14],
 						KT, phi_K, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
 	return;
 }

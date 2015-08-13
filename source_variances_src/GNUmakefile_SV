@@ -30,7 +30,6 @@ SRC		=	compute_source_variances.cpp \
 			$(SRCDIR)/sourcevariances.cpp \
 			$(SRCDIR)/sourcevariances_admin.cpp \
 			$(SRCDIR)/sourcevariances_resonance.cpp \
-			$(SRCDIR)/sourcevariances_extension.cpp \
 			$(SRCDIR)/sourcevariances_IO.cpp \
 			$(SRCDIR)/Arsenal.cpp \
 			$(SRCDIR)/gauss_quadrature.cpp
@@ -98,7 +97,6 @@ $(SRCDIR)/Arsenal.cpp: $(SRCDIR)/Arsenal.h
 $(SRCDIR)/sourcevariances.cpp: $(SRCDIR)/sourcevariances.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h $(SRCDIR)/Stopwatch.h
 $(SRCDIR)/sourcevariances_admin.cpp: $(SRCDIR)/sourcevariances.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
 $(SRCDIR)/sourcevariances_IO.cpp: $(SRCDIR)/sourcevariances.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
-$(SRCDIR)/sourcevariances_extension.cpp: $(SRCDIR)/sourcevariances.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
 $(SRCDIR)/sourcevariances_resonance.cpp: $(SRCDIR)/sourcevariances.h $(SRCDIR)/Arsenal.h $(SRCDIR)/gauss_quadrature.h
 $(SRCDIR)/SV_readindata.cpp: $(SRCDIR)/SV_readindata.h
 
