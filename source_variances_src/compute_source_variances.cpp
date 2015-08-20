@@ -127,13 +127,22 @@ int main(int argc, char *argv[])
 				//threshold = 0.0 means include none of them
 	output << "Working with threshold = " << threshold << endl;
 	vector<int> chosen_resonance_indices;
-	get_important_resonances(particle_idx, &chosen_resonance_indices, particle, Nparticle, threshold, output);
-	//if (abs(threshold - 1.0) > 1.e-12)
-	get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
-	sort_by_mass(&chosen_resonance_indices, particle, Nparticle, output);
-	for (int ii = 0; ii < (int)chosen_resonance_indices.size(); ii++)
-		output << ii << "   " << chosen_resonance_indices[ii] << "   " << particle[chosen_resonance_indices[ii]].name << endl;
-
+	if (threshold > 1.0 + 1.e-10)
+	{
+		int single_chosen_resonance = 21;	//index in all_particles array
+		chosen_resonance_indices.push_back(single_chosen_resonance);
+		output << "\t --> Looking only at contributions from " << particle[single_chosen_resonance].name << " and descendants" << endl;
+		get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
+		sort_by_mass(&chosen_resonance_indices, particle, Nparticle, output);
+	}
+	else
+	{
+		get_important_resonances(particle_idx, &chosen_resonance_indices, particle, Nparticle, threshold, output);
+		get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
+		sort_by_mass(&chosen_resonance_indices, particle, Nparticle, output);
+		for (int ii = 0; ii < (int)chosen_resonance_indices.size(); ii++)
+			output << ii << "   " << chosen_resonance_indices[ii] << "   " << particle[chosen_resonance_indices[ii]].name << endl;
+	}
 
    SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output);
    Source_function.read_in_all_dN_dypTdpTdphi = false;
@@ -147,13 +156,11 @@ int main(int argc, char *argv[])
 	
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
-   //Source_function.Analyze_sourcefunction_V2(FOsurf_ptr);
-   Source_function.Output_SVdN_dypTdpTdphi(folderindex);
-   Source_function.Output_SVdN_dypTdpT(folderindex);
-   Source_function.Output_dN_dypTdpTdphi(folderindex);
-   Source_function.Output_dN_dypTdpT(folderindex);
-   Source_function.Output_dN_dypTdpTdphi_grid(folderindex, 0);
-   Source_function.Output_results(folderindex);
+   //Source_function.Output_dN_dypTdpTdphi(folderindex);
+   //Source_function.Output_dN_dypTdpT(folderindex);
+   Source_function.Output_total_target_dN_dypTdpTdphi(folderindex);
+   Source_function.Output_chosen_resonances();
+   //Source_function.Output_results(folderindex);
    output << "Finished calculating HBT radii via source variances method" << endl;
 
 

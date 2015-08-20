@@ -52,22 +52,27 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	Pp = new double [4];
 	Pm = new double [4];
 
-	n_zeta_pts = 25;
-	n_v_pts = 25;
-	n_s_pts = 25;
+	//n_zeta_pts = 25;
+	//n_v_pts = 25;
+	//n_s_pts = 25;
+	n_zeta_pts = 48;
+	n_v_pts = 48;
+	n_s_pts = 48;
 	v_min = -1.;
 	v_max = 1.;
 	zeta_min = 0.;
 	zeta_max = M_PI;
 	
-   //default: use delta_f in calculations
-   use_delta_f = true;
-   no_df_stem = "";
+	//default: use delta_f in calculations
+	use_delta_f = true;
+	no_df_stem = "";
 	current_FOsurf_ptr = FOsurf_ptr;
-   Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
+	Emissionfunction_ptr = new vector<Emissionfunction_data> (1);
 //cerr << "made it inside!" << endl;
-	n_weighting_functions = 15;	//AKA, number of SV's
-	//n_weighting_functions = 3;	//just doing R^2_s to start
+	if (INCLUDE_SOURCE_VARIANCES)
+		n_weighting_functions = 15;	//AKA, number of SV's
+	else
+		n_weighting_functions = 1;	//just spectra
 	zvec = new double [4];
 
 //****************************************************************************************************
@@ -183,7 +188,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 
 				//check if decay channel has too many daughters (nbody >= 4)
 				bool too_many_daughters = false;
-				if (decay_channels.nbody[temp_idx] >= 4)
+				if (CHECK_NBODY && decay_channels.nbody[temp_idx] >= 4)
 					too_many_daughters = true;
 
 				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << decay_channels.resonance_name[temp_idx] << ", decay channel " << idecay + 1
@@ -222,17 +227,29 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	// Only make dN_dypTdpTdphi_moments large enough to hold all necessary resonance, not decay channels
 	//*****************************************************************
 	dN_dypTdpTdphi_moments = new double *** [Nparticle];
+	ln_dN_dypTdpTdphi_moments = new double *** [Nparticle];
+	sign_of_dN_dypTdpTdphi_moments = new double *** [Nparticle];
 	for (int ir=0; ir<Nparticle; ir++)
 	{
 		dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		ln_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
+		sign_of_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
 		for (int wfi=0; wfi<n_weighting_functions; wfi++)
 		{
 			dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+			ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
+			sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
 			for (int ipT=0; ipT<n_interp2_pT_pts; ipT++)
 			{
 				dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+				ln_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
+				sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
 				for (int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
-					dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+					{
+						dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+						ln_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+						sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
+					}
 			}
 		}
 	}
@@ -265,7 +282,12 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		double s_max_temp = (M_temp - particle_mass)*(M_temp - particle_mass);
 		// N.B. - this is only really necessary for 3-body decays,
 		//			but doesn't cause any problems for 2-body and is easier/simpler to code...
-		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts[idc], s_wts[idc]);	}
+		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, s_pts[idc], s_wts[idc]);
+	}
+	//for (int iv = 0; iv < n_v_pts; iv++)
+	//	*global_out_stream_ptr << setw(8) << setprecision(15) << "v_pts[" << iv << "] = " << v_pts[iv] << " and v_wts[" << iv << "] = " << v_wts[iv] << endl;
+	//for (int izeta = 0; izeta < n_zeta_pts; izeta++)
+	//	*global_out_stream_ptr << setw(8) << setprecision(15) << "zeta_pts[" << izeta << "] = " << zeta_pts[izeta] << " and zeta_wts[" << izeta << "] = " << zeta_wts[izeta] << endl;
 //cerr << "finished all that stuff..." << endl;
 	
 
@@ -275,7 +297,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
    gauss_quadrature(n_SP_pT, 1, 0.0, 0.0, SP_pT_min, SP_pT_max, SP_pT, SP_pT_weight);
    SP_pphi = new double [n_SP_pphi];
    SP_pphi_weight = new double [n_SP_pphi];
-   gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2*M_PI, SP_pphi, SP_pphi_weight);
+   gauss_quadrature(n_SP_pphi, 1, 0.0, 0.0, 0.0, 2.*M_PI, SP_pphi, SP_pphi_weight);
    SP_p_y = 0.0e0;
 
 //initialize and set evenly spaced grid of px-py points in transverse plane,
@@ -321,80 +343,76 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		//gauss_quadrature(n_interp2_pT_pts, 1, 0.0, 0.0, interp2_pT_min, interp2_pT_max, SPinterp2_pT, dummywts3);
 		//for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
 		//	cerr << SPinterp2_pT[ipt] << endl;
-		//gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, interp2_pphi_min, interp2_pphi_max, SPinterp2_pphi, dummywts4);
+		gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, interp2_pphi_min, interp2_pphi_max, SPinterp2_pphi, dummywts4);
 		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
 		{
-			SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
-			//if (VERBOSE > 0) *global_out_stream_ptr << "SPinterp2_pphi[" << ipphi << "] = " << SPinterp2_pphi[ipphi] << endl;
+			//SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
+			//if (VERBOSE > 0) *global_out_stream_ptr << setw(8) << setprecision(15) << "SPinterp2_pphi[" << ipphi << "] = " << SPinterp2_pphi[ipphi] << endl;
 			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
 			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
 		}
 	}
 
-   dN_dypTdpTdphi = new double* [n_SP_pT];
-   SV_dN_dypTdpTdphi = new double* [n_SP_pT];
-   cosine_iorder = new double* [n_SP_pT];
-   sine_iorder = new double* [n_SP_pT];
-   for(int i=0; i<n_SP_pT; i++)
-   {
-      dN_dypTdpTdphi[i] = new double [n_SP_pphi];
-      SV_dN_dypTdpTdphi[i] = new double [n_SP_pphi];
-      cosine_iorder[i] = new double [n_order];
-      sine_iorder[i] = new double [n_order];
-   }
-   dN_dydphi = new double [n_SP_pphi];
-   dN_dypTdpT = new double [n_SP_pT];
-   pTdN_dydphi = new double [n_SP_pphi];
-   SV_dN_dydphi = new double [n_SP_pphi];
-   SV_dN_dypTdpT = new double [n_SP_pT];
-   SV_pTdN_dydphi = new double [n_SP_pphi];
-   for(int i=0; i<n_SP_pphi; i++)
-   {
-      dN_dydphi[i] = 0.0e0;
-      pTdN_dydphi[i] = 0.0e0;
-      SV_dN_dydphi[i] = 0.0e0;
-      SV_pTdN_dydphi[i] = 0.0e0;
-      for(int j=0; j<n_SP_pT; j++)
-      {
-	dN_dypTdpTdphi[j][i] = 0.0e0;
-	SV_dN_dypTdpTdphi[j][i] = 0.0e0;
-      }
-   }
-   for(int i=0; i<n_SP_pT; i++)
-   for(int j=0; j<n_order; j++)
-   {
-      cosine_iorder[i][j] = 0.0e0;
-      sine_iorder[i][j] = 0.0e0;
-   }
-   for (int i=0; i<n_SP_pT; i++)
-   {
-	dN_dypTdpT[i] = 0.0e0;
-	SV_dN_dypTdpT[i] = 0.0e0;
-   }
-   plane_angle = new double [n_order];
+	dN_dypTdpTdphi = new double* [n_SP_pT];
+	SV_dN_dypTdpTdphi = new double* [n_SP_pT];
+	cosine_iorder = new double* [n_SP_pT];
+	sine_iorder = new double* [n_SP_pT];
+	for(int i=0; i<n_SP_pT; i++)
+	{
+		dN_dypTdpTdphi[i] = new double [n_SP_pphi];
+		SV_dN_dypTdpTdphi[i] = new double [n_SP_pphi];
+		cosine_iorder[i] = new double [n_order];
+		sine_iorder[i] = new double [n_order];
+	}
+	dN_dydphi = new double [n_SP_pphi];
+	dN_dypTdpT = new double [n_SP_pT];
+	pTdN_dydphi = new double [n_SP_pphi];
+	SV_dN_dydphi = new double [n_SP_pphi];
+	SV_dN_dypTdpT = new double [n_SP_pT];
+	SV_pTdN_dydphi = new double [n_SP_pphi];
+	for(int i=0; i<n_SP_pphi; i++)
+	{
+		dN_dydphi[i] = 0.0e0;
+		pTdN_dydphi[i] = 0.0e0;
+		SV_dN_dydphi[i] = 0.0e0;
+		SV_pTdN_dydphi[i] = 0.0e0;
+		for(int j=0; j<n_SP_pT; j++)
+		{
+			dN_dypTdpTdphi[j][i] = 0.0e0;
+			SV_dN_dypTdpTdphi[j][i] = 0.0e0;
+		}
+	}
+	for(int i=0; i<n_SP_pT; i++)
+	{
+		dN_dypTdpT[i] = 0.0e0;
+		SV_dN_dypTdpT[i] = 0.0e0;
+		for(int j=0; j<n_order; j++)
+		{
+			cosine_iorder[i][j] = 0.0e0;
+			sine_iorder[i][j] = 0.0e0;
+		}
+	}
+	plane_angle = new double [n_order];
 
-   //pair momentum
-   K_T = new double [n_localp_T];
-   double dK_T = (localp_T_max - localp_T_min)/(n_localp_T - 1 + 1e-100);
-   for(int i=0; i<n_localp_T; i++) K_T[i] = localp_T_min + i*dK_T;
-   //K_y = p_y;
-   K_y = 0.;
+	//pair momentum
+	K_T = new double [n_localp_T];
+	double dK_T = (localp_T_max - localp_T_min)/(n_localp_T - 1 + 1e-100);
+	for(int i=0; i<n_localp_T; i++) K_T[i] = localp_T_min + i*dK_T;
+	//K_y = p_y;
+	K_y = 0.;
 	ch_K_y = cosh(K_y);
 	sh_K_y = sinh(K_y);
-   beta_l = sh_K_y/ch_K_y;
-   K_phi = new double [n_localp_phi];
-   K_phi_weight = new double [n_localp_phi];
-   gauss_quadrature(n_localp_phi, 1, 0.0, 0.0, localp_phi_min, localp_phi_max, K_phi, K_phi_weight);
+	beta_l = sh_K_y/ch_K_y;
+	K_phi = new double [n_localp_phi];
+	K_phi_weight = new double [n_localp_phi];
+	gauss_quadrature(n_localp_phi, 1, 0.0, 0.0, localp_phi_min, localp_phi_max, K_phi, K_phi_weight);
 
-	//source_variances_array = new double [n_weighting_functions];
-	//for (int i=0; i<n_weighting_functions; i++) source_variances_array[i] = 0.0;
-
-   //spatial rapidity grid
-   eta_s = new double [eta_s_npts];
-   eta_s_weight = new double [eta_s_npts];
-   gauss_quadrature(eta_s_npts, 1, 0.0, 0.0, eta_s_i, eta_s_f, eta_s, eta_s_weight);
-   ch_eta_s = new double [eta_s_npts];
-   sh_eta_s = new double [eta_s_npts];
+	//spatial rapidity grid
+	eta_s = new double [eta_s_npts];
+	eta_s_weight = new double [eta_s_npts];
+	gauss_quadrature(eta_s_npts, 1, 0.0, 0.0, eta_s_i, eta_s_f, eta_s, eta_s_weight);
+	ch_eta_s = new double [eta_s_npts];
+	sh_eta_s = new double [eta_s_npts];
 	for (int ieta = 0; ieta < eta_s_npts; ieta++)
 	{
 		ch_eta_s[ieta] = cosh(eta_s[ieta]);
@@ -1004,6 +1022,129 @@ int SourceVariances::lookup_resonance_idx_from_particle_id(int pid)
 					<< " *** br = " << all_particles[pid].effective_branchratio << endl;
 	}
 	return (result);
+}
+
+double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
+{
+	double aa, bb, cc;
+	double eps=1e-100;
+
+	if (x2 == x1) 
+		aa = 0.0;
+	else
+		aa =(f2-f1)/(x2-x1);
+	bb = f1 - aa * x1;
+	cc = aa*x + bb;
+	
+	return cc;
+}
+
+double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_pid)
+{
+	double phir, val;
+	double f1, f2;
+	int pn, npt, nphi;
+	int PTCHANGE = 1.0;
+
+	//if(phirin < 0.0){
+	//	printf("ERROR: phir %15.8le < 0 !!! \n", phirin);exit(0);}
+	//if(phirin > 2.0*PI){
+	//	printf("ERROR: phir %15.8le > 2PI !!! \n", phirin);exit(0);}
+
+	phir = phirin;
+
+	//pn = partid[MHALF + res_num];
+	pn = local_pid;
+
+	npt = 1;
+	while((ptr > SPinterp2_pT[npt]) &&
+		(npt<(n_interp2_pT_pts - 1))) npt++;
+
+	int nphi_max = n_interp2_pphi_pts-1;
+//debugger(__LINE__,__FILE__);
+	if(phir < SPinterp2_pphi[0])
+	{
+//debugger(__LINE__,__FILE__);
+		f1 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
+			dN_dypTdpTdphi_moments[pn][0][npt-1][nphi_max],
+			dN_dypTdpTdphi_moments[pn][0][npt-1][0], phir);
+		f2 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
+			dN_dypTdpTdphi_moments[pn][0][npt][nphi_max],
+			dN_dypTdpTdphi_moments[pn][0][npt][0], phir);
+	}
+	else if(phir > SPinterp2_pphi[nphi_max])
+	{
+//debugger(__LINE__,__FILE__);
+		f1 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
+			dN_dypTdpTdphi_moments[pn][0][npt-1][nphi_max],
+			dN_dypTdpTdphi_moments[pn][0][npt-1][0], phir);
+		f2 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
+			dN_dypTdpTdphi_moments[pn][0][npt][nphi_max],
+			dN_dypTdpTdphi_moments[pn][0][npt][0], phir);
+	}
+	else
+	{
+//debugger(__LINE__,__FILE__);
+		nphi = 1;
+		while((phir > SPinterp2_pphi[nphi])&&(nphi < nphi_max)) nphi++;
+		 /* phi interpolation */
+		double phi0 = SPinterp2_pphi[nphi-1];
+//debugger(__LINE__,__FILE__);
+		double phi1 = SPinterp2_pphi[nphi];
+//debugger(__LINE__,__FILE__);
+		//cerr << "nphi = " << nphi << " and npt = " << npt << endl;
+		double spec0 = dN_dypTdpTdphi_moments[pn][0][npt-1][nphi-1];
+//debugger(__LINE__,__FILE__);
+		double spec1 = dN_dypTdpTdphi_moments[pn][0][npt-1][nphi];
+//debugger(__LINE__,__FILE__);
+		double spec2 = dN_dypTdpTdphi_moments[pn][0][npt][nphi-1];
+//debugger(__LINE__,__FILE__);
+		double spec3 = dN_dypTdpTdphi_moments[pn][0][npt][nphi];
+//debugger(__LINE__,__FILE__);
+		f1 = lin_int(phi0, phi1,
+			spec0,
+			spec1, phir);
+//debugger(__LINE__,__FILE__);
+		f2 = lin_int(phi0, phi1,
+			spec2,
+			spec3, phir);
+//debugger(__LINE__,__FILE__);
+
+	}
+//debugger(__LINE__,__FILE__);
+	if(f1 < 0) f1 = 0.0;
+	if(f2 < 0) f2 = 0.0;
+	f1 = f1 + 1e-100;
+	f2 = f2 + 1e-100;
+	if(ptr > PTCHANGE)
+	{
+		f1 = log(f1);
+		f2 = log(f2);
+	}
+//debugger(__LINE__,__FILE__);
+	val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt],
+		f1, f2, ptr);
+//debugger(__LINE__,__FILE__);
+         /*if(isnan(val))
+         {
+             printf("dEdndy3 val \n");
+             printf("f1, %15.8lf f2, %15.8lf  \n", f1, f2);
+             printf(" nphi  %i npt %i \n", nphi,npt);
+             printf(" f1  %15.8le %15.8le  \n", f1, f2);
+             printf(" phi  %15.8lf %15.8lf  \n", PHI[nphi-1], PHI[nphi]);
+             printf(" pt   %15.8lf %15.8lf  \n", particle[pn].pt[npt-1],particle[pn].pt[npt]);
+             printf(" phi  %15.8lf pt %15.8lf    val %15.8lf \n", phir, ptr,val);
+             printf(" phi %15.8le %15.8le \n",dN_dypTdpTdphi_moments[pn][0][npt][nphi-1],
+                                         dN_dypTdpTdphi_moments[pn][0][npt][nphi]);
+             printf(" pt  %15.8le %15.8le \n",dN_dypTdpTdphi_moments[pn][0][npt-1][nphi-1],
+                                     dN_dypTdpTdphi_moments[pn][0][npt-1][nphi]);
+             exit(-1);
+         }*/
+	if(ptr > PTCHANGE)
+		val = exp(val);
+//debugger(__LINE__,__FILE__);
+
+	return val;
 }
 
 //End of file

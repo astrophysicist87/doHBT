@@ -300,6 +300,8 @@ class SourceVariances
 		double place_in_range(double phi, double min, double max);
 		void Get_current_decay_string(int dc_idx, string * decay_string);
 		int lookup_resonance_idx_from_particle_id(int particle_id);
+		double lin_int(double x1, double x2, double f1, double f2, double x);
+		double Edndp3(double ptr, double phirin, double yr, int local_pid);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);
@@ -308,9 +310,11 @@ class SourceVariances
 		void Output_dN_dypTdpT(int folderindex);
 		void Output_dN_dypTdpTdphi_grid(int folderindex, int dc_idx);
 		void Output_all_dN_dypTdpTdphi(int folderindex);
+		void Output_total_target_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);
 		void Readin_results(int folderindex);
 		void Read_in_all_dN_dypTdpTdphi(int folderindex);
+		void Output_chosen_resonances();
 
 		//parameters that the user is free to define
 		double plumberg_test_variable;

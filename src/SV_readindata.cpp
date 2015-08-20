@@ -644,6 +644,7 @@ void get_all_descendants(vector<int> * chosen_resonance_indices_ptr, particle_in
 {
 	// This function ensures that no particles are missing from the chosen_resonances vector,
 	// even if a truncated (threshold < 1.0) version is used
+	int amount_of_output = 1;
 	bool no_missing_descendants = false;
 	int original_size = (int)(*chosen_resonance_indices_ptr).size();
 	while (!no_missing_descendants)
@@ -653,22 +654,35 @@ void get_all_descendants(vector<int> * chosen_resonance_indices_ptr, particle_in
 		for (int icr = 0; icr < old_size; icr++)
 		{
 			particle_info resonance = particle[(*chosen_resonance_indices_ptr)[icr]];
-			if (resonance.stable == 1) continue;
+			if (amount_of_output > 1) output << "Currently looking at resonance " << resonance.name << endl;
+			if (resonance.stable == 1 && resonance.decays_Npart[0] == 1)
+				continue;
 			int number_of_decays = resonance.decays;
 			for (int k = 0; k < number_of_decays; k++)
 			{
+				if (amount_of_output > 1) output << resonance.name << ": currently looking at decay #" << k << endl;
 				int nb = abs(resonance.decays_Npart[k]);
 				for (int l = 0; l < nb; l++)
 				{
 					int pid = lookup_particle_id_from_monval(particle, Nparticle, resonance.decays_part[k][l]);
-					//if this decay particle is not in the list, include it
+					if (amount_of_output > 1) output << resonance.name << ", decay #" << k
+								<< ": currently looking at daughter " << particle[pid].name << endl;
+					//if this decay particle is not in the list and has large effective br, include it
 					bool decay_particle_is_not_in_list = ( find ((*chosen_resonance_indices_ptr).begin(), (*chosen_resonance_indices_ptr).end(), pid)
 															==
 															(*chosen_resonance_indices_ptr).end() );
 					bool br_tot_is_not_small = ( particle[pid].effective_branchratio >= 1.e-12 );
+					if (decay_particle_is_not_in_list)
+						if (amount_of_output > 1) output << resonance.name << ", decay #" << k
+							<< ", daughter " << particle[pid].name << ": daughter is not in list!" << endl;
+					if (br_tot_is_not_small)
+						if (amount_of_output > 1) output << resonance.name << ", decay #" << k
+							<< ", daughter " << particle[pid].name << ": effective br. is not small!" << endl;
 					if (decay_particle_is_not_in_list && br_tot_is_not_small)
 					{
 						(*chosen_resonance_indices_ptr).push_back(pid);
+						if (amount_of_output > 1) output << resonance.name << ", decay #" << k
+							<< ", daughter " << particle[pid].name << ": adding daughter to list!" << endl;
 						new_size++;
 					}
 				}
@@ -676,9 +690,9 @@ void get_all_descendants(vector<int> * chosen_resonance_indices_ptr, particle_in
 		}
 		no_missing_descendants = ( old_size == new_size );
 		if (new_size == original_size)
-			output << "get_all_descendants(): No new particles added!" << endl;
+			if (amount_of_output > 0) output << "get_all_descendants(): No new particles added!" << endl;
 		else
-			output << "get_all_descendants(): " << new_size - original_size << " new particles added!" << endl;
+			if (amount_of_output > 0) output << "get_all_descendants(): " << new_size - original_size << " new particles added!" << endl;
 	}
 	return;
 }

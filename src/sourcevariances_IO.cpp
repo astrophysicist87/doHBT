@@ -21,6 +21,22 @@
 
 using namespace std;
 
+void replace_parentheses(std::string & tempstring)
+{
+	int len = tempstring.length();
+	for(unsigned int i = 0; i < len; i++)
+	{
+		char c = tempstring[i];
+		if (c == '(' || c == ')')
+			tempstring[i] = '_';
+	}
+	
+	if (tempstring[len - 1] == '_')
+		tempstring.erase( len - 1 );
+	
+	return;
+}
+
 void SourceVariances::Output_results(int folderindex)
 {
 	ostringstream filename_stream_HBT;
@@ -259,6 +275,41 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 	return;
 }
 
+void SourceVariances::Output_total_target_dN_dypTdpTdphi(int folderindex)
+{
+	string local_name = all_particles[target_particle_id].name;
+	replace_parentheses(local_name);
+	ostringstream filename_stream_target_dN_dypTdpTdphi;
+	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
+
+	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	{
+		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+			output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[target_particle_id][0][ipt][iphi] << "   ";
+		output_target_dN_dypTdpTdphi << endl;
+	}
+
+	output_target_dN_dypTdpTdphi.close();
+
+	return;
+}
+
+void SourceVariances::Output_chosen_resonances()
+{
+	ostringstream filename_stream_crf;
+	filename_stream_crf << global_path << "/chosen_resonances.dat";
+	ofstream output_crf(filename_stream_crf.str().c_str());
+
+	output_crf << particle_monval << endl;
+	for (int icr = 0; icr < (int)chosen_resonances.size(); icr++)
+		output_crf << all_particles[chosen_resonances[icr]].monval << endl;
+
+	output_crf.close();
+
+	return;
+}
+
 /*void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 {
 	ostringstream filename_stream_all_dN_dypTdpTdphi;
@@ -339,6 +390,28 @@ void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 		input_all_dN_dypTdpTdphi >> dN_dypTdpTdphi_moments[ii][0][ipt][iphi];
 
 	input_all_dN_dypTdpTdphi.close();
+
+
+	ostringstream filename_stream_pTpts;
+	filename_stream_pTpts << global_path << "/pT_gauss_table.dat";
+	ifstream input_pTpts(filename_stream_pTpts.str().c_str());
+	ostringstream filename_stream_pphipts;
+	filename_stream_pphipts << global_path << "/phi_gauss_table.dat";
+	ifstream input_pphipts(filename_stream_pphipts.str().c_str());
+
+	double * dummy_pT_wts = new double [n_interp2_pT_pts];
+	double * dummy_pphi_wts = new double [n_interp2_pphi_pts];
+
+	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+		input_pTpts >> SPinterp2_pT[ipt] >> dummy_pT_wts[ipt];
+
+	for(int ipphi = 0; ipphi < n_interp2_pphi_pts; ipphi++)
+		input_pphipts >> SPinterp2_pphi[ipphi] >> dummy_pphi_wts[ipphi];
+
+	if (VERBOSE > 0) *global_out_stream_ptr << "Read_in_all_dN_dypTdpTdphi(): read in pT and pphi points!" << endl;
+
+	input_pTpts.close();
+	input_pphipts.close();
 
 	return;
 }

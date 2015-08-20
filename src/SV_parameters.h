@@ -15,7 +15,7 @@ using namespace std;
 #define ASSUME_ETA_SYMMETRIC 		1		// 1 means integrate only over eta_s = 0..eta_s_max, and multiply by 2 or 0 to speed up calculations
 							// 0 means just integrate over given range of eta_s without worrying about symmetry
 #define GROUPING_PARTICLES 		0		// set to 1 to perform calculations for similar particles together
-#define PARTICLE_DIFF_TOLERANCE 	0.01		// particles with mass and chemical potential (for each FO-cell) difference less than this value
+#define PARTICLE_DIFF_TOLERANCE 	0.00		// particles with mass and chemical potential (for each FO-cell) difference less than this value
 							// will be considered to be identical (b/c Cooper-Frye)
 #define USE_PLANE_PSI_ORDER 		0		// specifies whether to do HBT relative to flow-plane angle,
 							// and at what order: 0 - use plane_psi = 0.0, !0 - use flow-plane angle at given order
@@ -27,8 +27,11 @@ using namespace std;
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
 #define SPACETIME_MOMENTS_ONLY		false		// duh
-#define CHECK_FOR_LIFETIME		true		// true means skip particles which are too long-lived
+#define CHECK_FOR_LIFETIME		false		// true means skip particles which are too long-lived
+#define CHECK_NBODY			false		// true means skip particles with nbody >= 4
 #define DO_ALL_DECAY_CHANNELS		false		// duh
+#define INCLUDE_SOURCE_VARIANCES	false		// false means do spectra only
+#define USE_INTERP_ALT			true		// uses routine from iS.e code for comparison (only use if INCLUDE_SOURCE_VARIANCES is false!!!!!)
 
 const double hbarC=0.197327053;  //GeV*fm
 const double twopi = 2.*M_PI;
@@ -44,7 +47,7 @@ const int eta_s_npts = 15;
 const double eta_s_i = 0.0;
 //const int eta_s_npts = 40;
 //const double eta_s_i = -5.0;
-const double eta_s_f = 5.0;
+const double eta_s_f = 4.0;
 
 //relative momentum information
 const int qnpts = 51;
