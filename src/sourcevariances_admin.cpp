@@ -1041,6 +1041,16 @@ double SourceVariances::lin_int(double x1, double x2, double f1, double f2, doub
 
 double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_pid)
 {
+	return Edndp3_original(ptr, phirin, yr, local_pid);
+	//if (ptr > 1.0 || phirin > SPinterp2_pphi[n_interp2_pphi_pts-1] || phirin < SPinterp2_pphi[0])
+	//	return Edndp3_original(ptr, phirin, yr, local_pid);
+	//else
+	//	return interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[local_pid][0],
+	//				ptr, phirin, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
+}
+
+double SourceVariances::Edndp3_original(double ptr, double phirin, double yr, int local_pid)
+{
 	double phir, val;
 	double f1, f2;
 	int pn, npt, nphi;
@@ -1053,7 +1063,6 @@ double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_p
 
 	phir = phirin;
 
-	//pn = partid[MHALF + res_num];
 	pn = local_pid;
 
 	npt = 1;
@@ -1061,10 +1070,8 @@ double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_p
 		(npt<(n_interp2_pT_pts - 1))) npt++;
 
 	int nphi_max = n_interp2_pphi_pts-1;
-//debugger(__LINE__,__FILE__);
 	if(phir < SPinterp2_pphi[0])
 	{
-//debugger(__LINE__,__FILE__);
 		f1 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
 			dN_dypTdpTdphi_moments[pn][0][npt-1][nphi_max],
 			dN_dypTdpTdphi_moments[pn][0][npt-1][0], phir);
@@ -1074,7 +1081,6 @@ double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_p
 	}
 	else if(phir > SPinterp2_pphi[nphi_max])
 	{
-//debugger(__LINE__,__FILE__);
 		f1 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
 			dN_dypTdpTdphi_moments[pn][0][npt-1][nphi_max],
 			dN_dypTdpTdphi_moments[pn][0][npt-1][0], phir);
@@ -1084,34 +1090,22 @@ double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_p
 	}
 	else
 	{
-//debugger(__LINE__,__FILE__);
 		nphi = 1;
 		while((phir > SPinterp2_pphi[nphi])&&(nphi < nphi_max)) nphi++;
 		 /* phi interpolation */
 		double phi0 = SPinterp2_pphi[nphi-1];
-//debugger(__LINE__,__FILE__);
 		double phi1 = SPinterp2_pphi[nphi];
-//debugger(__LINE__,__FILE__);
 		//cerr << "nphi = " << nphi << " and npt = " << npt << endl;
 		double spec0 = dN_dypTdpTdphi_moments[pn][0][npt-1][nphi-1];
-//debugger(__LINE__,__FILE__);
 		double spec1 = dN_dypTdpTdphi_moments[pn][0][npt-1][nphi];
-//debugger(__LINE__,__FILE__);
 		double spec2 = dN_dypTdpTdphi_moments[pn][0][npt][nphi-1];
-//debugger(__LINE__,__FILE__);
 		double spec3 = dN_dypTdpTdphi_moments[pn][0][npt][nphi];
-//debugger(__LINE__,__FILE__);
-		f1 = lin_int(phi0, phi1,
-			spec0,
-			spec1, phir);
-//debugger(__LINE__,__FILE__);
-		f2 = lin_int(phi0, phi1,
-			spec2,
-			spec3, phir);
-//debugger(__LINE__,__FILE__);
+		f1 = lin_int(phi0, phi1, spec0, spec1, phir);
+		f2 = lin_int(phi0, phi1, spec2, spec3, phir);
 
 	}
-//debugger(__LINE__,__FILE__);
+	if (f1 < 0 || f2 < 0)
+		printf("In Edndp3(): f1 = %f, f2 = %f, ptr = %f, phir = %f, resnum = %i", f1, f2, ptr, phirin, local_pid);
 	if(f1 < 0) f1 = 0.0;
 	if(f2 < 0) f2 = 0.0;
 	f1 = f1 + 1e-100;
@@ -1120,11 +1114,15 @@ double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_p
 	{
 		f1 = log(f1);
 		f2 = log(f2);
+		//val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt],
+		//	f1, f2, ptr);
 	}
-//debugger(__LINE__,__FILE__);
+	//else
+	//{
+	//	val = 
+	//}
 	val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt],
 		f1, f2, ptr);
-//debugger(__LINE__,__FILE__);
          /*if(isnan(val))
          {
              printf("dEdndy3 val \n");
@@ -1142,7 +1140,8 @@ double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_p
          }*/
 	if(ptr > PTCHANGE)
 		val = exp(val);
-//debugger(__LINE__,__FILE__);
+
+	//if (1) *global_out_stream_ptr << "In Edndp3(): {ptr, phir, local_pid, val} = " << ptr << "   " << phir << "   " << local_pid << "   " << val << endl;
 
 	return val;
 }

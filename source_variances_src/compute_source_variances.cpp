@@ -129,10 +129,10 @@ int main(int argc, char *argv[])
 	vector<int> chosen_resonance_indices;
 	if (threshold > 1.0 + 1.e-10)
 	{
-		int single_chosen_resonance = 21;	//index in all_particles array
+		int single_chosen_resonance = 183;	//index in all_particles array
 		chosen_resonance_indices.push_back(single_chosen_resonance);
 		output << "\t --> Looking only at contributions from " << particle[single_chosen_resonance].name << " and descendants" << endl;
-		get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
+		//get_all_descendants(&chosen_resonance_indices, particle, Nparticle, output);
 		sort_by_mass(&chosen_resonance_indices, particle, Nparticle, output);
 	}
 	else

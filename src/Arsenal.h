@@ -34,9 +34,13 @@ double interpTriLinearNondirect(double * x, double * y, double * z, double *** f
 				bool returnflag = false, double default_return_value = 0.0);
 double interpCubicDirect(double * x, double * y, double x0, long size,
 				bool returnflag = false, double default_return_value = 0.0);
-double interpCubicNondirect(double * x, double * y, double xx, long size);
+//double interpCubicNondirect(double * x, double * y, double xx, long size);
+double interpCubicNonDirect(double * x, double * y, double x0, long size,
+				bool returnflag = false, double default_return_value = 0.0);
 double interpBiCubicDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);
 double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size,
+				bool returnflag = false, double default_return_value = 0.0);
+double interpBiCubicNonDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size,
 				bool returnflag = false, double default_return_value = 0.0);
 double interpPolyDirect(double * x, double * y, double x0, long size);
 double interpBiPolyDirect(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size);

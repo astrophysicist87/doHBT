@@ -628,13 +628,23 @@ double interpCubicDirect(double * x, double * y, double x0, long size, bool retu
   // find x's integer index
   long idx = floor((x0-x[0])/dx);
 
-  if (idx<0 || idx>=size-1)
-  {
-    cout    << "interpCubicDirect: x0 out of bounds." << endl
-            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
-            << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
-    exit(1);
-  }
+  //if (idx<0 || idx>=size-1)
+  //{
+  //  cout    << "interpCubicDirect: x0 out of bounds." << endl
+  //          << "x ranges from " << x[0] << " to " << x[size-1] << ", "
+  //          << "x0=" << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+  //  exit(1);
+  //}
+	if (idx < 0 || idx >= size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cerr << "interpCubicDirect(): index out of range!  Aborting!" << endl
+				<< "interpCubicDirect(): size = " << size << ", x0 = " << x0 << ", " << "dx=" << dx << ", " << "idx=" << idx << endl;
+			exit(1);
+		}
+		else return (default_return_value);
+	}
 
   if (idx==0)
   {
@@ -663,38 +673,49 @@ double interpCubicDirect(double * x, double * y, double x0, long size, bool retu
 
 /////////////////////////////////////////////////////////////////////////////////////////
 //**********************************************************************
-double interpCubicNondirect(double * x, double * y, double xx, long size)
+//double interpCubicNondirect(double * x, double * y, double xx, long size)
+double interpCubicNonDirect(double * x, double * y, double x0, long size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
 // Returns the interpreted value of y=y(x) at x=x0 using cubic polynomial interpolation method.
 // -- x,y: the independent and dependent double x0ables; x is *NOT* assumed to be equal spaced but it has to be increasing
-// -- xx: where the interpolation should be performed
+// -- x0: where the interpolation should be performed
 {
   //long size = x->size();
   if (size==1) {cout<<"interpCubicNondirect warning: table size = 1"<<endl; return y[0];}
 
   // if close to left end:
-  if (abs(xx-x[0])<(x[1]-x[0])*1e-30) return y[0];
+  if (abs(x0-x[0])<(x[1]-x[0])*1e-30) return y[0];
 
   // find x's integer index
-  //long idx = binarySearch(x, xx);
-  long idx = binarySearch(x, size, xx, true);
+  //long idx = binarySearch(x, x0);
+  long idx = binarySearch(x, size, x0, true);
 
-  if (idx<0 || idx>=size-1)
-  {
-    cout    << "interpCubicNondirect: x0 out of bounds." << endl
-            << "x ranges from " << x[0] << " to " << x[size-1] << ", "
-            << "xx=" << xx << ", " << "idx=" << idx << endl;
-    exit(1);
-  }
+  //if (idx<0 || idx>=size-1)
+  //{
+  //  cout    << "interpCubicNondirect: x0 out of bounds." << endl
+   //         << "x ranges from " << x[0] << " to " << x[size-1] << ", "
+  //          << "x0=" << x0 << ", " << "idx=" << idx << endl;
+   // exit(1);
+  //}
+	if (idx < 0 || idx >= size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cerr << "interpCubicNonDirect(): index out of range!  Aborting!" << endl
+				<< "interpCubicNonDirect(): size = " << size << ", x0 = " << x0 << ", " << "idx=" << idx << endl;
+			exit(1);
+		}
+		else return (default_return_value);
+	}
 
   if (idx==0)
   {
     // use linear interpolation at the left end
-    return y[0] + (y[1]-y[0])/(x[1]-x[0])*(xx-x[0]);
+    return y[0] + (y[1]-y[0])/(x[1]-x[0])*(x0-x[0]);
   }
   else if (idx==size-2)
   {
     // use linear interpolation at the right end
-    return y[size-2] + (y[size-1]-y[size-2] )/(x[size-1]-x[size-2] )*(xx-x[size-2]);
+    return y[size-2] + (y[size-1]-y[size-2] )/(x[size-1]-x[size-2] )*(x0-x[size-2]);
   }
   else
   {
@@ -729,7 +750,7 @@ double interpCubicNondirect(double * x, double * y, double xx, long size)
           + x2*(-x3s*y01-x0s*y13)
           + x1s*(-x3*y02+x2*y03-x0*y23)
           )/denominator;
-    return C0 + C1*xx + C2*xx*xx + C3*xx*xx*xx;
+    return C0 + C1*x0 + C2*x0*x0 + C3*x0*x0*x0;
   }
 
 }
@@ -868,6 +889,68 @@ double interpBiCubicDirectALT(double * x, double * y, double ** z, double x0, do
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
+//**********************************************************************
+double interpBiCubicNonDirectALT(double * x, double * y, double ** z, double x0, double y0, long x_size, long y_size, bool returnflag /*= false*/, double default_return_value /* = 0*/)
+{
+	//long size = x->size();
+	if (x_size==1 && y_size) {cout<<"interpBiCubicNonDirectALT warning: table size = 1"<<endl; return z[0][0];}
+	double dx = x[1]-x[0]; // increment in x
+	double dy = y[1]-y[0]; // increment in y
+	// find x's integer index
+	long xidx = floor((x0-x[0])/dx);
+	long yidx = floor((y0-y[0])/dy);
+	
+	// check for out-of-bounds points
+	if (xidx<0 || xidx>=x_size-1 || yidx<0 || yidx>=y_size-1)
+	{
+		if (!returnflag)	//i.e., if returnflag is false, exit
+		{
+			cout << "interpBiCubicNonDirectALT: point out of bounds." << endl
+				<< "x ranges from " << x[0] << " to " << x[x_size-1] << ", "
+				<< "x0=" << x0 << ", " << "dx=" << dx << ", " << "xidx=" << xidx << endl
+				<< "y ranges from " << y[0] << " to " << y[y_size-1] << ", "
+				<< "y0=" << y0 << ", " << "dy=" << dy << ", " << "yidx=" << yidx << endl;
+    			exit(1);
+		}
+		else return (default_return_value);
+	}
+
+  if (xidx==0)
+  {
+    // use quadratic interpolation at left end
+    double A0 = interpCubicNonDirect(y, z[0], y0, y_size);
+	double A1 = interpCubicNonDirect(y, z[1], y0, y_size);
+	double A2 = interpCubicNonDirect(y, z[2], y0, y_size);
+	double deltaX = x0 - x[0]; // deltaX is the increment of x0 compared to the closest lattice point
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else if (xidx==x_size-2)
+  {
+    // use quadratic interpolation at right end
+    double A0 = interpCubicNonDirect(y, z[x_size-3], y0, y_size);
+	double A1 = interpCubicNonDirect(y, z[x_size-2], y0, y_size);
+	double A2 = interpCubicNonDirect(y, z[x_size-1], y0, y_size);
+	double deltaX = x0 - (x[0] + (xidx-1)*dx);
+    return (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX - (3.0*A0-4.0*A1+A2)/(2.0*dx)*deltaX + A0;
+  }
+  else
+  {
+    // use cubic interpolation
+    double A0 = interpCubicNonDirect(y, z[xidx-1], y0, y_size);
+	double A1 = interpCubicNonDirect(y, z[xidx], y0, y_size);
+	double A2 = interpCubicNonDirect(y, z[xidx+1], y0, y_size);
+	double A3 = interpCubicNonDirect(y, z[xidx+2], y0, y_size);
+	double deltaX = x0 - (x[0] + xidx*dx);
+    //cout << A0 << "  " << A1 << "  " << A2 << "  " << A3 << endl;
+    return (-A0+3.0*A1-3.0*A2+A3)/(6.0*dx*dx*dx)*deltaX*deltaX*deltaX
+            + (A0-2.0*A1+A2)/(2.0*dx*dx)*deltaX*deltaX
+            - (2.0*A0+3.0*A1-6.0*A2+A3)/(6.0*dx)*deltaX
+            + A1;
+  }
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -919,7 +1002,8 @@ double interpolate1D(double * x, double * y, double x0, long size, int kind, boo
 			if (uniform_spacing)
 				return interpCubicDirect(x, y, x0, size, returnflag, default_return_value);
 			else
-				cerr << "Error (interpolate1D): cubic interpolation with non-uniform spacing not supported!" << endl;
+				return interpCubicNonDirect(x, y, x0, size, returnflag, default_return_value);
+				//cerr << "Error (interpolate1D): cubic interpolation with non-uniform spacing not supported!" << endl;
 			break;
 		}
 		case 2:
@@ -937,7 +1021,7 @@ double interpolate1D(double * x, double * y, double x0, long size, int kind, boo
 			break;
 		}
 	}
-	return 0.0;
+	return default_return_value;
 }
 
 
@@ -963,7 +1047,8 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 				return interpBiCubicDirectALT(x, y, z, x0, y0, x_size, y_size, returnflag, default_return_value);
 				//return interpBiCubicDirect(x, y, z, x0, y0, x_size, y_size);
 			else
-				cerr << "Error (interpolate2D): cubic interpolation with non-uniform spacing not supported!" << endl;
+				return interpBiCubicNonDirectALT(x, y, z, x0, y0, x_size, y_size, returnflag, default_return_value);
+				//cerr << "Error (interpolate2D): cubic interpolation with non-uniform spacing not supported!" << endl;
 			break;
 		}
 		case 2:
@@ -981,7 +1066,7 @@ double interpolate2D(double * x, double * y, double ** z, double x0, double y0, 
 			break;
 		}
 	}
-	return 0.0;
+	return default_return_value;
 }
 
 
@@ -1022,6 +1107,7 @@ double interpolate3D(double * x, double * y, double * z, double *** f, double x0
 			break;
 		}
 	}
+	return default_return_value;
 }
 
 

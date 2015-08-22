@@ -292,7 +292,7 @@ class SourceVariances
 		void Set_use_delta_f(bool usrdef_usedeltaf);
 		void Set_particle_mass(double usrdef_particle_mass);
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
-		double get_Q(int dc_idx);
+		double get_Q();
 		double g(double s);
 		void set_to_zero(double * array, int arraylength);
 		void adaptive_simpson_integration(void (SourceVariances::*f) (double, double *), double a, double b, double * results);
@@ -302,6 +302,7 @@ class SourceVariances
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		double lin_int(double x1, double x2, double f1, double f2, double x);
 		double Edndp3(double ptr, double phirin, double yr, int local_pid);
+		double Edndp3_original(double ptr, double phirin, double yr, int local_pid);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);

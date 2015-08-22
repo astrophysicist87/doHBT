@@ -162,6 +162,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
+	double current_dNd3p_00 = 249.013183, thermal_dNd3p_00 = 249.013183, previous_dNd3p_00 = 249.013183;
 	BIGsw.tic();
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
@@ -195,7 +196,16 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
 				continue;
 			Set_current_daughter_info(idc, idc_DI);
+			if (daughter_resonance_particle_id == target_particle_id)
+				previous_dNd3p_00 = current_dNd3p_00;
 			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+			if (daughter_resonance_particle_id == target_particle_id)
+			{
+				current_dNd3p_00 = dN_dypTdpTdphi_moments[daughter_resonance_particle_id][0][0][0];
+				*global_out_stream_ptr << all_particles[daughter_resonance_particle_id].name << " from " << all_particles[current_resonance_particle_id].name
+										<< " in decay channel " << current_decay_channel_string << ": "
+										<< current_dNd3p_00 << "   " << current_dNd3p_00-thermal_dNd3p_00 << "   " << current_dNd3p_00-previous_dNd3p_00 << endl;
+			}
 			//if (VERBOSE > 0) *global_out_stream_ptr << endl;
 		}
 		Delete_decay_channel_info();				// free up memory
@@ -478,6 +488,9 @@ void SourceVariances::Set_current_daughter_info(int dc_idx, int daughter_idx)
 			current_resonance_decay_masses[0] = m2ex;
 			current_resonance_decay_masses[1] = 0.5 * (m3ex + m4ex + current_resonance_mass - current_daughter_mass - m2ex);
 			// approximation obtained from earlier resonances code
+			//*global_out_stream_ptr << "Current decay " << current_decay_channel_string << ", br = " << current_resonance_direct_br
+			//						<< ": {m2ex, m3ex, m4ex, m3eff} = {"
+			//						<< m2ex << ", " << m3ex << ", " << m4ex << ", " << current_resonance_decay_masses[1] << "}" << endl;
 			break;
 		default:
 			cerr << "Set_current_daughter_info(): shouldn't have ended up here, bad value of current_reso_nbody!" << endl;
@@ -1104,7 +1117,16 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 		double s_min_temp = (m2 + m3)*(m2 + m3);
 		double s_max_temp = (Mres - mass)*(Mres - mass);
 		gauss_quadrature(n_s_pts, 1, 0.0, 0.0, s_min_temp, s_max_temp, NEW_s_pts, NEW_s_wts);
-		Qfunc = get_Q(dc_idx);
+		Qfunc = get_Q();
+/*if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_resonance_idx << ":" << endl
+			<< setw(8) << setprecision(15)
+			<< "  --> Qfunc = " << Qfunc << endl
+			<< "  --> s_min_temp = " << s_min_temp << endl
+			<< "  --> s_max_temp = " << s_max_temp << endl
+			<< "  --> m2 = " << m2 << endl
+			<< "  --> m3 = " << m3 << endl
+			<< "  --> mass = " << mass << endl
+			<< "  --> Mres = " << Mres << endl;*/
 		//set up vectors of points to speed-up integrals...
 		//cerr << "Entering loops now..." << endl;
 		for (int is = 0; is < n_s_pts; is++)

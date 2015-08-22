@@ -24,7 +24,7 @@ using namespace std;
 
 int CPidx = 0;
 
-double SourceVariances::get_Q(int dc_idx)
+double SourceVariances::get_Q()
 {
 	double smin = (m2+m3)*(m2+m3);
 	double smax = (Mres-mass)*(Mres-mass);
@@ -39,7 +39,8 @@ double SourceVariances::get_Q(int dc_idx)
 		double f3 = smin - sp;
 		double f4 = (m2-m3)*(m2-m3) - sp;
 		//sum += s_wts[dc_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
-		sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		//sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/sp;
 	}
 
 	return sum;
@@ -49,14 +50,13 @@ double SourceVariances::g(double s)
 {
 	double gs_pstar_loc = sqrt( ((Mres+mass)*(Mres+mass) - s)*((Mres-mass)*(Mres-mass) - s) )/(2.0*Mres);
 	double g_res = br/(4.*M_PI*gs_pstar_loc);
-	if (n_body == 3)
+	if (n_body == 3 || n_body == 4)		//both set up to work the same way
 	{
 		double pre_f = (Mres*br)/(2.*M_PI*s);
 		double num = sqrt( (s - (m2+m3)*(m2+m3)) * (s - (m2-m3)*(m2-m3)) );
 		double den = Qfunc;
 		g_res = pre_f * num / den;
 	}
-	//haven't treated (rare) case of n_body == 4 just yet...
 
 	return g_res;
 }
@@ -162,8 +162,8 @@ void SourceVariances::combine_sourcevariances(double * output, double * input, d
 void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, int daughter_particle_id, int decay_channel)
 {
 	CPidx = 0;
-*global_out_stream_ptr << "parent_resonance_particle_id = " << parent_resonance_particle_id << ", daughter_particle_id = "
-						<< daughter_particle_id << " and decay_channel = " << decay_channel << endl;
+//*global_out_stream_ptr << "parent_resonance_particle_id = " << parent_resonance_particle_id << ", daughter_particle_id = "
+	//					<< daughter_particle_id << " and decay_channel = " << decay_channel << endl;
 //cerr << "parent_resonance_particle_id = " << parent_resonance_particle_id << ", daughter_particle_id = "
 //						<< daughter_particle_id << " and decay_channel = " << decay_channel << endl;
 	time_t rawtime;
@@ -180,7 +180,7 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 	set_to_zero(Csum_vec, n_weighting_functions);
 	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
 	set_to_zero(y_of_r, n_weighting_functions);
-	Qfunc = get_Q(decay_channel);
+	//Qfunc = get_Q();
 
 	for (int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
 	for (int ipphi = 0; ipphi < n_interp2_pphi_pts; ipphi++)
@@ -256,7 +256,7 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 					ssum_vec[iweight] += Mres*VEC_n2_s_factor*vsum_vec[iweight];
 		}																									// end of nbody == 2
-		else/* if (n_body == 3)*/
+		else/* if (n_body == 3 || n_body == 4)*/
 		{
 			for (int is = 0; is < n_s_pts; is++)
 			{
@@ -311,11 +311,8 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 					ssum_vec[iweight] += Mres*VEC_s_factor[is]*vsum_vec[iweight];
 			}																								// end of s sum
 		}																									// end of nbody == 3
-		/*else if (n_body == 4)
-		{
-			;
-		}// end of nbody == 4*/
 
+		double temp = dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi];
 		for (int iweight = 0; iweight < n_weighting_functions; iweight++)
 		{
 			dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] += ssum_vec[iweight];
@@ -325,14 +322,14 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 		if (isnan(dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi]))
 		{
 			*global_out_stream_ptr << "ERROR: NaNs encountered!" << endl
-									<< "ipt = " << ipt << endl
-									<< "ipphi = " << ipphi << endl
+									<< "cont. to dN_dypTdpTdphi_moments[daughter_particle_id][0][" << ipt << "][" << ipphi << "] = "
+									<< setw(8) << setprecision(15) << dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi]-temp << endl
+									<< "  --> pt = " << local_pT << std::endl
+									<< "  --> pphi = " << local_pphi << std::endl
 									<< "daughter_particle_id = " << daughter_particle_id << endl
 									<< "parent_resonance_particle_id = " << parent_resonance_particle_id << endl
-									<< "decay_channel = " << decay_channel << endl
-									<< "  --> muRES = " << muRES << endl
+									<< "  --> Qfunc = " << Qfunc << endl
 									<< "  --> n_body = " << n_body << endl
-									<< "  --> signRES = " << signRES << endl
 									<< "  --> gRES = " << gRES << endl
 									<< "  --> Mres = " << Mres << endl
 									<< "  --> mass = " << mass << endl
