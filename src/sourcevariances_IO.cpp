@@ -258,19 +258,27 @@ void SourceVariances::Output_dN_dypTdpT(int folderindex)
 
 void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 {
-	ostringstream filename_stream_all_dN_dypTdpTdphi;
-	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+	//ostringstream filename_stream_all_dN_dypTdpTdphi;
+	//filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
+	//ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 
-	for(int ii = 0; ii < Nparticle; ii++)
-	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
-		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-			output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ii][0][ipt][iphi] << "   ";
-		output_all_dN_dypTdpTdphi << endl;
+		ostringstream filename_stream_all_dN_dypTdpTdphi;
+		filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_mom_"
+						<< setfill('0') << setw(2) << wfi << "_ev" << folderindex << no_df_stem << ".dat";
+		ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+		for(int ii = 0; ii < Nparticle; ii++)
+		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+		{
+			for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+				output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi] << "   ";
+			output_all_dN_dypTdpTdphi << endl;
+		}
+		output_all_dN_dypTdpTdphi.close();
 	}
 
-	output_all_dN_dypTdpTdphi.close();
+	//output_all_dN_dypTdpTdphi.close();
 
 	return;
 }
@@ -279,18 +287,23 @@ void SourceVariances::Output_total_target_dN_dypTdpTdphi(int folderindex)
 {
 	string local_name = all_particles[target_particle_id].name;
 	replace_parentheses(local_name);
-	ostringstream filename_stream_target_dN_dypTdpTdphi;
-	filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 
-	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
-		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-			output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[target_particle_id][0][ipt][iphi] << "   ";
-		output_target_dN_dypTdpTdphi << endl;
+		ostringstream filename_stream_target_dN_dypTdpTdphi;
+		filename_stream_target_dN_dypTdpTdphi << global_path << "/total_" << local_name << "_dN_dypTdpTdphi_mom_"
+								<< setfill('0') << setw(2) << wfi << "_ev" << folderindex << no_df_stem << ".dat";
+		ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
+	
+		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+		{
+			for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+				output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[target_particle_id][wfi][ipt][iphi] << "   ";
+			output_target_dN_dypTdpTdphi << endl;
+		}
+	
+		output_target_dN_dypTdpTdphi.close();
 	}
-
-	output_target_dN_dypTdpTdphi.close();
 
 	return;
 }
@@ -310,86 +323,34 @@ void SourceVariances::Output_chosen_resonances()
 	return;
 }
 
-/*void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
-{
-	ostringstream filename_stream_all_dN_dypTdpTdphi;
-	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
-
-	//for(int idc = 1; idc <= n_decay_channels; idc++)
-	//{
-		//for(int iKT = 0; iKT < n_localp_T; iKT++)
-		//for(int iKphi = 0; iKphi < n_localp_phi; iKphi++)
-		//	output_all_dN_dypTdpTdphi << K_T[iKT] << "   " << K_phi[iKphi] << "   " << integrated_spacetime_moments[idc-1][0][iKT][iKphi] << endl;
-		//output_all_dN_dypTdpTdphi << endl;
-	//}
-
-	//for(int ir = 0; ir <= n_resonance; ir++)
-	for(int ii = 0; ii < Nparticle; ii++)
-	{
-		//thermal only for timebeing...
-		std::vector<int>::iterator it = find (chosen_resonances.begin(), chosen_resonances.end(), ii);
-		//if (VERBOSE > 0) *global_out_stream_ptr << "particle_id = " << particle_id << endl;
-		if (ii == particle_id)
-		{
-			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-			{
-				for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-					output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[0][0][ipt][iphi] << "   ";
-				output_all_dN_dypTdpTdphi << endl;
-			}
-
-		}
-		else if (it != chosen_resonances.end())	// if particle was one of chosen resonances
-		{
-			int ir = it - chosen_resonances.begin() + 1;
-			//if (VERBOSE > 0) *global_out_stream_ptr << "ir = " << ir << endl;
-
-			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-			{
-				for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-					output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ir][0][ipt][iphi] << "   ";
-				output_all_dN_dypTdpTdphi << endl;
-			}
-		}
-		else
-		{
-			for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-			{
-				for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-					output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << 0.0 << "   ";
-				output_all_dN_dypTdpTdphi << endl;
-			}
-		}
-
-	}
-
-	output_all_dN_dypTdpTdphi.close();
-
-	return;
-}*/
-
 void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 {
-	ostringstream filename_stream_all_dN_dypTdpTdphi;
-	filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ifstream input_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
-
-	int local_filelength = get_filelength(filename_stream_all_dN_dypTdpTdphi.str().c_str());
-	int local_filewidth = get_filewidth(filename_stream_all_dN_dypTdpTdphi.str().c_str());
-	if (VERBOSE > 0) *global_out_stream_ptr << "Read_in_all_dN_dypTdpTdphi(): nrows = " << local_filelength << " and ncols = " << local_filewidth << endl;
-	if ((Nparticle * n_interp2_pphi_pts != local_filelength) || (n_interp2_pT_pts != local_filewidth))
+	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
-		cerr << "Read_in_all_dN_dypTdpTdphi(): Mismatch in dimensions!" << endl;
-		exit(1);
+		ostringstream filename_stream_all_dN_dypTdpTdphi;
+		filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_mom_"
+								<< setfill('0') << setw(2) << wfi << "_ev" << folderindex << no_df_stem << ".dat";
+		ifstream input_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+	
+		int local_filelength = get_filelength(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+		int local_filewidth = get_filewidth(filename_stream_all_dN_dypTdpTdphi.str().c_str());
+		if (VERBOSE > 0) *global_out_stream_ptr << "Read_in_all_dN_dypTdpTdphi(): nrows = "
+							<< local_filelength << " and ncols = " << local_filewidth << endl;
+		if ((Nparticle * n_interp2_pphi_pts != local_filelength) || (n_interp2_pT_pts != local_filewidth))
+		{
+			cerr << "Read_in_all_dN_dypTdpTdphi(): Mismatch in dimensions in file "
+				<< "all_res_dN_dypTdpTdphi_mom_" << setfill('0') << setw(2) << wfi
+				<< "_ev" << folderindex << no_df_stem << ".dat!" << endl;
+			exit(1);
+		}
+	
+		for(int ii = 0; ii < Nparticle; ii++)
+		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+			input_all_dN_dypTdpTdphi >> dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi];
+	
+		input_all_dN_dypTdpTdphi.close();
 	}
-
-	for(int ii = 0; ii < Nparticle; ii++)
-	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-		input_all_dN_dypTdpTdphi >> dN_dypTdpTdphi_moments[ii][0][ipt][iphi];
-
-	input_all_dN_dypTdpTdphi.close();
 
 
 	ostringstream filename_stream_pTpts;

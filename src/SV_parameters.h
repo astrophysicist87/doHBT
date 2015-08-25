@@ -27,11 +27,10 @@ using namespace std;
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
 #define SPACETIME_MOMENTS_ONLY		false		// duh
-#define CHECK_FOR_LIFETIME		false		// true means skip particles which are too long-lived
-#define CHECK_NBODY			false		// true means skip particles with nbody >= 4
+#define CHECK_FOR_LIFETIME		true		// true means skip particles which are too long-lived
 #define DO_ALL_DECAY_CHANNELS		false		// duh
-#define INCLUDE_SOURCE_VARIANCES	false		// false means do spectra only
-#define USE_INTERP_ALT			true		// uses routine from iS.e code for comparison (only use if INCLUDE_SOURCE_VARIANCES is false!!!!!)
+#define INCLUDE_SOURCE_VARIANCES	true		// false means do spectra only
+#define USE_INTERP_ALT			true		// uses routine from iS.e code for comparison
 
 const double hbarC=0.197327053;  //GeV*fm
 const double twopi = 2.*M_PI;

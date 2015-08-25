@@ -156,11 +156,9 @@ int main(int argc, char *argv[])
 	
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
-   //Source_function.Output_dN_dypTdpTdphi(folderindex);
-   //Source_function.Output_dN_dypTdpT(folderindex);
    Source_function.Output_total_target_dN_dypTdpTdphi(folderindex);
    Source_function.Output_chosen_resonances();
-   //Source_function.Output_results(folderindex);
+   Source_function.Output_results(folderindex);
    output << "Finished calculating HBT radii via source variances method" << endl;
 
 

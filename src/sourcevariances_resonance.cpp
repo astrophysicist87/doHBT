@@ -39,8 +39,8 @@ double SourceVariances::get_Q()
 		double f3 = smin - sp;
 		double f4 = (m2-m3)*(m2-m3) - sp;
 		//sum += s_wts[dc_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
-		//sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
-		sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/sp;
+		sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
+		//sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/sp;
 	}
 
 	return sum;
@@ -85,29 +85,29 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 	//[{xo2}_r]_{r-->\pi}
 	rap_dep_vector[4] = rap_indep_vector[4];								//xo2
 	//[{xl}_r]_{r-->\pi}
-	rap_dep_vector[5] = ch_rap_val * rap_indep_vector[5]							//xl
-				+ sh_rap_val * rap_indep_vector[7];						//t
+	rap_dep_vector[5] = ch_rap_val * rap_indep_vector[5]					//xl
+				+ sh_rap_val * rap_indep_vector[7];							//t
 	//[{xl2}_r]_{r-->\pi}
-	rap_dep_vector[6] = ch_rap_val * ch_rap_val * rap_indep_vector[6]					//xl2
-				+ 2. * ch_rap_val * sh_rap_val * rap_indep_vector[14]				//xlt
-				+ sh_rap_val * sh_rap_val * rap_indep_vector[8];				//t2
+	rap_dep_vector[6] = ch_rap_val * ch_rap_val * rap_indep_vector[6]		//xl2
+				+ 2. * ch_rap_val * sh_rap_val * rap_indep_vector[14]		//xlt
+				+ sh_rap_val * sh_rap_val * rap_indep_vector[8];			//t2
 	//[{t}_r]_{r-->\pi}
-	rap_dep_vector[7] = ch_rap_val * rap_indep_vector[7]							//t
-				+ sh_rap_val * rap_indep_vector[5];						//xl
+	rap_dep_vector[7] = ch_rap_val * rap_indep_vector[7]					//t
+				+ sh_rap_val * rap_indep_vector[5];							//xl
 	//[{t2}_r]_{r-->\pi}
-	rap_dep_vector[8] = ch_rap_val * ch_rap_val * rap_indep_vector[8]					//t2
-				+ 2. * ch_rap_val * sh_rap_val * rap_indep_vector[14]				//xlt
-				+ sh_rap_val * sh_rap_val * rap_indep_vector[6];				//xl2
+	rap_dep_vector[8] = ch_rap_val * ch_rap_val * rap_indep_vector[8]		//t2
+				+ 2. * ch_rap_val * sh_rap_val * rap_indep_vector[14]		//xlt
+				+ sh_rap_val * sh_rap_val * rap_indep_vector[6];			//xl2
 	//[{xs_xo}_r]_{r-->\pi}
 	rap_dep_vector[9] = rap_indep_vector[9];								//xsxo
 	//[{xs_xl}_r]_{r-->\pi}
-	rap_dep_vector[10] = ch_rap_val * rap_indep_vector[10]							//xsxl
+	rap_dep_vector[10] = ch_rap_val * rap_indep_vector[10]					//xsxl
 				+ sh_rap_val * rap_indep_vector[11];						//xst
 	//[{xs_t}_r]_{r-->\pi}
-	rap_dep_vector[11] = ch_rap_val * rap_indep_vector[11]							//xst
+	rap_dep_vector[11] = ch_rap_val * rap_indep_vector[11]					//xst
 				+ sh_rap_val * rap_indep_vector[10];						//xsxl
 	//[{xo_xl}_r]_{r-->\pi}
-	rap_dep_vector[12] = ch_rap_val * rap_indep_vector[12]							//xoxl					
+	rap_dep_vector[12] = ch_rap_val * rap_indep_vector[12]					//xoxl					
 				+ sh_rap_val * rap_indep_vector[13];						//xot
 	//[{xo_t}_r]_{r-->\pi}
 	rap_dep_vector[13] = ch_rap_val * rap_indep_vector[13]							//xot
@@ -228,11 +228,16 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 							//just interpolate table of single particle spectra...
 							//do interpolations
-							if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
+							//if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
+							if (USE_INTERP_ALT)
 							{//rapidity-dependence not calculated here, but spectra are rap.-indep anyway
-								rap_indep_y_of_r[0] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id);
-//cout << "SVres: " << local_pT << "   " << local_pphi << "   " << n_body << "   " << iv << "   " << izeta << "   " << tempidx
-//		<< "   " << PKT << "   " << PKphi << "   " << PKY << "   " << rap_indep_y_of_r[0] << endl;
+								rap_indep_y_of_r[0] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, 0);
+								if (INCLUDE_SOURCE_VARIANCES)
+								{
+									for (int iweight = 1; iweight < n_weighting_functions; iweight++)
+										rap_indep_y_of_r[iweight] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, iweight);
+								}
+
 							}
 							else
 							{
@@ -240,9 +245,6 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 									rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_particle_id][iweight],
 												PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
 							}
-							//for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							//	cerr << rap_indep_y_of_r[iweight] << "   ";
-							//cerr << endl;
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 							//now compute appropriate linear combinations
 							combine_sourcevariances(Csum_vec, y_of_r, alpha_t, alpha_o, alpha_s, alpha_l);
@@ -285,11 +287,15 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 							}
 							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
 							//just interpolate table of single particle spectra...
-							if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
+							//if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
+							if (USE_INTERP_ALT)
 							{//rapidity-dependence not calculated here, but spectra are rap.-indep anyway
-								rap_indep_y_of_r[0] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id);
-//cout << "SVres: " << n_body << "   " << is << "   " << iv << "   " << izeta << "   " << tempidx
-//		<< "   " << PKT << "   " << PKphi << "   " << PKY << "   " << rap_indep_y_of_r[0] << endl;
+								rap_indep_y_of_r[0] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, 0);
+								if (INCLUDE_SOURCE_VARIANCES)
+								{
+									for (int iweight = 1; iweight < n_weighting_functions; iweight++)
+										rap_indep_y_of_r[iweight] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, iweight);
+								}
 							}
 							else
 							{

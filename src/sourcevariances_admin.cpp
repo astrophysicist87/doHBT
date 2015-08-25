@@ -23,6 +23,11 @@
 
 using namespace std;
 
+template <typename T> int sgn(T val)
+{
+    return (T(0) < val) - (val < T(0));
+}
+
 SourceVariances::SourceVariances(particle_info* particle, particle_info* all_particles_in, int Nparticle_in,
 					FO_surf* FOsurf_ptr, vector<int> chosen_resonances_in, int particle_idx, ofstream& myout)
 {
@@ -187,9 +192,9 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 					lifetime_is_too_long = true;		//i.e., for lifetimes longer than 100 fm/c, skip decay channel
 
 				//check if decay channel has too many daughters (nbody >= 4)
-				bool too_many_daughters = false;
-				if (CHECK_NBODY && decay_channels.nbody[temp_idx] >= 4)
-					too_many_daughters = true;
+				//bool too_many_daughters = false;
+				//if (CHECK_NBODY && decay_channels.nbody[temp_idx] >= 4)
+				//	too_many_daughters = true;
 
 				if (VERBOSE > 0) *global_out_stream_ptr << "Resonance = " << decay_channels.resonance_name[temp_idx] << ", decay channel " << idecay + 1
 						<< ": mu=" << decay_channels.resonance_mu[temp_idx]
@@ -215,7 +220,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 					decay_channels.include_channel[temp_idx] = true;
 				else
 					decay_channels.include_channel[temp_idx] = (!lifetime_is_too_long
-											&& !too_many_daughters
+											//&& !too_many_daughters
 											&& !effective_br_is_too_small);
 
 				temp_idx++;
@@ -1024,24 +1029,11 @@ int SourceVariances::lookup_resonance_idx_from_particle_id(int pid)
 	return (result);
 }
 
-double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
+double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_pid, int wfi)
 {
-	double aa, bb, cc;
-	double eps=1e-100;
-
-	if (x2 == x1) 
-		aa = 0.0;
-	else
-		aa =(f2-f1)/(x2-x1);
-	bb = f1 - aa * x1;
-	cc = aa*x + bb;
-	
-	return cc;
-}
-
-double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_pid)
-{
-	return Edndp3_original(ptr, phirin, yr, local_pid);
+	//return Edndp3_original(ptr, phirin, yr, local_pid);
+	//return Edndp3_extended(ptr, phirin, yr, local_pid, wfi);
+	return Edndp3_extended_NEW(ptr, phirin, yr, local_pid, wfi);
 	//if (ptr > 1.0 || phirin > SPinterp2_pphi[n_interp2_pphi_pts-1] || phirin < SPinterp2_pphi[0])
 	//	return Edndp3_original(ptr, phirin, yr, local_pid);
 	//else
@@ -1142,6 +1134,230 @@ double SourceVariances::Edndp3_original(double ptr, double phirin, double yr, in
 		val = exp(val);
 
 	//if (1) *global_out_stream_ptr << "In Edndp3(): {ptr, phir, local_pid, val} = " << ptr << "   " << phir << "   " << local_pid << "   " << val << endl;
+
+	return val;
+}
+
+double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
+{
+	double aa, bb, cc;
+	double eps=1e-100;
+
+	if (x2 == x1) 
+		aa = 0.0;
+	else
+		aa =(f2-f1)/(x2-x1);
+	bb = f1 - aa * x1;
+	cc = aa*x + bb;
+	
+	return cc;
+}
+
+double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr, int local_pid, int wfi)
+{
+	double phi0, phi1;
+	double f1, f2, val;
+	int PTCHANGE = 1.0;
+
+	double phir = phirin;
+	int pn = local_pid;
+	int npphi_max = n_interp2_pphi_pts - 1;
+	int npT_max = n_interp2_pT_pts - 1;
+
+	// locate pT interval
+	int npt = 1;
+	while ((ptr > SPinterp2_pT[npt]) &&
+			(npt < npT_max)) npt++;
+
+	// locate pphi interval
+	int nphi = 1, nphim1 = 0;
+	if(phir < SPinterp2_pphi[0])			//if angle is less than minimum angle grid point
+	{
+		phi0 = SPinterp2_pphi[npphi_max]-2.*M_PI;
+		phi1 = SPinterp2_pphi[0];
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else if(phir > SPinterp2_pphi[npphi_max])	//if angle is greater than maximum angle grid point
+	{
+		phi0 = SPinterp2_pphi[npphi_max];
+		phi1 = SPinterp2_pphi[0]+2.*M_PI;
+		nphi = 0;
+		nphim1 = npphi_max;
+	}
+	else						//if angle is within grid range
+	{
+		while ((phir > SPinterp2_pphi[nphi]) &&
+				(nphi < npphi_max)) nphi++;
+		nphim1 = nphi - 1;
+	}
+
+	double pT0 = SPinterp2_pT[npt-1];
+	double pT1 = SPinterp2_pT[npt];
+	double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+	double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+	double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+	double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+
+
+	// interpolate over pT values first
+	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+	{
+		double sign_of_f11 = sgn(f11);
+		double sign_of_f12 = sgn(f12);
+		double sign_of_f21 = sgn(f21);
+		double sign_of_f22 = sgn(f22);
+
+		// set f1 first
+		if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+		{
+			double logf11 = log(abs(f11));
+			double logf21 = log(abs(f21));
+			f1 = sign_of_f11 * exp( lin_int(pT0, pT1, logf11, logf21, ptr) );
+		}
+		else					// otherwise, just interpolate original vals
+		{
+			f1 = lin_int(pT0, pT1, f11, f21, ptr);
+		}
+
+		// set f2 next
+		if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+		{
+			double logf12 = log(abs(f12));
+			double logf22 = log(abs(f22));
+			f2 = sign_of_f12 * exp( lin_int(pT0, pT1, logf12, logf22, ptr) );
+		}
+		else					// otherwise, just interpolate original vals
+		{
+			f2 = lin_int(pT0, pT1, f12, f22, ptr);
+		}
+	}
+	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+	{
+		f1 = lin_int(pT0, pT1, f11, f21, ptr);
+		f2 = lin_int(pT0, pT1, f12, f22, ptr);
+	}
+
+	// now, interpolate f1 and f2 over the pphi direction
+	val = lin_int(phi0, phi1, f1, f2, phir);
+
+	if (isnan(val) || abs(val) > 0.5*(abs(f1)+abs(f2))*1.e5)
+	{
+		*global_out_stream_ptr << "ERROR: problems encountered!" << endl
+			<< "val = " << setw(8) << setprecision(15) << val << endl
+			<< "  --> wfi = " << wfi << endl
+			<< "  --> ptr = " << ptr << endl
+			<< "  --> pt0 = " << pT0 << endl
+			<< "  --> pt1 = " << pT1 << endl
+			<< "  --> phir = " << phir << endl
+			<< "  --> phi0 = " << phi0 << endl
+			<< "  --> phi1 = " << phi1 << endl
+			<< "  --> f11 = " << f11 << endl
+			<< "  --> f12 = " << f12 << endl
+			<< "  --> f21 = " << f21 << endl
+			<< "  --> f22 = " << f22 << endl
+			<< "  --> f1 = " << f1 << endl
+			<< "  --> f2 = " << f2 << endl;
+		exit(1);
+	}
+
+	return val;
+}
+
+
+double SourceVariances::Edndp3_extended(double ptr, double phirin, double yr, int local_pid, int wfi)
+{
+	double phir, val;
+	double f1, f2, logf1, logf2;
+	double sign_of_f1, sign_of_f2;
+	int pn, npt, nphi;
+	double phi0, phi1, spec0, spec1, spec2, spec3, tmp;
+	int PTCHANGE = 1.0;
+
+	phir = phirin;
+
+	pn = local_pid;
+
+	//locate pT interval
+	npt = 1;
+	while((ptr > SPinterp2_pT[npt]) &&
+		(npt<(n_interp2_pT_pts - 1))) npt++;
+
+	int nphi_max = n_interp2_pphi_pts-1;
+	if(phir < SPinterp2_pphi[0])			//if angle is less than minimum angle grid point
+	{
+		f1 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
+			dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi_max],
+			dN_dypTdpTdphi_moments[pn][wfi][npt-1][0], phir);
+		f2 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
+			dN_dypTdpTdphi_moments[pn][wfi][npt][nphi_max],
+			dN_dypTdpTdphi_moments[pn][wfi][npt][0], phir);
+	}
+	else if(phir > SPinterp2_pphi[nphi_max])	//if angle is greater than maximum angle grid point
+	{
+		f1 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
+			dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi_max],
+			dN_dypTdpTdphi_moments[pn][wfi][npt-1][0], phir);
+		f2 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
+			dN_dypTdpTdphi_moments[pn][wfi][npt][nphi_max],
+			dN_dypTdpTdphi_moments[pn][wfi][npt][0], phir);
+	}
+	else						//if angle is within grid range
+	{
+		//locate pphi interval
+		nphi = 1;
+		while((phir > SPinterp2_pphi[nphi]) &&
+				(nphi < nphi_max)) nphi++;
+		phi0 = SPinterp2_pphi[nphi-1];
+		phi1 = SPinterp2_pphi[nphi];
+		spec0 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi-1];
+		spec1 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+		spec2 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi-1];
+		spec3 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+		f1 = lin_int(phi0, phi1, spec0, spec1, phir);
+		f2 = lin_int(phi0, phi1, spec2, spec3, phir);
+	}
+	//if (f1 < 0 || f2 < 0)
+	//	printf("WARNING in Edndp3(): f1 = %f, f2 = %f, ptr = %f, phir = %f, resnum = %i", f1, f2, ptr, phirin, local_pid);
+	sign_of_f1 = sgn(f1);
+	sign_of_f2 = sgn(f2);
+	f1 = f1 + 1.e-100;
+	f2 = f2 + 1.e-100;
+	
+	//if f1 and f2 have the same sign and ptr > PTCHANGE = 1.0 GeV (currently), then interpolate the logarithms
+	if(ptr > PTCHANGE && sign_of_f1 * sign_of_f2 > 0)
+	{
+		logf1 = log(abs(f1));
+		logf2 = log(abs(f2));
+		tmp = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt], logf1, logf2, ptr);
+		val = sign_of_f1 * exp( tmp );
+	}
+	else							//otherwise, just interpolate the original values
+	{
+		val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt], f1, f2, ptr);
+	}
+	if (isnan(val) || abs(val) > 0.5*(abs(f1)+abs(f2))*1.e5)
+	{
+		*global_out_stream_ptr << "ERROR: problems encountered!" << endl
+			<< "val = " << setw(8) << setprecision(15) << val << endl
+			<< "  --> ptr = " << ptr << endl
+			<< "  --> phir = " << phir << endl
+			<< "  --> phi0 = " << SPinterp2_pphi[nphi-1] << endl
+			<< "  --> phi1 = " << SPinterp2_pphi[nphi] << endl
+			<< "  --> spec0 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi-1] << endl
+			<< "  --> spec1 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
+			<< "  --> spec2 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi-1] << endl
+			<< "  --> spec3 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
+			<< "  --> pt0 = " << SPinterp2_pT[npt-1] << endl
+			<< "  --> pt1 = " << SPinterp2_pT[npt] << endl
+			<< "  --> f1 = " << f1 << endl
+			<< "  --> f2 = " << f2 << endl
+			<< "  --> log(abs(f1)) = " << logf1 << endl
+			<< "  --> log(abs(f2)) = " << logf2 << endl
+			<< "  --> tmp = " << tmp << endl
+			<< "  --> wfi = " << wfi << endl;
+		exit(1);
+	}
 
 	return val;
 }
