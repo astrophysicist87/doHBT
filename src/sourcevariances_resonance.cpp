@@ -22,8 +22,6 @@
 
 using namespace std;
 
-int CPidx = 0;
-
 double SourceVariances::get_Q()
 {
 	double smin = (m2+m3)*(m2+m3);
@@ -40,7 +38,6 @@ double SourceVariances::get_Q()
 		double f4 = (m2-m3)*(m2-m3) - sp;
 		//sum += s_wts[dc_idx-1][is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
 		sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/(sp+1.e-15);
-		//sum += NEW_s_wts[is]*sqrt(f1*f2*f3*f4)/sp;
 	}
 
 	return sum;
@@ -161,11 +158,6 @@ void SourceVariances::combine_sourcevariances(double * output, double * input, d
 
 void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, int daughter_particle_id, int decay_channel)
 {
-	CPidx = 0;
-//*global_out_stream_ptr << "parent_resonance_particle_id = " << parent_resonance_particle_id << ", daughter_particle_id = "
-	//					<< daughter_particle_id << " and decay_channel = " << decay_channel << endl;
-//cerr << "parent_resonance_particle_id = " << parent_resonance_particle_id << ", daughter_particle_id = "
-//						<< daughter_particle_id << " and decay_channel = " << decay_channel << endl;
 	time_t rawtime;
   	struct tm * timeinfo;
 	double * ssum_vec = new double [n_weighting_functions];

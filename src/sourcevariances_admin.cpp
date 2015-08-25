@@ -1140,17 +1140,18 @@ double SourceVariances::Edndp3_original(double ptr, double phirin, double yr, in
 
 double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
 {
-	double aa, bb, cc;
+	double aa;
 	double eps=1e-100;
 
 	if (x2 == x1) 
 		aa = 0.0;
 	else
 		aa =(f2-f1)/(x2-x1);
-	bb = f1 - aa * x1;
-	cc = aa*x + bb;
+	//double bb = f1 - aa * x1;
+	//double cc = aa*x + bb;
 	
-	return cc;
+	//return (aa*x + f1 - aa * x1);
+	return (f1 + aa * (x1 - x));
 }
 
 double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr, int local_pid, int wfi)
@@ -1190,6 +1191,8 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 		while ((phir > SPinterp2_pphi[nphi]) &&
 				(nphi < npphi_max)) nphi++;
 		nphim1 = nphi - 1;
+		phi0 = SPinterp2_pphi[nphim1];
+		phi1 = SPinterp2_pphi[nphi];
 	}
 
 	double pT0 = SPinterp2_pT[npt-1];

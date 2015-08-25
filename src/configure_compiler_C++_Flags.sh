@@ -6,5 +6,5 @@ if [ "$CC" == "" ]; then
    CC=`which g++`;
    CFLAGS=" -O3"
 fi
-CFLAGS="$CFLAGS -Wall -lgsl -lgslcblas"
+CFLAGS="$CFLAGS -Wall -lgsl -lgslcblas -g -pg"
 echo $CFLAGS
