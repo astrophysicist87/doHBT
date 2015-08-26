@@ -295,8 +295,7 @@ class SourceVariances
 		double place_in_range(double phi, double min, double max);
 		void Get_current_decay_string(int dc_idx, string * decay_string);
 		int lookup_resonance_idx_from_particle_id(int particle_id);
-		static inline double lin_int(double x1, double x2, double f1, double f2, double x);
-		static inline double lin_int2(double x1, double one_by_x2_m_x1, double f1, double f2, double x);
+		static inline double lin_int(double x1, double one_by_x2_m_x1, double f1, double f2, double x);
 		double Edndp3(double ptr, double phir, int local_pid, int wfi);
 		void Edndp3(double ptr, double phir, int local_pid, double * results);
 

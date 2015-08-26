@@ -674,6 +674,8 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	{
 		double pT = SPinterp_pT[ipt];
+		double * p0_pTslice = SPinterp_p0[ipt];
+		double * pz_pTslice = SPinterp_pz[ipt];
 
 		for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
 		{
@@ -715,8 +717,8 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 
 				for(int ieta=0; ieta < eta_s_npts; ++ieta)
 				{
-					double p0 = SPinterp_p0[ipt][ieta];
-					double pz = SPinterp_pz[ipt][ieta];
+					double p0 = p0_pTslice[ieta];
+					double pz = pz_pTslice[ieta];
 					double z0 = tau*ch_eta_s[ieta];
 					double z3 = tau*sh_eta_s[ieta];
 					double expon, f0;
