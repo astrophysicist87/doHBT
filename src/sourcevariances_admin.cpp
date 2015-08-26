@@ -23,6 +23,8 @@
 
 using namespace std;
 
+int PTCHANGE = 1.0;
+
 template <typename T> int sgn(T val)
 {
     return (T(0) < val) - (val < T(0));
@@ -241,15 +243,15 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		sign_of_dN_dypTdpTdphi_moments[ir] = new double ** [n_weighting_functions];
 		for (int wfi=0; wfi<n_weighting_functions; wfi++)
 		{
-			dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
-			ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
-			sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp2_pT_pts];
-			for (int ipT=0; ipT<n_interp2_pT_pts; ipT++)
+			dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp_pT_pts];
+			ln_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp_pT_pts];
+			sign_of_dN_dypTdpTdphi_moments[ir][wfi] = new double * [n_interp_pT_pts];
+			for (int ipT=0; ipT<n_interp_pT_pts; ipT++)
 			{
-				dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
-				ln_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
-				sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp2_pphi_pts];
-				for (int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
+				dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp_pphi_pts];
+				ln_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp_pphi_pts];
+				sign_of_dN_dypTdpTdphi_moments[ir][wfi][ipT] = new double [n_interp_pphi_pts];
+				for (int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 					{
 						dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
 						ln_dN_dypTdpTdphi_moments[ir][wfi][ipT][ipphi] = 0.0;
@@ -307,54 +309,54 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 
 //initialize and set evenly spaced grid of px-py points in transverse plane,
 //and corresponding p0 and pz points
-	SPinterp2_pT = new double [n_interp2_pT_pts];
-	SPinterp2_pphi = new double [n_interp2_pphi_pts];
-	sin_SPinterp2_pphi = new double [n_interp2_pphi_pts];
-	cos_SPinterp2_pphi = new double [n_interp2_pphi_pts];
-	SPinterp2_p0 = new double* [n_interp2_pT_pts];
-	SPinterp2_pz = new double* [n_interp2_pT_pts];
-	double * dummywts3 = new double [n_interp2_pT_pts];
-	double * dummywts4 = new double [n_interp2_pphi_pts];
-	for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
+	SPinterp_pT = new double [n_interp_pT_pts];
+	SPinterp_pphi = new double [n_interp_pphi_pts];
+	sin_SPinterp_pphi = new double [n_interp_pphi_pts];
+	cos_SPinterp_pphi = new double [n_interp_pphi_pts];
+	SPinterp_p0 = new double* [n_interp_pT_pts];
+	SPinterp_pz = new double* [n_interp_pT_pts];
+	double * dummywts3 = new double [n_interp_pT_pts];
+	double * dummywts4 = new double [n_interp_pphi_pts];
+	for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
 	{
-		SPinterp2_p0[ipt] = new double [eta_s_npts];
-		SPinterp2_pz[ipt] = new double [eta_s_npts];
+		SPinterp_p0[ipt] = new double [eta_s_npts];
+		SPinterp_pz[ipt] = new double [eta_s_npts];
 	}
 	if (UNIFORM_SPACING)
 	{
 		//use uniformly spaced points in transverse momentum to make
 		//interpolation simpler/faster
-		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
-			SPinterp2_pT[ipt] = interp2_pT_min + (double)ipt*Del2_pT;
-		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
+		for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+			SPinterp_pT[ipt] = interp_pT_min + (double)ipt*Del2_pT;
+		for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 		{
-			SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
-			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
-			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
+			SPinterp_pphi[ipphi] = interp_pphi_min + (double)ipphi*Del2_pphi;
+			sin_SPinterp_pphi[ipphi] = sin(SPinterp_pphi[ipphi]);
+			cos_SPinterp_pphi[ipphi] = cos(SPinterp_pphi[ipphi]);
 		}
-		//for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
-		//	cerr << SPinterp2_pT[ipt] << endl;
+		//for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+		//	cerr << SPinterp_pT[ipt] << endl;
 	}
 	else
 	{
 		//try just gaussian points...
 		//syntax:
 		//int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[]) 
-		gauss_quadrature(n_interp2_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp2_pT, dummywts3);
-		//for(int ipT=0; ipT<n_interp2_pT_pts; ipT++)
-		//	if (VERBOSE > 0) *global_out_stream_ptr << "SPinterp2_pT[" << ipT << "] = " << SPinterp2_pT[ipT] << endl;
-		//logspace(SPinterp2_pT, interp2_pT_min, interp2_pT_max, n_interp2_pT_pts);
-		//scalepoints(SPinterp2_pT, interp2_pT_min, interp2_pT_max, 0.25, n_interp2_pT_pts);
-		//gauss_quadrature(n_interp2_pT_pts, 1, 0.0, 0.0, interp2_pT_min, interp2_pT_max, SPinterp2_pT, dummywts3);
-		//for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
-		//	cerr << SPinterp2_pT[ipt] << endl;
-		gauss_quadrature(n_interp2_pphi_pts, 1, 0.0, 0.0, interp2_pphi_min, interp2_pphi_max, SPinterp2_pphi, dummywts4);
-		for(int ipphi=0; ipphi<n_interp2_pphi_pts; ipphi++)
+		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, dummywts3);
+		//for(int ipT=0; ipT<n_interp_pT_pts; ipT++)
+		//	if (VERBOSE > 0) *global_out_stream_ptr << "SPinterp_pT[" << ipT << "] = " << SPinterp_pT[ipT] << endl;
+		//logspace(SPinterp_pT, interp_pT_min, interp_pT_max, n_interp_pT_pts);
+		//scalepoints(SPinterp_pT, interp_pT_min, interp_pT_max, 0.25, n_interp_pT_pts);
+		//gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, interp_pT_min, interp_pT_max, SPinterp_pT, dummywts3);
+		//for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+		//	cerr << SPinterp_pT[ipt] << endl;
+		gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, dummywts4);
+		for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 		{
-			//SPinterp2_pphi[ipphi] = interp2_pphi_min + (double)ipphi*Del2_pphi;
-			//if (VERBOSE > 0) *global_out_stream_ptr << setw(8) << setprecision(15) << "SPinterp2_pphi[" << ipphi << "] = " << SPinterp2_pphi[ipphi] << endl;
-			sin_SPinterp2_pphi[ipphi] = sin(SPinterp2_pphi[ipphi]);
-			cos_SPinterp2_pphi[ipphi] = cos(SPinterp2_pphi[ipphi]);
+			//SPinterp_pphi[ipphi] = interp_pphi_min + (double)ipphi*Del2_pphi;
+			//if (VERBOSE > 0) *global_out_stream_ptr << setw(8) << setprecision(15) << "SPinterp_pphi[" << ipphi << "] = " << SPinterp_pphi[ipphi] << endl;
+			sin_SPinterp_pphi[ipphi] = sin(SPinterp_pphi[ipphi]);
+			cos_SPinterp_pphi[ipphi] = cos(SPinterp_pphi[ipphi]);
 		}
 	}
 
@@ -685,7 +687,7 @@ void SourceVariances::Allocate_decay_channel_info()
 	VEC_n2_alpha = new double ** [n_v_pts];
 	VEC_n2_Pm = new double ** [n_v_pts];
 	VEC_n2_alpha_m = new double ** [n_v_pts];
-	for(int iv = 0; iv < n_v_pts; iv++)
+	for(int iv = 0; iv < n_v_pts; ++iv)
 	{
 		VEC_n2_MT[iv] = new double [n_zeta_pts];
 		VEC_n2_PPhi_tilde[iv] = new double [n_zeta_pts];
@@ -696,7 +698,7 @@ void SourceVariances::Allocate_decay_channel_info()
 		VEC_n2_Pm[iv] = new double * [n_zeta_pts];
 		VEC_n2_alpha_m[iv] = new double * [n_zeta_pts];
 		VEC_n2_zeta_factor[iv] = new double [n_zeta_pts];
-		for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+		for(int izeta = 0; izeta < n_zeta_pts; ++izeta)
 		{
 			VEC_n2_Pp[iv][izeta] = new double [4];
 			VEC_n2_alpha[iv][izeta] = new double [4];
@@ -728,7 +730,7 @@ void SourceVariances::Allocate_decay_channel_info()
 	VEC_alpha = new double *** [n_s_pts];
 	VEC_Pm = new double *** [n_s_pts];
 	VEC_alpha_m = new double *** [n_s_pts];
-	for(int is = 0; is < n_s_pts; is++)
+	for(int is = 0; is < n_s_pts; ++is)
 	{
 		VEC_v_factor[is] = new double [n_v_pts];
 		VEC_zeta_factor[is] = new double * [n_v_pts];
@@ -745,7 +747,7 @@ void SourceVariances::Allocate_decay_channel_info()
 		VEC_alpha[is] = new double ** [n_v_pts];
 		VEC_Pm[is] = new double ** [n_v_pts];
 		VEC_alpha_m[is] = new double ** [n_v_pts];
-		for(int iv = 0; iv < n_v_pts; iv++)
+		for(int iv = 0; iv < n_v_pts; ++iv)
 		{
 			VEC_MT[is][iv] = new double [n_zeta_pts];
 			VEC_PPhi_tilde[is][iv] = new double [n_zeta_pts];
@@ -756,7 +758,7 @@ void SourceVariances::Allocate_decay_channel_info()
 			VEC_Pm[is][iv] = new double * [n_zeta_pts];
 			VEC_alpha_m[is][iv] = new double * [n_zeta_pts];
 			VEC_zeta_factor[is][iv] = new double [n_zeta_pts];
-			for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+			for(int izeta = 0; izeta < n_zeta_pts; ++izeta)
 			{
 				VEC_Pp[is][iv][izeta] = new double [4];
 				VEC_alpha[is][iv][izeta] = new double [4];
@@ -773,9 +775,9 @@ void SourceVariances::Allocate_decay_channel_info()
 void SourceVariances::Delete_decay_channel_info()
 {
 	if (VERBOSE > 2) *global_out_stream_ptr << "Deleting memory for decay channel information..." << endl;
-	for(int iv = 0; iv < n_v_pts; iv++)
+	for(int iv = 0; iv < n_v_pts; ++iv)
 	{
-		for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+		for(int izeta = 0; izeta < n_zeta_pts; ++izeta)
 		{
 			delete [] VEC_n2_Pp[iv][izeta];
 			delete [] VEC_n2_alpha[iv][izeta];
@@ -808,11 +810,11 @@ void SourceVariances::Delete_decay_channel_info()
 	delete [] VEC_n2_Pm;
 	delete [] VEC_n2_alpha_m;
 
-	for(int is = 0; is < n_s_pts; is++)
+	for(int is = 0; is < n_s_pts; ++is)
 	{
-		for(int iv = 0; iv < n_v_pts; iv++)
+		for(int iv = 0; iv < n_v_pts; ++iv)
 		{
-			for(int izeta = 0; izeta < n_zeta_pts; izeta++)
+			for(int izeta = 0; izeta < n_zeta_pts; ++izeta)
 			{
 				delete [] VEC_Pp[is][iv][izeta];
 				delete [] VEC_alpha[is][iv][izeta];
@@ -927,58 +929,6 @@ void SourceVariances::Set_particle_mass(double usrdef_particle_mass)
 void SourceVariances::Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr)
 {
 	current_FOsurf_ptr = FOsurf_ptr;
-	
-	/*surf_damu = new double * [3];
-	surf_pimunu = new double * [8];  //all pimunu's and bulkPi coeff --> latter probably zero
-	surf_Bn_muS_muB = new double * [3];
-	surf_geometry_pts = new double * [7];
-	surf_particle_mu = new double * [Maxparticle];
-	surf_flow = new double * [3];
-	for (int i = 0; i < 3; i++)
-	{
-		surf_damu[i] = new double [FO_length];
-		surf_Bn_muS_muB[i] = new double [FO_length];
-		surf_flow[i] = new double [FO_length];
-	}
-	for (int i = 0; i < 7; i++)
-		surf_geometry_pts[i] = new double [FO_length];
-	for (int i = 0; i < 8; i++)
-		surf_pimunu[i] = new double [FO_length];
-	for (int i = 0; i < Maxparticle; i++)
-		surf_particle_mu[i] = new double [FO_length];
-	
-	for (int isurf = 0; isurf < FO_length; isurf++)
-	{
-		FO_surf* surf = &FOsurf_ptr[isurf];
-		
-		surf_particle_mu[particle_id][isurf] = surf->particle_mu[particle_id];
-		
-		surf_damu[0][isurf] = surf->da0;
-		surf_damu[1][isurf] = surf->da1;
-		surf_damu[2][isurf] = surf->da2;
-		
-		surf_pimunu[0][isurf] = surf->pi00;
-		surf_pimunu[1][isurf] = surf->pi01;
-		surf_pimunu[2][isurf] = surf->pi02;
-		surf_pimunu[3][isurf] = surf->pi11;
-		surf_pimunu[4][isurf] = surf->pi12;
-		surf_pimunu[5][isurf] = surf->pi22;
-		surf_pimunu[6][isurf] = surf->pi33;
-		surf_pimunu[7][isurf] = surf->bulkPi;
-		
-		surf_geometry_pts[0][isurf] = surf->tau;
-		surf_geometry_pts[1][isurf] = surf->r;
-		surf_geometry_pts[2][isurf] = surf->phi;
-		surf_geometry_pts[3][isurf] = surf->xpt;
-		surf_geometry_pts[4][isurf] = surf->ypt;
-		surf_geometry_pts[5][isurf] = surf->sin_phi;
-		surf_geometry_pts[6][isurf] = surf->cos_phi;
-		
-		surf_flow[0][isurf] = surf->vx;
-		surf_flow[1][isurf] = surf->vy;
-		surf_flow[2][isurf] = surf->gammaT;
-	}*/
-	
 	return;
 }
 
@@ -1029,174 +979,63 @@ int SourceVariances::lookup_resonance_idx_from_particle_id(int pid)
 	return (result);
 }
 
-double SourceVariances::Edndp3(double ptr, double phirin, double yr, int local_pid, int wfi)
+inline double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
 {
-	//return Edndp3_original(ptr, phirin, yr, local_pid);
-	//return Edndp3_extended(ptr, phirin, yr, local_pid, wfi);
-	return Edndp3_extended_NEW(ptr, phirin, yr, local_pid, wfi);
-	//if (ptr > 1.0 || phirin > SPinterp2_pphi[n_interp2_pphi_pts-1] || phirin < SPinterp2_pphi[0])
-	//	return Edndp3_original(ptr, phirin, yr, local_pid);
-	//else
-	//	return interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[local_pid][0],
-	//				ptr, phirin, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
+	return ( f1 + (f2 - f1) * (x - x1) / (x2 - x1) );
 }
 
-double SourceVariances::Edndp3_original(double ptr, double phirin, double yr, int local_pid)
+inline double SourceVariances::lin_int2(double x1, double one_by_x2_m_x1, double f1, double f2, double x)
 {
-	double phir, val;
-	double f1, f2;
-	int pn, npt, nphi;
-	int PTCHANGE = 1.0;
-
-	//if(phirin < 0.0){
-	//	printf("ERROR: phir %15.8le < 0 !!! \n", phirin);exit(0);}
-	//if(phirin > 2.0*PI){
-	//	printf("ERROR: phir %15.8le > 2PI !!! \n", phirin);exit(0);}
-
-	phir = phirin;
-
-	pn = local_pid;
-
-	npt = 1;
-	while((ptr > SPinterp2_pT[npt]) &&
-		(npt<(n_interp2_pT_pts - 1))) npt++;
-
-	int nphi_max = n_interp2_pphi_pts-1;
-	if(phir < SPinterp2_pphi[0])
-	{
-		f1 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
-			dN_dypTdpTdphi_moments[pn][0][npt-1][nphi_max],
-			dN_dypTdpTdphi_moments[pn][0][npt-1][0], phir);
-		f2 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
-			dN_dypTdpTdphi_moments[pn][0][npt][nphi_max],
-			dN_dypTdpTdphi_moments[pn][0][npt][0], phir);
-	}
-	else if(phir > SPinterp2_pphi[nphi_max])
-	{
-		f1 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
-			dN_dypTdpTdphi_moments[pn][0][npt-1][nphi_max],
-			dN_dypTdpTdphi_moments[pn][0][npt-1][0], phir);
-		f2 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
-			dN_dypTdpTdphi_moments[pn][0][npt][nphi_max],
-			dN_dypTdpTdphi_moments[pn][0][npt][0], phir);
-	}
-	else
-	{
-		nphi = 1;
-		while((phir > SPinterp2_pphi[nphi])&&(nphi < nphi_max)) nphi++;
-		 /* phi interpolation */
-		double phi0 = SPinterp2_pphi[nphi-1];
-		double phi1 = SPinterp2_pphi[nphi];
-		//cerr << "nphi = " << nphi << " and npt = " << npt << endl;
-		double spec0 = dN_dypTdpTdphi_moments[pn][0][npt-1][nphi-1];
-		double spec1 = dN_dypTdpTdphi_moments[pn][0][npt-1][nphi];
-		double spec2 = dN_dypTdpTdphi_moments[pn][0][npt][nphi-1];
-		double spec3 = dN_dypTdpTdphi_moments[pn][0][npt][nphi];
-		f1 = lin_int(phi0, phi1, spec0, spec1, phir);
-		f2 = lin_int(phi0, phi1, spec2, spec3, phir);
-
-	}
-	if (f1 < 0 || f2 < 0)
-		printf("In Edndp3(): f1 = %f, f2 = %f, ptr = %f, phir = %f, resnum = %i", f1, f2, ptr, phirin, local_pid);
-	if(f1 < 0) f1 = 0.0;
-	if(f2 < 0) f2 = 0.0;
-	f1 = f1 + 1e-100;
-	f2 = f2 + 1e-100;
-	if(ptr > PTCHANGE)
-	{
-		f1 = log(f1);
-		f2 = log(f2);
-		//val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt],
-		//	f1, f2, ptr);
-	}
-	//else
-	//{
-	//	val = 
-	//}
-	val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt],
-		f1, f2, ptr);
-         /*if(isnan(val))
-         {
-             printf("dEdndy3 val \n");
-             printf("f1, %15.8lf f2, %15.8lf  \n", f1, f2);
-             printf(" nphi  %i npt %i \n", nphi,npt);
-             printf(" f1  %15.8le %15.8le  \n", f1, f2);
-             printf(" phi  %15.8lf %15.8lf  \n", PHI[nphi-1], PHI[nphi]);
-             printf(" pt   %15.8lf %15.8lf  \n", particle[pn].pt[npt-1],particle[pn].pt[npt]);
-             printf(" phi  %15.8lf pt %15.8lf    val %15.8lf \n", phir, ptr,val);
-             printf(" phi %15.8le %15.8le \n",dN_dypTdpTdphi_moments[pn][0][npt][nphi-1],
-                                         dN_dypTdpTdphi_moments[pn][0][npt][nphi]);
-             printf(" pt  %15.8le %15.8le \n",dN_dypTdpTdphi_moments[pn][0][npt-1][nphi-1],
-                                     dN_dypTdpTdphi_moments[pn][0][npt-1][nphi]);
-             exit(-1);
-         }*/
-	if(ptr > PTCHANGE)
-		val = exp(val);
-
-	//if (1) *global_out_stream_ptr << "In Edndp3(): {ptr, phir, local_pid, val} = " << ptr << "   " << phir << "   " << local_pid << "   " << val << endl;
-
-	return val;
+	return ( f1 + (f2 - f1) * (x - x1) * one_by_x2_m_x1 );
 }
 
-double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
-{
-	double aa;
-	double eps=1e-100;
-
-	if (x2 == x1) 
-		aa = 0.0;
-	else
-		aa =(f2-f1)/(x2-x1);
-	//double bb = f1 - aa * x1;
-	//double cc = aa*x + bb;
-	
-	//return (aa*x + f1 - aa * x1);
-	return (f1 + aa * (x - x1));
-}
-
-double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr, int local_pid, int wfi)
+double SourceVariances::Edndp3(double ptr, double phir, int pn, int wfi)
 {
 	double phi0, phi1;
 	double f1, f2, val;
 	int PTCHANGE = 1.0;
 
-	double phir = phirin;
-	int pn = local_pid;
-	int npphi_max = n_interp2_pphi_pts - 1;
-	int npT_max = n_interp2_pT_pts - 1;
+	int npphi_max = n_interp_pphi_pts - 1;
+	int npT_max = n_interp_pT_pts - 1;
 
 	// locate pT interval
 	int npt = 1;
-	while ((ptr > SPinterp2_pT[npt]) &&
+	while ((ptr > SPinterp_pT[npt]) &&
 			(npt < npT_max)) ++npt;
 
 	// locate pphi interval
 	int nphi = 1, nphim1 = 0;
-	if(phir < SPinterp2_pphi[0])			//if angle is less than minimum angle grid point
+	if(phir < SPinterp_pphi[0])			//if angle is less than minimum angle grid point
 	{
-		phi0 = SPinterp2_pphi[npphi_max]-2.*M_PI;
-		phi1 = SPinterp2_pphi[0];
+		phi0 = SPinterp_pphi[npphi_max]-2.*M_PI;
+		phi1 = SPinterp_pphi[0];
 		nphi = 0;
 		nphim1 = npphi_max;
 	}
-	else if(phir > SPinterp2_pphi[npphi_max])	//if angle is greater than maximum angle grid point
+	else if(phir > SPinterp_pphi[npphi_max])	//if angle is greater than maximum angle grid point
 	{
-		phi0 = SPinterp2_pphi[npphi_max];
-		phi1 = SPinterp2_pphi[0]+2.*M_PI;
+		phi0 = SPinterp_pphi[npphi_max];
+		phi1 = SPinterp_pphi[0]+2.*M_PI;
 		nphi = 0;
 		nphim1 = npphi_max;
 	}
 	else						//if angle is within grid range
 	{
-		while ((phir > SPinterp2_pphi[nphi]) &&
+		while ((phir > SPinterp_pphi[nphi]) &&
 				(nphi < npphi_max)) ++nphi;
 		nphim1 = nphi - 1;
-		phi0 = SPinterp2_pphi[nphim1];
-		phi1 = SPinterp2_pphi[nphi];
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
 	}
 
-	double pT0 = SPinterp2_pT[npt-1];
-	double pT1 = SPinterp2_pT[npt];
+	double pT0 = SPinterp_pT[npt-1];
+	double pT1 = SPinterp_pT[npt];
+	if (pT0==pT1 || phi0==phi1)
+	{
+		cerr << "ERROR in Edndp3(): pT and/or pphi values equal (how did THAT happen??)!" << endl;
+		exit(1);
+	}
+	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
 
 	// interpolate over pT values first
 	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
@@ -1211,13 +1050,13 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 		{
 			double logf11 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
 			double logf21 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
-			f1 = sign_of_f11 * exp( lin_int(pT0, pT1, logf11, logf21, ptr) );
+			f1 = sign_of_f11 * exp( lin_int2(pT0, one_by_pTdiff, logf11, logf21, ptr) );
 		}
 		else					// otherwise, just interpolate original vals
 		{
 			double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
 			double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
-			f1 = lin_int(pT0, pT1, f11, f21, ptr);
+			f1 = lin_int2(pT0, one_by_pTdiff, f11, f21, ptr);
 		}
 
 		// set f2 next
@@ -1225,13 +1064,13 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 		{
 			double logf12 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
 			double logf22 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
-			f2 = sign_of_f12 * exp( lin_int(pT0, pT1, logf12, logf22, ptr) );
+			f2 = sign_of_f12 * exp( lin_int2(pT0, one_by_pTdiff, logf12, logf22, ptr) );
 		}
 		else					// otherwise, just interpolate original vals
 		{
 			double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
 			double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
-			f2 = lin_int(pT0, pT1, f12, f22, ptr);
+			f2 = lin_int2(pT0, one_by_pTdiff, f12, f22, ptr);
 		}
 	}
 	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
@@ -1240,12 +1079,12 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 		double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
 		double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
 		double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
-		f1 = lin_int(pT0, pT1, f11, f21, ptr);
-		f2 = lin_int(pT0, pT1, f12, f22, ptr);
+		f1 = lin_int2(pT0, one_by_pTdiff, f11, f21, ptr);
+		f2 = lin_int2(pT0, one_by_pTdiff, f12, f22, ptr);
 	}
 
 	// now, interpolate f1 and f2 over the pphi direction
-	val = lin_int(phi0, phi1, f1, f2, phir);
+	val = lin_int2(phi0, one_by_pphidiff, f1, f2, phir);
 
 	if (isnan(val) || abs(val) > 0.5*(abs(f1)+abs(f2))*1.e5)
 	{
@@ -1258,10 +1097,6 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 			<< "  --> phir = " << phir << endl
 			<< "  --> phi0 = " << phi0 << endl
 			<< "  --> phi1 = " << phi1 << endl
-			//<< "  --> f11 = " << f11 << endl
-			//<< "  --> f12 = " << f12 << endl
-			//<< "  --> f21 = " << f21 << endl
-			//<< "  --> f22 = " << f22 << endl
 			<< "  --> f1 = " << f1 << endl
 			<< "  --> f2 = " << f2 << endl;
 		exit(1);
@@ -1270,102 +1105,122 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 	return val;
 }
 
+void SourceVariances::Edndp3(double ptr, double phir, int pn, double * results)
+{//move loop over n_weighting_functions inside this function
+	double phi0, phi1;
+	double f1, f2;
 
-double SourceVariances::Edndp3_extended(double ptr, double phirin, double yr, int local_pid, int wfi)
-{
-	double phir, val;
-	double f1, f2, logf1, logf2;
-	double sign_of_f1, sign_of_f2;
-	int pn, npt, nphi;
-	double phi0, phi1, spec0, spec1, spec2, spec3, tmp;
-	int PTCHANGE = 1.0;
+	int npphi_max = n_interp_pphi_pts - 1;
+	int npT_max = n_interp_pT_pts - 1;
 
-	phir = phirin;
+	// locate pT interval
+	int npt = 1;
+	while ((ptr > SPinterp_pT[npt]) &&
+			(npt < npT_max)) ++npt;
+	double pT0 = SPinterp_pT[npt-1];
+	double pT1 = SPinterp_pT[npt];
 
-	pn = local_pid;
-
-	//locate pT interval
-	npt = 1;
-	while((ptr > SPinterp2_pT[npt]) &&
-		(npt<(n_interp2_pT_pts - 1))) npt++;
-
-	int nphi_max = n_interp2_pphi_pts-1;
-	if(phir < SPinterp2_pphi[0])			//if angle is less than minimum angle grid point
+	// locate pphi interval
+	int nphi = 1, nphim1 = 0;
+	if(phir < SPinterp_pphi[0])			//if angle is less than minimum angle grid point
 	{
-		f1 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
-			dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi_max],
-			dN_dypTdpTdphi_moments[pn][wfi][npt-1][0], phir);
-		f2 = lin_int(SPinterp2_pphi[nphi_max]-2.*M_PI, SPinterp2_pphi[0],
-			dN_dypTdpTdphi_moments[pn][wfi][npt][nphi_max],
-			dN_dypTdpTdphi_moments[pn][wfi][npt][0], phir);
+		phi0 = SPinterp_pphi[npphi_max] - 2. * M_PI;
+		phi1 = SPinterp_pphi[0];
+		nphi = 0;
+		nphim1 = npphi_max;
 	}
-	else if(phir > SPinterp2_pphi[nphi_max])	//if angle is greater than maximum angle grid point
+	else if(phir > SPinterp_pphi[npphi_max])	//if angle is greater than maximum angle grid point
 	{
-		f1 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
-			dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi_max],
-			dN_dypTdpTdphi_moments[pn][wfi][npt-1][0], phir);
-		f2 = lin_int(SPinterp2_pphi[nphi_max], SPinterp2_pphi[0]+2.*M_PI,
-			dN_dypTdpTdphi_moments[pn][wfi][npt][nphi_max],
-			dN_dypTdpTdphi_moments[pn][wfi][npt][0], phir);
+		phi0 = SPinterp_pphi[npphi_max];
+		phi1 = SPinterp_pphi[0] + 2. * M_PI;
+		nphi = 0;
+		nphim1 = npphi_max;
 	}
 	else						//if angle is within grid range
 	{
-		//locate pphi interval
-		nphi = 1;
-		while((phir > SPinterp2_pphi[nphi]) &&
-				(nphi < nphi_max)) nphi++;
-		phi0 = SPinterp2_pphi[nphi-1];
-		phi1 = SPinterp2_pphi[nphi];
-		spec0 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi-1];
-		spec1 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
-		spec2 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi-1];
-		spec3 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
-		f1 = lin_int(phi0, phi1, spec0, spec1, phir);
-		f2 = lin_int(phi0, phi1, spec2, spec3, phir);
+		while ((phir > SPinterp_pphi[nphi]) &&
+				(nphi < npphi_max)) ++nphi;
+		nphim1 = nphi - 1;
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
 	}
-	//if (f1 < 0 || f2 < 0)
-	//	printf("WARNING in Edndp3(): f1 = %f, f2 = %f, ptr = %f, phir = %f, resnum = %i", f1, f2, ptr, phirin, local_pid);
-	sign_of_f1 = sgn(f1);
-	sign_of_f2 = sgn(f2);
-	f1 = f1 + 1.e-100;
-	f2 = f2 + 1.e-100;
-	
-	//if f1 and f2 have the same sign and ptr > PTCHANGE = 1.0 GeV (currently), then interpolate the logarithms
-	if(ptr > PTCHANGE && sign_of_f1 * sign_of_f2 > 0)
+
+	if (pT0==pT1 || phi0==phi1)
 	{
-		logf1 = log(abs(f1));
-		logf2 = log(abs(f2));
-		tmp = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt], logf1, logf2, ptr);
-		val = sign_of_f1 * exp( tmp );
-	}
-	else							//otherwise, just interpolate the original values
-	{
-		val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt], f1, f2, ptr);
-	}
-	if (isnan(val)/* || abs(val) > 0.5*(abs(f1)+abs(f2))*1.e5*/)
-	{
-		*global_out_stream_ptr << "ERROR: problems encountered!" << endl
-			<< "val = " << setw(8) << setprecision(15) << val << endl
-			<< "  --> ptr = " << ptr << endl
-			<< "  --> phir = " << phir << endl
-			<< "  --> phi0 = " << SPinterp2_pphi[nphi-1] << endl
-			<< "  --> phi1 = " << SPinterp2_pphi[nphi] << endl
-			<< "  --> spec0 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi-1] << endl
-			<< "  --> spec1 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
-			<< "  --> spec2 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi-1] << endl
-			<< "  --> spec3 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
-			<< "  --> pt0 = " << SPinterp2_pT[npt-1] << endl
-			<< "  --> pt1 = " << SPinterp2_pT[npt] << endl
-			<< "  --> f1 = " << f1 << endl
-			<< "  --> f2 = " << f2 << endl
-			<< "  --> log(abs(f1)) = " << logf1 << endl
-			<< "  --> log(abs(f2)) = " << logf2 << endl
-			<< "  --> tmp = " << tmp << endl
-			<< "  --> wfi = " << wfi << endl;
+		cerr << "ERROR in Edndp3(): pT and/or pphi values equal (how did THAT happen??)!" << endl;
 		exit(1);
 	}
 
-	return val;
+	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
+
+	for (int wfi = 0; wfi < n_weighting_functions; ++wfi)
+	{
+		// interpolate over pT values first
+		if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
+		{
+			double sign_of_f11 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+			double sign_of_f12 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+			double sign_of_f21 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+			double sign_of_f22 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+	
+			// set f1 first
+			if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			{
+				double logf11 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+				double logf21 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+				f1 = sign_of_f11 * exp( lin_int2(pT0, one_by_pTdiff, logf11, logf21, ptr) );
+			}
+			else					// otherwise, just interpolate original vals
+			{
+				double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+				double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+				f1 = lin_int2(pT0, one_by_pTdiff, f11, f21, ptr);
+			}
+		
+			// set f2 next
+			if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			{
+				double logf12 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+				double logf22 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+				f2 = sign_of_f12 * exp( lin_int2(pT0, one_by_pTdiff, logf12, logf22, ptr) );
+			}
+			else					// otherwise, just interpolate original vals
+			{
+				double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+				double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+				f2 = lin_int2(pT0, one_by_pTdiff, f12, f22, ptr);
+			}
+		}
+		else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
+		{
+			double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+			double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+			double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+			double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+			f1 = lin_int2(pT0, one_by_pTdiff, f11, f21, ptr);
+			f2 = lin_int2(pT0, one_by_pTdiff, f12, f22, ptr);
+		}
+	
+		// now, interpolate f1 and f2 over the pphi direction
+		results[wfi] = lin_int2(phi0, one_by_pphidiff, f1, f2, phir);
+	
+		if (isnan(results[wfi]) || abs(results[wfi]) > 0.5*(abs(f1)+abs(f2))*1.e5)
+		{
+			*global_out_stream_ptr << "ERROR: problems encountered!" << endl
+				<< "results[" << wfi << "] = " << setw(8) << setprecision(15) << results[wfi] << endl
+				<< "  --> ptr = " << ptr << endl
+				<< "  --> pt0 = " << pT0 << endl
+				<< "  --> pt1 = " << pT1 << endl
+				<< "  --> phir = " << phir << endl
+				<< "  --> phi0 = " << phi0 << endl
+				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f1 = " << f1 << endl
+				<< "  --> f2 = " << f2 << endl;
+			exit(1);
+		}
+	}
+	return;
 }
+
 
 //End of file

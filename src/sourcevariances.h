@@ -135,22 +135,17 @@ class SourceVariances
 		double * zvec;
 
 		//SP momentum arrays for interpolation grid
-		double * SPinterp1_px;
-		double * SPinterp1_py;
-		double *** SPinterp1_p0;
-		double *** SPinterp1_pz;
-		double * SPinterp2_pT;
-		double * SPinterp2_pphi;
-		double * sin_SPinterp2_pphi;
-		double * cos_SPinterp2_pphi;
-		double ** SPinterp2_p0;
-		double ** SPinterp2_pz;
+		double * SPinterp_pT;
+		double * SPinterp_pphi;
+		double * sin_SPinterp_pphi;
+		double * cos_SPinterp_pphi;
+		double ** SPinterp_p0;
+		double ** SPinterp_pz;
 
 		FO_surf* current_FOsurf_ptr;
 		//FO surface info that is constant - to save time
 		double Tdec, Edec, Pdec, muRES, signRES, gRES;
 		double S_prefactor;
-		double ** surf_damu, ** surf_pimunu, ** surf_Bn_muS_muB, ** surf_geometry_pts, ** surf_particle_mu, ** surf_flow;
 	
 		//single particle spectra for plane angle determination
 		//int n_order;
@@ -271,7 +266,7 @@ class SourceVariances
 		void Allocate_decay_channel_info();
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
-		void combine_sourcevariances(double * output, double * input, double alpha_t, double alpha_o, double alpha_s, double alpha_l);
+		void combine_sourcevariances(double * output, double * input, double * alpha_vec);
 		void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
 		void Compute_source_variances(int iKT, int iKphi);
 
@@ -294,17 +289,16 @@ class SourceVariances
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
 		double get_Q();
 		double g(double s);
-		void set_to_zero(double * array, int arraylength);
+		inline void set_to_zero(double * array, int arraylength);
 		void adaptive_simpson_integration(void (SourceVariances::*f) (double, double *), double a, double b, double * results);
 		double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi);
 		double place_in_range(double phi, double min, double max);
 		void Get_current_decay_string(int dc_idx, string * decay_string);
 		int lookup_resonance_idx_from_particle_id(int particle_id);
-		double lin_int(double x1, double x2, double f1, double f2, double x);
-		double Edndp3(double ptr, double phirin, double yr, int local_pid, int wfi);
-		double Edndp3_original(double ptr, double phirin, double yr, int local_pid);
-		double Edndp3_extended(double ptr, double phirin, double yr, int local_pid, int wfi);
-		double Edndp3_extended_NEW(double ptr, double phirin, double yr, int local_pid, int wfi);
+		static inline double lin_int(double x1, double x2, double f1, double f2, double x);
+		static inline double lin_int2(double x1, double one_by_x2_m_x1, double f1, double f2, double x);
+		double Edndp3(double ptr, double phir, int local_pid, int wfi);
+		void Edndp3(double ptr, double phir, int local_pid, double * results);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);

@@ -184,9 +184,9 @@ void SourceVariances::zeta_loop(double zeta_loc, double * zetasum_vec)
 	temp_cos_PPhi_tilde_loc = (mT*MT_loc*cosh(P_Y_loc-p_y) - Estar_loc*Mres)/(pT*PT_loc);
 	//assume that PPhi_tilde is +ve in next step...
 	temp_sin_PPhi_tilde_loc = sqrt(1. - temp_cos_PPhi_tilde_loc*temp_cos_PPhi_tilde_loc);
-	PPhi_tilde_loc = place_in_range( atan2(temp_sin_PPhi_tilde_loc, temp_cos_PPhi_tilde_loc), interp2_pphi_min, interp2_pphi_max);
-	PPhi_tilde_SHIFT = place_in_range( K_phi_local + PPhi_tilde_loc, interp2_pphi_min, interp2_pphi_max);
-	PPhi_tilde_SHIFT_FLIP = place_in_range( K_phi_local - PPhi_tilde_loc, interp2_pphi_min, interp2_pphi_max);
+	PPhi_tilde_loc = place_in_range( atan2(temp_sin_PPhi_tilde_loc, temp_cos_PPhi_tilde_loc), interp_pphi_min, interp_pphi_max);
+	PPhi_tilde_SHIFT = place_in_range( K_phi_local + PPhi_tilde_loc, interp_pphi_min, interp_pphi_max);
+	PPhi_tilde_SHIFT_FLIP = place_in_range( K_phi_local - PPhi_tilde_loc, interp_pphi_min, interp_pphi_max);
 
 	if (VERBOSE > 0) *global_out_stream_ptr << "Working on resonance # = " << current_decay_channel_idx << ":" << endl
 		<< setw(8) << setprecision(15)
@@ -458,8 +458,8 @@ void SourceVariances::compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, i
 		xspt = temp_r * sin_phi_m_Kphires;
 		for(int ieta=0; ieta < eta_s_npts; ieta++)
 		{
-			//p0 = SPinterp2_p0[ipt][ieta];
-			//pz = SPinterp2_pz[ipt][ieta];
+			//p0 = SPinterp_p0[ipt][ieta];
+			//pz = SPinterp_pz[ipt][ieta];
 			p0 = MTres * cosh(local_resonance_rapidity - eta_s[ieta]);
 			pz = MTres * sinh(local_resonance_rapidity - eta_s[ieta]);
 			zpt = tau*sh_eta_s[ieta];

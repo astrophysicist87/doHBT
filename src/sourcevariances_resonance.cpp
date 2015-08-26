@@ -28,7 +28,7 @@ double SourceVariances::get_Q()
 	double smax = (Mres-mass)*(Mres-mass);
 	double sum = 0.;
 	
-	for (int is = 0; is < n_s_pts; is++)
+	for (int is = 0; is < n_s_pts; ++is)
 	{
 		//double sp = s_pts[dc_idx-1][is];
 		double sp = NEW_s_pts[is];
@@ -117,40 +117,40 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 	return;
 }
 
-void SourceVariances::combine_sourcevariances(double * output, double * input, double alpha_t, double alpha_o, double alpha_s, double alpha_l)
-{
+void SourceVariances::combine_sourcevariances(double * output, double * input, double * alpha_vec)
+{//0, 1, 2, 3 --> t, o, s, l
 	//[{1}_r]_{r-->\pi}
 	output[0] += input[0];
 	if (INCLUDE_SOURCE_VARIANCES)
 	{
 	//[{xs}_r]_{r-->\pi}
-	output[1] += input[1] + alpha_s*input[0];
+	output[1] += input[1] + alpha_vec[2]*input[0];
 	//[{xs2}_r]_{r-->\pi}
-	output[2] += input[2] + 2.*alpha_s*input[1] + 2.*alpha_s*alpha_s*input[0];
+	output[2] += input[2] + 2.*alpha_vec[2]*input[1] + 2.*alpha_vec[2]*alpha_vec[2]*input[0];
 	//[{xo}_r]_{r-->\pi}
-	output[3] += input[3] + alpha_o*input[0];
+	output[3] += input[3] + alpha_vec[1]*input[0];
 	//[{xo2}_r]_{r-->\pi}
-	output[4] += input[4] + 2.*alpha_o*input[3] + 2.*alpha_o*alpha_o*input[0];
+	output[4] += input[4] + 2.*alpha_vec[1]*input[3] + 2.*alpha_vec[1]*alpha_vec[1]*input[0];
 	//[{xl}_r]_{r-->\pi}
-	output[5] += input[5] + alpha_l*input[0];
+	output[5] += input[5] + alpha_vec[3]*input[0];
 	//[{xl2}_r]_{r-->\pi}
-	output[6] += input[6] + 2.*alpha_l*input[5] + 2.*alpha_l*alpha_l*input[0];
+	output[6] += input[6] + 2.*alpha_vec[3]*input[5] + 2.*alpha_vec[3]*alpha_vec[3]*input[0];
 	//[{t}_r]_{r-->\pi}
-	output[7] += input[7] + alpha_t*input[0];
+	output[7] += input[7] + alpha_vec[0]*input[0];
 	//[{t2}_r]_{r-->\pi}
-	output[8] += input[8] + 2.*alpha_t*input[7] + 2.*alpha_t*alpha_t*input[0];
+	output[8] += input[8] + 2.*alpha_vec[0]*input[7] + 2.*alpha_vec[0]*alpha_vec[0]*input[0];
 	//[{xs_xo}_r]_{r-->\pi}
-	output[9] += input[9] + alpha_s*input[3] + alpha_o*input[1] + 2.*alpha_s*alpha_o*input[0];
+	output[9] += input[9] + alpha_vec[2]*input[3] + alpha_vec[1]*input[1] + 2.*alpha_vec[2]*alpha_vec[1]*input[0];
 	//[{xs_xl}_r]_{r-->\pi}
-	output[10] += input[10] + alpha_s*input[5] + alpha_l*input[1] + 2.*alpha_s*alpha_l*input[0];
+	output[10] += input[10] + alpha_vec[2]*input[5] + alpha_vec[3]*input[1] + 2.*alpha_vec[2]*alpha_vec[3]*input[0];
 	//[{xs_t}_r]_{r-->\pi}
-	output[11] += input[11] + alpha_s*input[7] + alpha_t*input[1] + 2.*alpha_s*alpha_t*input[0];
+	output[11] += input[11] + alpha_vec[2]*input[7] + alpha_vec[0]*input[1] + 2.*alpha_vec[2]*alpha_vec[0]*input[0];
 	//[{xo_xl}_r]_{r-->\pi}
-	output[12] += input[12] + alpha_o*input[5] + alpha_l*input[3] + 2.*alpha_o*alpha_l*input[0];
+	output[12] += input[12] + alpha_vec[1]*input[5] + alpha_vec[3]*input[3] + 2.*alpha_vec[1]*alpha_vec[3]*input[0];
 	//[{xo_t}_r]_{r-->\pi}
-	output[13] += input[13] + alpha_o*input[7] + alpha_t*input[3] + 2.*alpha_o*alpha_t*input[0];
+	output[13] += input[13] + alpha_vec[1]*input[7] + alpha_vec[0]*input[3] + 2.*alpha_vec[1]*alpha_vec[0]*input[0];
 	//[{xl_t}_r]_{r-->\pi}
-	output[14] += input[14] + alpha_l*input[7] + alpha_t*input[5] + 2.*alpha_l*alpha_t*input[0];
+	output[14] += input[14] + alpha_vec[3]*input[7] + alpha_vec[0]*input[5] + 2.*alpha_vec[3]*alpha_vec[0]*input[0];
 	}
 	
 	return;
@@ -166,19 +166,19 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 	double * Csum_vec = new double [n_weighting_functions];
 	double * rap_indep_y_of_r = new double [n_weighting_functions];
 	double * y_of_r = new double [n_weighting_functions];
+	double * alphavec = new double [4];
 	set_to_zero(ssum_vec, n_weighting_functions);
 	set_to_zero(vsum_vec, n_weighting_functions);
 	set_to_zero(zetasum_vec, n_weighting_functions);
 	set_to_zero(Csum_vec, n_weighting_functions);
 	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
 	set_to_zero(y_of_r, n_weighting_functions);
-	//Qfunc = get_Q();
 
-	for (int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-	for (int ipphi = 0; ipphi < n_interp2_pphi_pts; ipphi++)
+	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
+	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
-		double local_pT = SPinterp2_pT[ipt];
-		double local_pphi = SPinterp2_pphi[ipphi];
+		double local_pT = SPinterp_pT[ipt];
+		double local_pphi = SPinterp_pphi[ipphi];
 		set_to_zero(ssum_vec, n_weighting_functions);
 		set_to_zero(vsum_vec, n_weighting_functions);
 		set_to_zero(zetasum_vec, n_weighting_functions);
@@ -190,138 +190,89 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 		{
 			//then g(s) is delta-function, skip s-integration entirely
 			//double s_loc = m2*m2;
-			//cerr << "SVres: " << VEC_n2_pstar << "   " << VEC_n2_Estar << "   " << current_daughter_mass << "   " << current_resonance_mass << "   " << VEC_n2_spt << endl;
 			set_to_zero(vsum_vec, n_weighting_functions);
-				for (int iv = 0; iv < n_v_pts; iv++)
+			for (int iv = 0; iv < n_v_pts; ++iv)
+			{
+				double zetasum = 0.0;
+				time (&rawtime);
+				timeinfo = localtime (&rawtime);
+				set_to_zero(zetasum_vec, n_weighting_functions);
+				for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
 				{
-					double zetasum = 0.0;
-					time (&rawtime);
-					timeinfo = localtime (&rawtime);
-					set_to_zero(zetasum_vec, n_weighting_functions);
-					for (int izeta = 0; izeta < n_zeta_pts; izeta++)
+					alphavec = VEC_n2_alpha[iv][izeta];
+					set_to_zero(Csum_vec, n_weighting_functions);
+					double PKT = VEC_n2_PT[iv][izeta];
+					double PKY = VEC_n2_P_Y[iv];
+					double PKphi = VEC_n2_PPhi_tilde[iv][izeta];
+					for (int tempidx = 1; tempidx <= 2; ++tempidx)
 					{
-						double alpha_t = VEC_n2_alpha[iv][izeta][0];
-						double alpha_o = VEC_n2_alpha[iv][izeta][1];
-						double alpha_s = VEC_n2_alpha[iv][izeta][2];
-						double alpha_l = VEC_n2_alpha[iv][izeta][3];
-						set_to_zero(Csum_vec, n_weighting_functions);
-						double PKT = VEC_n2_PT[iv][izeta];
-						double PKY = VEC_n2_P_Y[iv];
-						double PKphi = VEC_n2_PPhi_tilde[iv][izeta];
-						for (int tempidx = 1; tempidx <= 2; tempidx++)
+						if (tempidx != 1)
 						{
-							if (tempidx != 1)
-							{
-								//Phi only changes sign, does NOT get shifted by pi!
-								PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
-								alpha_s = VEC_n2_alpha_m[iv][izeta][2];
-								alpha_o = VEC_n2_alpha_m[iv][izeta][1];
-							}
-							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
-							//just interpolate table of single particle spectra...
-							//do interpolations
-							//if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
-							if (USE_INTERP_ALT)
-							{//rapidity-dependence not calculated here, but spectra are rap.-indep anyway
-								rap_indep_y_of_r[0] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, 0);
-								if (INCLUDE_SOURCE_VARIANCES)
-								{
-									for (int iweight = 1; iweight < n_weighting_functions; iweight++)
-										rap_indep_y_of_r[iweight] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, iweight);
-								}
-
-							}
-							else
-							{
-								for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-									rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_particle_id][iweight],
-												PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
-							}
-							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
-							//now compute appropriate linear combinations
-							combine_sourcevariances(Csum_vec, y_of_r, alpha_t, alpha_o, alpha_s, alpha_l);
-						}																					// end of tempidx sum
-						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-							zetasum_vec[iweight] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[iweight];
-					}																						// end of zeta sum
-					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-						vsum_vec[iweight] += VEC_n2_v_factor[iv]*zetasum_vec[iweight];
-				}																							// end of v sum
-				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-					ssum_vec[iweight] += Mres*VEC_n2_s_factor*vsum_vec[iweight];
-		}																									// end of nbody == 2
-		else/* if (n_body == 3 || n_body == 4)*/
+							//Phi only changes sign, does NOT get shifted by pi!
+							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
+							alphavec = VEC_n2_alpha_m[iv][izeta];
+						}
+						Edndp3(PKT, PKphi, parent_resonance_particle_id, rap_indep_y_of_r);
+						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
+						combine_sourcevariances(Csum_vec, y_of_r, alphavec);
+					}																					// end of tempidx sum
+					for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
+						zetasum_vec[iweight] += VEC_n2_zeta_factor[iv][izeta]*Csum_vec[iweight];
+				}																						// end of zeta sum
+				for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
+					vsum_vec[iweight] += VEC_n2_v_factor[iv]*zetasum_vec[iweight];
+			}																							// end of v sum
+			for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
+				ssum_vec[iweight] += Mres*VEC_n2_s_factor*vsum_vec[iweight];
+		}																								// end of nbody == 2
+		else
 		{
-			for (int is = 0; is < n_s_pts; is++)
+			for (int is = 0; is < n_s_pts; ++is)
 			{
 				double vsum = 0.0;
- 		  			set_to_zero(vsum_vec, n_weighting_functions);
-				for (int iv = 0; iv < n_v_pts; iv++)
+ 		  		set_to_zero(vsum_vec, n_weighting_functions);
+				for (int iv = 0; iv < n_v_pts; ++iv)
 				{
 					set_to_zero(zetasum_vec, n_weighting_functions);
-					for (int izeta = 0; izeta < n_zeta_pts; izeta++)
+					for (int izeta = 0; izeta < n_zeta_pts; ++izeta)
 					{
-						double alpha_t = VEC_alpha[is][iv][izeta][0];
-						double alpha_o = VEC_alpha[is][iv][izeta][1];
-						double alpha_s = VEC_alpha[is][iv][izeta][2];
-						double alpha_l = VEC_alpha[is][iv][izeta][3];
+						alphavec = VEC_alpha[is][iv][izeta];
 						set_to_zero(Csum_vec, n_weighting_functions);
 						double PKT = VEC_PT[is][iv][izeta];
 						double PKY = VEC_P_Y[is][iv];
 						double PKphi = VEC_PPhi_tilde[is][iv][izeta];
-						for (int tempidx = 1; tempidx <= 2; tempidx++)
+						for (int tempidx = 1; tempidx <= 2; ++tempidx)
 						{
 							if (tempidx != 1)
 							{
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
-								alpha_s = VEC_alpha_m[is][iv][izeta][2];
-								alpha_o = VEC_alpha_m[is][iv][izeta][1];
+								alphavec = VEC_alpha_m[is][iv][izeta];
 							}
-							//instead of calculating each weight_function and averaging over FO surf a bazillion times,
-							//just interpolate table of single particle spectra...
-							//if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
-							if (USE_INTERP_ALT)
-							{//rapidity-dependence not calculated here, but spectra are rap.-indep anyway
-								rap_indep_y_of_r[0] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, 0);
-								if (INCLUDE_SOURCE_VARIANCES)
-								{
-									for (int iweight = 1; iweight < n_weighting_functions; iweight++)
-										rap_indep_y_of_r[iweight] = Edndp3(PKT, PKphi, PKY, parent_resonance_particle_id, iweight);
-								}
-							}
-							else
-							{
-								for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-									rap_indep_y_of_r[iweight] = interpolate2D(SPinterp2_pT, SPinterp2_pphi, dN_dypTdpTdphi_moments[parent_resonance_particle_id][iweight],
-												PKT, PKphi, n_interp2_pT_pts, n_interp2_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING, true);
-							}
+							Edndp3(PKT, PKphi, parent_resonance_particle_id, rap_indep_y_of_r);
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 							//now compute appropriate linear combinations
-							combine_sourcevariances(Csum_vec, y_of_r, alpha_t, alpha_o, alpha_s, alpha_l);
+							combine_sourcevariances(Csum_vec, y_of_r, alphavec);
 						}																					// end of tempidx sum
-						for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+						for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
 							zetasum_vec[iweight] += VEC_zeta_factor[is][iv][izeta]*Csum_vec[iweight];
 					}																						// end of zeta sum
-					for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+					for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
 						vsum_vec[iweight] += VEC_v_factor[is][iv]*zetasum_vec[iweight];
 				}																							// end of v sum
-				for (int iweight = 0; iweight < n_weighting_functions; iweight++)
+				for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
 					ssum_vec[iweight] += Mres*VEC_s_factor[is]*vsum_vec[iweight];
 			}																								// end of s sum
 		}																									// end of nbody == 3
 
-		double temp = dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi];
-		for (int iweight = 0; iweight < n_weighting_functions; iweight++)
-		{
+		//update all gridpoints for daughter moments
+		for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
 			dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] += ssum_vec[iweight];
-			//cerr << "   " << dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi];
-		}
-		//cerr << endl;
+
 		if (isnan(dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi]))
 		{
 			*global_out_stream_ptr << "ERROR: NaNs encountered!" << endl
-									<< "cont. to dN_dypTdpTdphi_moments[daughter_particle_id][0][" << ipt << "][" << ipphi << "] = "
-									<< setw(8) << setprecision(15) << dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi]-temp << endl
+									<< "dN_dypTdpTdphi_moments[daughter_particle_id][0][" << ipt << "][" << ipphi << "] = "
+									<< setw(8) << setprecision(15) << dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi] << endl
 									<< "  --> pt = " << local_pT << std::endl
 									<< "  --> pphi = " << local_pphi << std::endl
 									<< "daughter_particle_id = " << daughter_particle_id << endl
@@ -350,11 +301,10 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 	return;
 }
 
-void SourceVariances::set_to_zero(double * array, int arraylength)
+inline void SourceVariances::set_to_zero(double * array, int arraylength)
 {
-	for (int arrayidx=0; arrayidx<arraylength; arrayidx++) array[arrayidx] = 0.0;
-	
-	return;
+	for (int arrayidx=0; arrayidx<arraylength; ++arrayidx) array[arrayidx] = 0.0;
+	//return;
 }
 
 //End of file

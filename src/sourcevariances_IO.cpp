@@ -230,9 +230,9 @@ void SourceVariances::Output_dN_dypTdpTdphi_grid(int folderindex, int dc_idx)
 
 	for(int imom=0; imom<n_weighting_functions; imom++)
 	{
-		for(int iphi=0; iphi<n_interp2_pphi_pts; iphi++)
-		for(int ipt=0; ipt<n_interp2_pT_pts; ipt++)
-			output_dN_dypTdpTdphi << imom << "   " << SPinterp2_pT[ipt] << "   " << SPinterp2_pphi[iphi]
+		for(int iphi=0; iphi<n_interp_pphi_pts; iphi++)
+		for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
+			output_dN_dypTdpTdphi << imom << "   " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[iphi]
 						<< "   " << dN_dypTdpTdphi_moments[dc_idx][imom][ipt][iphi] << endl;
 		output_dN_dypTdpTdphi << endl;
 	}
@@ -269,9 +269,9 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 						<< setfill('0') << setw(2) << wfi << "_ev" << folderindex << no_df_stem << ".dat";
 		ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 		for(int ii = 0; ii < Nparticle; ii++)
-		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+		for(int iphi = 0; iphi < n_interp_pphi_pts; iphi++)
 		{
-			for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+			for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
 				output_all_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi] << "   ";
 			output_all_dN_dypTdpTdphi << endl;
 		}
@@ -295,9 +295,9 @@ void SourceVariances::Output_total_target_dN_dypTdpTdphi(int folderindex)
 								<< setfill('0') << setw(2) << wfi << "_ev" << folderindex << no_df_stem << ".dat";
 		ofstream output_target_dN_dypTdpTdphi(filename_stream_target_dN_dypTdpTdphi.str().c_str());
 	
-		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
+		for(int iphi = 0; iphi < n_interp_pphi_pts; iphi++)
 		{
-			for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+			for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
 				output_target_dN_dypTdpTdphi << scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[target_particle_id][wfi][ipt][iphi] << "   ";
 			output_target_dN_dypTdpTdphi << endl;
 		}
@@ -336,7 +336,7 @@ void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 		int local_filewidth = get_filewidth(filename_stream_all_dN_dypTdpTdphi.str().c_str());
 		if (VERBOSE > 0) *global_out_stream_ptr << "Read_in_all_dN_dypTdpTdphi(): nrows = "
 							<< local_filelength << " and ncols = " << local_filewidth << endl;
-		if ((Nparticle * n_interp2_pphi_pts != local_filelength) || (n_interp2_pT_pts != local_filewidth))
+		if ((Nparticle * n_interp_pphi_pts != local_filelength) || (n_interp_pT_pts != local_filewidth))
 		{
 			cerr << "Read_in_all_dN_dypTdpTdphi(): Mismatch in dimensions in file "
 				<< "all_res_dN_dypTdpTdphi_mom_" << setfill('0') << setw(2) << wfi
@@ -345,8 +345,8 @@ void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 		}
 	
 		for(int ii = 0; ii < Nparticle; ii++)
-		for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
-		for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
+		for(int iphi = 0; iphi < n_interp_pphi_pts; iphi++)
+		for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
 			input_all_dN_dypTdpTdphi >> dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi];
 	
 		input_all_dN_dypTdpTdphi.close();
@@ -360,14 +360,14 @@ void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 	filename_stream_pphipts << global_path << "/phi_gauss_table.dat";
 	ifstream input_pphipts(filename_stream_pphipts.str().c_str());
 
-	double * dummy_pT_wts = new double [n_interp2_pT_pts];
-	double * dummy_pphi_wts = new double [n_interp2_pphi_pts];
+	double * dummy_pT_wts = new double [n_interp_pT_pts];
+	double * dummy_pphi_wts = new double [n_interp_pphi_pts];
 
-	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
-		input_pTpts >> SPinterp2_pT[ipt] >> dummy_pT_wts[ipt];
+	for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
+		input_pTpts >> SPinterp_pT[ipt] >> dummy_pT_wts[ipt];
 
-	for(int ipphi = 0; ipphi < n_interp2_pphi_pts; ipphi++)
-		input_pphipts >> SPinterp2_pphi[ipphi] >> dummy_pphi_wts[ipphi];
+	for(int ipphi = 0; ipphi < n_interp_pphi_pts; ipphi++)
+		input_pphipts >> SPinterp_pphi[ipphi] >> dummy_pphi_wts[ipphi];
 
 	if (VERBOSE > 0) *global_out_stream_ptr << "Read_in_all_dN_dypTdpTdphi(): read in pT and pphi points!" << endl;
 

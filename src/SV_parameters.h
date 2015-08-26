@@ -27,9 +27,9 @@ using namespace std;
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
 #define SPACETIME_MOMENTS_ONLY		false		// duh
-#define CHECK_FOR_LIFETIME		false		// true means skip particles which are too long-lived
+#define CHECK_FOR_LIFETIME		true		// true means skip particles which are too long-lived
 #define DO_ALL_DECAY_CHANNELS		false		// duh
-#define INCLUDE_SOURCE_VARIANCES	false		// false means do spectra only
+#define INCLUDE_SOURCE_VARIANCES	true		// false means do spectra only
 #define USE_INTERP_ALT			true		// uses routine from iS.e code for comparison
 
 const double hbarC=0.197327053;  //GeV*fm
@@ -64,16 +64,16 @@ const double SP_pT_max = 3.0;
 
 //parameters for interpolation grid
 //  - polar
-//const int n_interp2_pT_pts = 77;
-//const int n_interp2_pphi_pts = 11;
-const int n_interp2_pT_pts = 15;
-const int n_interp2_pphi_pts = 48;
-const double interp2_pT_min = 0.01;
-const double interp2_pphi_min = 0.0;
-const double interp2_pT_max = 4.05;
-const double interp2_pphi_max = 2.*M_PI;
-const double Del2_pT = (interp2_pT_max - interp2_pT_min) / (double)(n_interp2_pT_pts-1);
-const double Del2_pphi = (interp2_pphi_max - interp2_pphi_min) / (double)(n_interp2_pphi_pts-1);
+//const int n_interp_pT_pts = 77;
+//const int n_interp_pphi_pts = 11;
+const int n_interp_pT_pts = 15;
+const int n_interp_pphi_pts = 48;
+const double interp_pT_min = 0.01;
+const double interp_pphi_min = 0.0;
+const double interp_pT_max = 4.05;
+const double interp_pphi_max = 2.*M_PI;
+const double Del2_pT = (interp_pT_max - interp_pT_min) / (double)(n_interp_pT_pts-1);
+const double Del2_pphi = (interp_pphi_max - interp_pphi_min) / (double)(n_interp_pphi_pts-1);
 
 //correlation function info
 const int corrfuncdim = 1;
