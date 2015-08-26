@@ -1151,7 +1151,7 @@ double SourceVariances::lin_int(double x1, double x2, double f1, double f2, doub
 	//double cc = aa*x + bb;
 	
 	//return (aa*x + f1 - aa * x1);
-	return (f1 + aa * (x1 - x));
+	return (f1 + aa * (x - x1));
 }
 
 double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr, int local_pid, int wfi)
@@ -1168,7 +1168,7 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 	// locate pT interval
 	int npt = 1;
 	while ((ptr > SPinterp2_pT[npt]) &&
-			(npt < npT_max)) npt++;
+			(npt < npT_max)) ++npt;
 
 	// locate pphi interval
 	int nphi = 1, nphim1 = 0;
@@ -1189,7 +1189,7 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 	else						//if angle is within grid range
 	{
 		while ((phir > SPinterp2_pphi[nphi]) &&
-				(nphi < npphi_max)) nphi++;
+				(nphi < npphi_max)) ++nphi;
 		nphim1 = nphi - 1;
 		phi0 = SPinterp2_pphi[nphim1];
 		phi1 = SPinterp2_pphi[nphi];
@@ -1197,46 +1197,49 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 
 	double pT0 = SPinterp2_pT[npt-1];
 	double pT1 = SPinterp2_pT[npt];
-	double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
-	double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
-	double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
-	double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
-
 
 	// interpolate over pT values first
 	if(ptr > PTCHANGE)				// if pT interpolation point is larger than PTCHANGE (currently 1.0 GeV)
 	{
-		double sign_of_f11 = sgn(f11);
-		double sign_of_f12 = sgn(f12);
-		double sign_of_f21 = sgn(f21);
-		double sign_of_f22 = sgn(f22);
+		double sign_of_f11 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+		double sign_of_f12 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+		double sign_of_f21 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+		double sign_of_f22 = sign_of_dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
 
 		// set f1 first
 		if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 		{
-			double logf11 = log(abs(f11));
-			double logf21 = log(abs(f21));
+			double logf11 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+			double logf21 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
 			f1 = sign_of_f11 * exp( lin_int(pT0, pT1, logf11, logf21, ptr) );
 		}
 		else					// otherwise, just interpolate original vals
 		{
+			double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+			double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
 			f1 = lin_int(pT0, pT1, f11, f21, ptr);
 		}
 
 		// set f2 next
 		if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 		{
-			double logf12 = log(abs(f12));
-			double logf22 = log(abs(f22));
+			double logf12 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+			double logf22 = ln_dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
 			f2 = sign_of_f12 * exp( lin_int(pT0, pT1, logf12, logf22, ptr) );
 		}
 		else					// otherwise, just interpolate original vals
 		{
+			double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+			double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
 			f2 = lin_int(pT0, pT1, f12, f22, ptr);
 		}
 	}
 	else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
 	{
+		double f11 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+		double f12 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+		double f21 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+		double f22 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
 		f1 = lin_int(pT0, pT1, f11, f21, ptr);
 		f2 = lin_int(pT0, pT1, f12, f22, ptr);
 	}
@@ -1255,10 +1258,10 @@ double SourceVariances::Edndp3_extended_NEW(double ptr, double phirin, double yr
 			<< "  --> phir = " << phir << endl
 			<< "  --> phi0 = " << phi0 << endl
 			<< "  --> phi1 = " << phi1 << endl
-			<< "  --> f11 = " << f11 << endl
-			<< "  --> f12 = " << f12 << endl
-			<< "  --> f21 = " << f21 << endl
-			<< "  --> f22 = " << f22 << endl
+			//<< "  --> f11 = " << f11 << endl
+			//<< "  --> f12 = " << f12 << endl
+			//<< "  --> f21 = " << f21 << endl
+			//<< "  --> f22 = " << f22 << endl
 			<< "  --> f1 = " << f1 << endl
 			<< "  --> f2 = " << f2 << endl;
 		exit(1);
@@ -1339,7 +1342,7 @@ double SourceVariances::Edndp3_extended(double ptr, double phirin, double yr, in
 	{
 		val = lin_int(SPinterp2_pT[npt-1], SPinterp2_pT[npt], f1, f2, ptr);
 	}
-	if (isnan(val) || abs(val) > 0.5*(abs(f1)+abs(f2))*1.e5)
+	if (isnan(val)/* || abs(val) > 0.5*(abs(f1)+abs(f2))*1.e5*/)
 	{
 		*global_out_stream_ptr << "ERROR: problems encountered!" << endl
 			<< "val = " << setw(8) << setprecision(15) << val << endl

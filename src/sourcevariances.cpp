@@ -770,15 +770,14 @@ cout << "local_pid = " << local_pid << endl;
 	}
 //debugger(__LINE__,__FILE__);
 
-	//only use this for spectra for now
-	double temp;
 	//set log of dN_dypTdpTdphi_moments...
+	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	for(int ipt = 0; ipt < n_interp2_pT_pts; ipt++)
 	for(int iphi = 0; iphi < n_interp2_pphi_pts; iphi++)
 	{
-		temp = dN_dypTdpTdphi_moments[local_pid][0][ipt][iphi];
-		ln_dN_dypTdpTdphi_moments[local_pid][0][ipt][iphi] = log(abs(temp));
-		sign_of_dN_dypTdpTdphi_moments[local_pid][0][ipt][iphi] = sgn(temp);
+		double temp = dN_dypTdpTdphi_moments[local_pid][wfi][ipt][iphi];
+		ln_dN_dypTdpTdphi_moments[local_pid][wfi][ipt][iphi] = log(abs(temp));
+		sign_of_dN_dypTdpTdphi_moments[local_pid][wfi][ipt][iphi] = sgn(temp);
 	}
 //debugger(__LINE__,__FILE__);
 
