@@ -174,6 +174,10 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 	set_to_zero(rap_indep_y_of_r, n_weighting_functions);
 	set_to_zero(y_of_r, n_weighting_functions);
 
+	res_sign_info = sign_of_dN_dypTdpTdphi_moments[parent_resonance_particle_id];
+	res_log_info = ln_dN_dypTdpTdphi_moments[parent_resonance_particle_id];
+	res_moments_info = dN_dypTdpTdphi_moments[parent_resonance_particle_id];
+
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
@@ -212,7 +216,7 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 							alphavec = VEC_n2_alpha_m[iv][izeta];
 						}
-						Edndp3(PKT, PKphi, parent_resonance_particle_id, rap_indep_y_of_r);
+						Edndp3(PKT, PKphi, rap_indep_y_of_r);
 						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 						combine_sourcevariances(Csum_vec, y_of_r, alphavec);
 					}																					// end of tempidx sum
@@ -248,7 +252,7 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 								alphavec = VEC_alpha_m[is][iv][izeta];
 							}
-							Edndp3(PKT, PKphi, parent_resonance_particle_id, rap_indep_y_of_r);
+							Edndp3(PKT, PKphi, rap_indep_y_of_r);
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 							//now compute appropriate linear combinations
 							combine_sourcevariances(Csum_vec, y_of_r, alphavec);

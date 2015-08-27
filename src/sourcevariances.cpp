@@ -158,7 +158,6 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
-	double current_dNd3p_00 = 249.013183, thermal_dNd3p_00 = 249.013183, previous_dNd3p_00 = 249.013183;
 	BIGsw.tic();
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
@@ -520,11 +519,15 @@ bool SourceVariances::particles_are_the_same(int reso_idx1, int reso_idx2)
 
 void SourceVariances::Recycle_spacetime_moments()
 {
+	for(int wfi = 0; wfi < n_weighting_functions; ++wfi)
 	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-	for(int wfi = 0; wfi < n_weighting_functions; ++wfi)
+	{
 		dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
+		ln_dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = ln_dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
+		sign_of_dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = sign_of_dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
 		//N.B. - not dc_idx - 1, since spacetime moments for dc_idx = 0 are just thermal pions
+	}
 
 	return;
 }
@@ -794,168 +797,6 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 
 	return;
 }
-
-/*
-//SAVING THE ORIGINAL IN CASE I SCREW UP THE CHANGES...
-void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int local_pid)
-{
-cout << "local_pid = " << local_pid << endl;
-	double *** temp_moments_array = new double ** [n_interp_pT_pts];
-	for (int ipt = 0; ipt < n_interp_pT_pts; ipt++)
-	{
-		temp_moments_array[ipt] = new double * [n_interp_pphi_pts];
-		for (int ipphi = 0; ipphi < n_interp_pphi_pts; ipphi++)
-		{
-			temp_moments_array[ipt][ipphi] = new double [n_weighting_functions];
-			for (int wfi = 0; wfi < n_weighting_functions; wfi++)
-				temp_moments_array[ipt][ipphi][wfi] = 0.0;
-		}
-	}
-	//int local_reso_idx;
-	double z0, z1, z2, z3;
-	double sign, degen, localmass, mu;
-	if (local_pid == target_particle_id)
-	{
-		sign = particle_sign;
-		degen = particle_gspin;
-		localmass = particle_mass;
-		mu = FOsurf_ptr[0].particle_mu[particle_id];
-	}
-	else
-	{
-		sign = all_particles[local_pid].sign;
-		degen = all_particles[local_pid].gspin;
-		localmass = all_particles[local_pid].mass;
-		mu = all_particles[local_pid].mu;
-	}
-	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
-	Tdec = (&FOsurf_ptr[0])->Tdec;
-	double one_by_Tdec = 1./Tdec;
-	Pdec = (&FOsurf_ptr[0])->Pdec;
-	Edec = (&FOsurf_ptr[0])->Edec;
-	double deltaf_prefactor = 0.;
-	if (use_delta_f) deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
-	//declare variables used below here to see if this speeds up code:
-	double tau, vx, vy, da0, da1, da2;
-	double pi00, pi01, pi02, pi11, pi12, pi22, pi33;
-	double temp_r, temp_phi, xpt, ypt, zpt, tpt, sin_temp_phi, cos_temp_phi, gammaT, expon;
-	
-	double pT, pphi, sin_pphi, cos_pphi, sin_phi_m_pphi, cos_phi_m_pphi;
-	double px, py, p0, pz, f0, deltaf, S_p, S_p_withweight;
-	FO_surf* surf;
-	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
-	if (ASSUME_ETA_SYMMETRIC)
-	{
-		eta_odd_factor = 0.0;
-		eta_even_factor = 2.0;
-	}
-	for(int isurf=0; isurf<FO_length; ++isurf)
-	{
-		surf = &FOsurf_ptr[isurf];
-		tau = surf->tau;
-		vx = surf->vx;
-		vy = surf->vy;
-		da0 = surf->da0;
-		da1 = surf->da1;
-		da2 = surf->da2;
-		pi00 = surf->pi00;
-		pi01 = surf->pi01;
-		pi02 = surf->pi02;
-		pi11 = surf->pi11;
-		pi12 = surf->pi12;
-		pi22 = surf->pi22;
-		pi33 = surf->pi33;
-		temp_r = surf->r;
-		sin_temp_phi = surf->sin_phi;
-		cos_temp_phi = surf->cos_phi;
-		gammaT = surf->gammaT;
-		for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-		{
-			pT = SPinterp_pT[ipt];
-			for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-			{
-				sin_pphi = sin_SPinterp_pphi[iphi];
-				cos_pphi = cos_SPinterp_pphi[iphi];
-				px = pT*cos_pphi;
-				py = pT*sin_pphi;
-				sin_phi_m_pphi = sin_temp_phi * cos_pphi - cos_temp_phi * sin_pphi;
-				cos_phi_m_pphi = cos_temp_phi * cos_pphi + sin_temp_phi * sin_pphi;
-				z1 = temp_r * cos_phi_m_pphi;
-				z2 = temp_r * sin_phi_m_pphi;
-				for(int ieta=0; ieta < eta_s_npts; ++ieta)
-				{
-					p0 = SPinterp_p0[ipt][ieta];
-					pz = SPinterp_pz[ipt][ieta];
-	
-					//now get distribution function, emission function, etc.
-					if (TRUNCATE_COOPER_FRYE)
-					{
-						expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
-						if (expon > 20.) continue;
-						f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
-					}
-					else
-						f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
-	
-					//viscous corrections
-					deltaf = 0.;
-					if (use_delta_f)
-					deltaf = deltaf_prefactor * (1. - sign*f0)
-							* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
-					//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
-					S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
-					//ignore points where delta f is large or emission function goes negative from pdsigma
-					if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
-						S_p = 0.0;
-
-					S_p_withweight = S_p*tau*eta_s_weight[ieta];
-					z0 = tau*ch_eta_s[ieta];
-					z3 = tau*sh_eta_s[ieta];
-					temp_moments_array[ipt][iphi][0] += eta_even_factor*S_p_withweight;			//<1>
-					if (INCLUDE_SOURCE_VARIANCES)
-					{
-						temp_moments_array[ipt][iphi][1] += eta_even_factor*S_p_withweight*z2;				//<x_s>
-						temp_moments_array[ipt][iphi][2] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
-						temp_moments_array[ipt][iphi][3] += eta_even_factor*S_p_withweight*z1;				//<x_o>
-						temp_moments_array[ipt][iphi][4] += eta_even_factor*S_p_withweight*z1*z1;			//<x^2_o>
-						temp_moments_array[ipt][iphi][5] += eta_odd_factor*S_p_withweight*z3;				//<x_l>
-						temp_moments_array[ipt][iphi][6] += eta_even_factor*S_p_withweight*z3*z3;			//<x^2_l>
-						temp_moments_array[ipt][iphi][7] += eta_even_factor*S_p_withweight*z0;				//<t>
-						temp_moments_array[ipt][iphi][8] += eta_even_factor*S_p_withweight*z0*z0;			//<t^2>
-						temp_moments_array[ipt][iphi][9] += eta_even_factor*S_p_withweight*z2*z1;			//<x_s x_o>
-						temp_moments_array[ipt][iphi][10] += eta_odd_factor*S_p_withweight*z2*z3;			//<x_s x_l>
-						temp_moments_array[ipt][iphi][11] += eta_even_factor*S_p_withweight*z2*z0;			//<x_s t>
-						temp_moments_array[ipt][iphi][12] += eta_odd_factor*S_p_withweight*z1*z3;			//<x_o x_l>
-						temp_moments_array[ipt][iphi][13] += eta_even_factor*S_p_withweight*z1*z0;			//<x_o t>
-						temp_moments_array[ipt][iphi][14] += eta_odd_factor*S_p_withweight*z3*z0;			//<x_l t>
-					}
-				}
-			}
-		}
-	}
-
-	//set log of dN_dypTdpTdphi_moments...
-	for(int wfi = 0; wfi < n_weighting_functions; ++wfi)
-	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-	{
-		double temp = temp_moments_array[ipt][iphi][wfi];
-		dN_dypTdpTdphi_moments[local_pid][wfi][ipt][iphi] = temp;
-		ln_dN_dypTdpTdphi_moments[local_pid][wfi][ipt][iphi] = log(abs(temp));
-		sign_of_dN_dypTdpTdphi_moments[local_pid][wfi][ipt][iphi] = sgn(temp);
-	}
-
-	for(int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
-	{
-		for(int iphi = 0; iphi < n_interp_pphi_pts; ++iphi)
-			delete[] temp_moments_array[ipt][iphi];
-		delete[] temp_moments_array[ipt];
-	}
-	delete[] temp_moments_array;
-
-	return;
-}
-*/
 
 void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi)
 {

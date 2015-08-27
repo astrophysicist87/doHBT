@@ -81,6 +81,7 @@ class SourceVariances
 		bool thermal_pions_only;
 		int Nparticle;
 		int target_particle_id;		//the particle whose spectra (with resonance contributions) you want to compute
+		int current_level_of_output;
 
 		int n_zeta_pts, n_v_pts, n_s_pts;
 		double v_min, v_max, zeta_min, zeta_max, s_min, s_max;
@@ -220,6 +221,8 @@ class SourceVariances
 		double **R2_outlong_C, **R2_outlong_S;
 		double **R2_sidelong_C, **R2_sidelong_S;
 
+		double *** res_sign_info, *** res_log_info, *** res_moments_info;
+
 		
 		//miscellaneous
 		ofstream * global_out_stream_ptr;
@@ -297,7 +300,7 @@ class SourceVariances
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		static inline double lin_int(double x1, double one_by_x2_m_x1, double f1, double f2, double x);
 		double Edndp3(double ptr, double phir, int local_pid, int wfi);
-		void Edndp3(double ptr, double phir, int local_pid, double * results);
+		void Edndp3(double ptr, double phir, double * results);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);

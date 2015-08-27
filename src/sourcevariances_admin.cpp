@@ -53,6 +53,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	read_in_all_dN_dypTdpTdphi = false;
 	output_all_dN_dypTdpTdphi = true;
 	currentfolderindex = -1;
+	current_level_of_output = 0;
 
 	//just need this for various dummy momentum calculations
 	P_eval = new double [4];
@@ -62,9 +63,9 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	//n_zeta_pts = 25;
 	//n_v_pts = 25;
 	//n_s_pts = 25;
-	n_zeta_pts = 48;
-	n_v_pts = 48;
-	n_s_pts = 48;
+	n_zeta_pts = 12;
+	n_v_pts = 12;
+	n_s_pts = 12;
 	v_min = -1.;
 	v_max = 1.;
 	zeta_min = 0.;
@@ -1105,7 +1106,7 @@ double SourceVariances::Edndp3(double ptr, double phir, int pn, int wfi)
 	return val;
 }
 
-void SourceVariances::Edndp3(double ptr, double phir, int pn, double * results)
+void SourceVariances::Edndp3(double ptr, double phir, double * results)
 {//move loop over n_weighting_functions inside this function
 	double phi0, phi1;
 	double f1, f2;
@@ -1152,9 +1153,6 @@ void SourceVariances::Edndp3(double ptr, double phir, int pn, double * results)
 	}
 
 	double one_by_pTdiff = 1./(pT1 - pT0), one_by_pphidiff = 1./(phi1 - phi0);
-	double *** res_sign_info = sign_of_dN_dypTdpTdphi_moments[pn];
-	double *** res_log_info = ln_dN_dypTdpTdphi_moments[pn];
-	double *** res_moments_info = dN_dypTdpTdphi_moments[pn];
 
 	for (int wfi = 0; wfi < n_weighting_functions; ++wfi)
 	{
