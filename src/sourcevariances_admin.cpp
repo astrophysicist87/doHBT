@@ -60,9 +60,6 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	Pp = new double [4];
 	Pm = new double [4];
 
-	//n_zeta_pts = 25;
-	//n_v_pts = 25;
-	//n_s_pts = 25;
 	n_zeta_pts = 12;
 	n_v_pts = 12;
 	n_s_pts = 12;
@@ -980,17 +977,17 @@ int SourceVariances::lookup_resonance_idx_from_particle_id(int pid)
 	return (result);
 }
 
-/*inline double SourceVariances::lin_int(double x1, double x2, double f1, double f2, double x)
-{
-	return ( f1 + (f2 - f1) * (x - x1) / (x2 - x1) );
-}*/
-
-inline double SourceVariances::lin_int(double x1, double one_by_x2_m_x1, double f1, double f2, double x)
+inline double SourceVariances::lin_int(const double x1, const double one_by_x2_m_x1, const double f1, const double f2, const double x)
 {
 	return ( f1 + (f2 - f1) * (x - x1) * one_by_x2_m_x1 );
 }
 
-double SourceVariances::Edndp3(double ptr, double phir, int pn, int wfi)
+inline double SourceVariances::lin_int2(double x_m_x1, double one_by_x2_m_x1, double f1, double f2)
+{
+	return ( f1 + (f2 - f1) * x_m_x1 * one_by_x2_m_x1 );
+}
+
+double SourceVariances::Edndp3(const double ptr, const double phir, const int pn, const int wfi)
 {
 	double phi0, phi1;
 	double f1, f2, val;
@@ -1203,9 +1200,121 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 				<< "  --> f2 = " << f2 << endl;
 			exit(1);
 		}
+			if (current_level_of_output > 10) cout << "Edndp3(): results[" << wfi << "] = "
+				<< setw(8) << setprecision(15) << results[wfi] << endl
+				<< "  --> ptr = " << ptr << endl
+				<< "  --> pt0 = " << pT0 << endl
+				<< "  --> pt1 = " << pT1 << endl
+				<< "  --> phir = " << phir << endl
+				<< "  --> phi0 = " << phi0 << endl
+				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f11 = " << temp_res_moments_info[npt-1][nphim1] << endl
+				<< "  --> f12 = " << temp_res_moments_info[npt-1][nphi] << endl
+				<< "  --> f21 = " << temp_res_moments_info[npt][nphim1] << endl
+				<< "  --> f22 = " << temp_res_moments_info[npt][nphi] << endl
+				<< "  --> f1 = " << f1 << endl
+				<< "  --> f2 = " << f2 << endl;
 	}
 
 	return;
+}
+
+double SourceVariances::Edndp3_original(double ptr, double phir, int pn, int wfi)
+{
+	double val;
+	double f1, f2;
+	int npt, nphi, nphim1;
+	double phi0, phi1, pT0, pT1;
+	double spec0, spec1, spec2, spec3;
+	int PTCHANGE = 1.0;
+
+	npt = 1;
+	while((ptr > SPinterp_pT[npt]) &&
+		(npt<(n_interp_pT_pts - 1))) npt++;
+
+	int nphi_max = n_interp_pphi_pts-1;
+	if(phir < SPinterp_pphi[0])
+	{
+		//f1 = lin_int(SPinterp_pphi[nphi_max]-2.*M_PI, SPinterp_pphi[0],
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi_max],
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt-1][0], phir);
+		//f2 = lin_int(SPinterp_pphi[nphi_max]-2.*M_PI, SPinterp_pphi[0],
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt][nphi_max],
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt][0], phir);
+		nphi = 0;
+		nphim1 = nphi_max;
+		phi0 = SPinterp_pphi[nphi_max]-2.*M_PI;
+		phi1 = SPinterp_pphi[0];
+	}
+	else if(phir > SPinterp_pphi[nphi_max])
+	{
+		//f1 = lin_int(SPinterp_pphi[nphi_max], SPinterp_pphi[0]+2.*M_PI,
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi_max],
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt-1][0], phir);
+		//f2 = lin_int(SPinterp_pphi[nphi_max], SPinterp_pphi[0]+2.*M_PI,
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt][nphi_max],
+		//	dN_dypTdpTdphi_moments[pn][wfi][npt][0], phir);
+		nphi = 0;
+		nphim1 = nphi_max;
+		phi0 = SPinterp_pphi[nphi_max];
+		phi1 = SPinterp_pphi[0]+2.*M_PI;
+	}
+	else
+	{
+		nphi = 1;
+		while((phir > SPinterp_pphi[nphi])&&(nphi < nphi_max)) nphi++;
+		 /* phi interpolation */
+		//nphi = 0;
+		nphim1 = nphi - 1;
+		phi0 = SPinterp_pphi[nphim1];
+		phi1 = SPinterp_pphi[nphi];
+	}
+	double one_by_pphidiff = 1./(phi1 - phi0);
+	spec0 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
+	spec1 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
+	spec2 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
+	spec3 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
+	f1 = lin_int(phi0, one_by_pphidiff, spec0, spec1, phir);
+	f2 = lin_int(phi0, one_by_pphidiff, spec2, spec3, phir);
+
+	if(f1 < 0) f1 = 0.0;
+	if(f2 < 0) f2 = 0.0;
+	f1 = f1 + 1e-100;
+	f2 = f2 + 1e-100;
+	if(ptr > PTCHANGE)
+	{
+		f1 = log(f1);
+		f2 = log(f2);
+	}
+	pT0 = SPinterp_pT[npt-1];
+	pT1 = SPinterp_pT[npt];
+	double one_by_pTdiff = 1./(pT1 - pT0);
+	val = lin_int(pT0, one_by_pTdiff, f1, f2, ptr);
+	if(ptr > PTCHANGE)
+		val = exp(val);
+
+	if (current_level_of_output > 0) cout << "\t" << dN_dypTdpTdphi_moments[pn][0][npt-1][nphim1] << "   "
+		<< dN_dypTdpTdphi_moments[pn][0][npt-1][nphi] << "   "
+		<< dN_dypTdpTdphi_moments[pn][0][npt][nphim1] << "   "
+		<< dN_dypTdpTdphi_moments[pn][0][npt][nphi] << "   "
+		<< f1 << "   " << f2 << "   " << ptr << "   " << phir << "   "
+		<< pT0 << "   " << pT1 << "   " << phi0 << "   " << phi1 << endl;
+			if (current_level_of_output > 10) cout << "Edndp3_original(): val = "
+				<< setw(8) << setprecision(15) << val << endl
+				<< "  --> ptr = " << ptr << endl
+				<< "  --> pt0 = " << pT0 << endl
+				<< "  --> pt1 = " << pT1 << endl
+				<< "  --> phir = " << phir << endl
+				<< "  --> phi0 = " << phi0 << endl
+				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f11 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1] << endl
+				<< "  --> f12 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
+				<< "  --> f21 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1] << endl
+				<< "  --> f22 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
+				<< "  --> f1 = " << f1 << endl
+				<< "  --> f2 = " << f2 << endl;
+
+	return val;
 }
 
 

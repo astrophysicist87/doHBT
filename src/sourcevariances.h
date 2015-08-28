@@ -256,6 +256,7 @@ class SourceVariances
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int local_pid);
 		void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int local_pid);
 		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
+		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
 		double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
@@ -272,6 +273,7 @@ class SourceVariances
 		void combine_sourcevariances(double * output, double * input, double * alpha_vec);
 		void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
 		void Compute_source_variances(int iKT, int iKphi);
+		void test_function(FO_surf* FOsurf_ptr, int local_pid);
 
 		void Get_source_variances(int, int);
 		void Calculate_R2_side(int, int);
@@ -299,8 +301,10 @@ class SourceVariances
 		void Get_current_decay_string(int dc_idx, string * decay_string);
 		int lookup_resonance_idx_from_particle_id(int particle_id);
 		static inline double lin_int(double x1, double one_by_x2_m_x1, double f1, double f2, double x);
+		static inline double lin_int2(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		double Edndp3(double ptr, double phir, int local_pid, int wfi);
 		void Edndp3(double ptr, double phir, double * results);
+		double Edndp3_original(double ptr, double phir, int local_pid, int wfi);
 
 		// input and output function prototypes
 		void Output_SVdN_dypTdpTdphi(int folderindex);

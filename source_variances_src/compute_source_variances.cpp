@@ -153,9 +153,12 @@ int main(int argc, char *argv[])
    Source_function.Set_ofstream(output);
 
    Source_function.Update_sourcefunction(&particle[particle_idx], FO_length, particle_idx);
-	
+
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
+   
+//Source_function.test_function(FOsurf_ptr, 75);
+
    Source_function.Output_total_target_dN_dypTdpTdphi(folderindex);
    Source_function.Output_chosen_resonances();
    Source_function.Output_results(folderindex);

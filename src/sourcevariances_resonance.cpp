@@ -178,6 +178,13 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 	res_log_info = ln_dN_dypTdpTdphi_moments[parent_resonance_particle_id];
 	res_moments_info = dN_dypTdpTdphi_moments[parent_resonance_particle_id];
 
+	if (parent_resonance_particle_id == 75)
+		current_level_of_output = 1;
+	else
+		current_level_of_output = 0;
+
+	if (current_level_of_output > 0) cout << all_particles[parent_resonance_particle_id].name << " to " << all_particles[daughter_particle_id].name << " (decay #): ";
+
 	for (int ipt = 0; ipt < n_interp_pT_pts; ++ipt)
 	for (int ipphi = 0; ipphi < n_interp_pphi_pts; ++ipphi)
 	{
@@ -216,7 +223,10 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 							alphavec = VEC_n2_alpha_m[iv][izeta];
 						}
-						Edndp3(PKT, PKphi, rap_indep_y_of_r);
+						//Edndp3(PKT, PKphi, rap_indep_y_of_r);
+						rap_indep_y_of_r[0] = Edndp3_original(PKT, PKphi, parent_resonance_particle_id, 0);
+if (current_level_of_output > 0 && ipt==0 && ipphi==0)
+	cout << n_body << "   " << local_pT << "   " << local_pphi << "   " << PKT << "   " << PKphi << "   " << PKY << "   " << rap_indep_y_of_r[0] << endl;
 						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 						combine_sourcevariances(Csum_vec, y_of_r, alphavec);
 					}																					// end of tempidx sum
@@ -252,7 +262,10 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 								alphavec = VEC_alpha_m[is][iv][izeta];
 							}
-							Edndp3(PKT, PKphi, rap_indep_y_of_r);
+							//Edndp3(PKT, PKphi, rap_indep_y_of_r);
+							rap_indep_y_of_r[0] = Edndp3_original(PKT, PKphi, parent_resonance_particle_id, 0);
+if (current_level_of_output > 0 && ipt==0 && ipphi==0)
+	cout << n_body << "   " << local_pT << "   " << local_pphi << "   " << PKT << "   " << PKphi << "   " << PKY << "   " << rap_indep_y_of_r[0] << endl;
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 							//now compute appropriate linear combinations
 							combine_sourcevariances(Csum_vec, y_of_r, alphavec);
@@ -292,6 +305,22 @@ void SourceVariances::Do_resonance_integrals(int parent_resonance_particle_id, i
 									<< "  --> m3 = " << m3 << endl << endl;
 			exit(1);
 		}
+		if (ipt==0 && ipphi==0 && current_level_of_output > 0)
+			*global_out_stream_ptr << "dN_dypTdpTdphi_moments[" << daughter_particle_id << "][0][" << ipt << "][" << ipphi << "] = "
+									<< setw(8) << setprecision(15) << dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi] << endl
+									<< "   " << local_pT
+									<< "   " << local_pphi
+									<< "   " << daughter_particle_id
+									<< "   " << parent_resonance_particle_id
+									<< "   " << Qfunc
+									<< "   " << n_body
+									<< "   " << gRES
+									<< "   " << Mres
+									<< "   " << mass
+									<< "   " << Gamma
+									<< "   " << br
+									<< "   " << m2
+									<< "   " << m3 << endl;
 	}//end of pt, pphi loops
 
 	//clean up

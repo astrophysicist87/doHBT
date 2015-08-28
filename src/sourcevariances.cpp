@@ -158,6 +158,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
+	double current_dNd3p_00 = 249.013183, thermal_dNd3p_00 = 249.013183, previous_dNd3p_00 = 249.013183;
 	BIGsw.tic();
 	// ************************************************************
 	// Compute feeddown with heaviest resonances first
@@ -187,7 +188,17 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 			if (!Do_this_daughter_particle(idc, idc_DI, &daughter_resonance_particle_id))
 				continue;
 			Set_current_daughter_info(idc, idc_DI);
+			if (daughter_resonance_particle_id == target_particle_id)
+				previous_dNd3p_00 = current_dNd3p_00;
 			Do_resonance_integrals(current_resonance_particle_id, daughter_resonance_particle_id, idc);
+			if (daughter_resonance_particle_id == target_particle_id)
+			{
+				current_dNd3p_00 = dN_dypTdpTdphi_moments[daughter_resonance_particle_id][0][0][0];
+				*global_out_stream_ptr << all_particles[daughter_resonance_particle_id].name << " from " << all_particles[current_resonance_particle_id].name
+										<< " in decay channel " << current_decay_channel_string << ": "
+										<< current_dNd3p_00 << "   " << current_dNd3p_00-thermal_dNd3p_00 << "   " << current_dNd3p_00-previous_dNd3p_00 << endl;
+			}
+
 		}
 		Delete_decay_channel_info();				// free up memory
 	}											// END of decay channel loop
@@ -208,12 +219,12 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 			Compute_source_variances(iKT, iKphi);
 			if (INCLUDE_SOURCE_VARIANCES)
 			{
-			Calculate_R2_side(iKT, iKphi);
-			Calculate_R2_out(iKT, iKphi);
-			Calculate_R2_long(iKT, iKphi);
-			Calculate_R2_outside(iKT, iKphi);
-			Calculate_R2_sidelong(iKT, iKphi);
-			Calculate_R2_outlong(iKT, iKphi);
+				Calculate_R2_side(iKT, iKphi);
+				Calculate_R2_out(iKT, iKphi);
+				Calculate_R2_long(iKT, iKphi);
+				Calculate_R2_outside(iKT, iKphi);
+				Calculate_R2_sidelong(iKT, iKphi);
+				Calculate_R2_outlong(iKT, iKphi);
 			}
 		}
 
@@ -722,8 +733,6 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 				{
 					double p0 = p0_pTslice[ieta];
 					double pz = pz_pTslice[ieta];
-					double z0 = tau*ch_eta_s[ieta];
-					double z3 = tau*sh_eta_s[ieta];
 					double expon, f0;
 	
 					//now get distribution function, emission function, etc.
@@ -753,6 +762,8 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 					local_temp_moments[0] += eta_even_factor*S_p_withweight;					//<1>
 					if (INCLUDE_SOURCE_VARIANCES)
 					{
+						double z0 = tau*ch_eta_s[ieta];
+						double z3 = tau*sh_eta_s[ieta];
 						local_temp_moments[1] += eta_even_factor*S_p_withweight*z2;				//<x_s>
 						local_temp_moments[2] += eta_even_factor*S_p_withweight*z2*z2;			//<x^2_s>
 						local_temp_moments[3] += eta_even_factor*S_p_withweight*z1;				//<x_o>
@@ -1438,5 +1449,148 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 	}
 	return;
 }
+
+//***************************************************************************************************
+
+void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
+{
+	current_level_of_output = 0;
+
+	res_sign_info = sign_of_dN_dypTdpTdphi_moments[local_pid];
+	res_log_info = ln_dN_dypTdpTdphi_moments[local_pid];
+	res_moments_info = dN_dypTdpTdphi_moments[local_pid];
+
+	double local_pT_min = 0.25, local_pT_max = 10.0, local_pphi_min = 0.0, local_pphi_max = 2.*M_PI;
+	double npt = 250., npphi = 25.;
+	double Del_pT = (local_pT_max - local_pT_min) / (npt - 1.);
+	double Del_pphi = (local_pphi_max - local_pphi_min) / (npphi - 1.);
+	double * result2 = new double [1];
+	for (int ipt = 0; ipt < npt; ipt++)
+	for (int ipphi = 0; ipphi < npphi; ipphi++)
+	{
+		double local_pT = local_pT_min + ipt * Del_pT;
+		double local_pphi = local_pphi_min + ipphi * Del_pphi;
+		double result1 = Cal_dN_dypTdpTdphi_function(FOsurf_ptr, local_pid, local_pT, local_pphi);
+		result2[0] = 0.0;
+		double result3 = Edndp3_original(local_pT, local_pphi, local_pid, 0);
+		Edndp3(local_pT, local_pphi, result2);
+		cout << local_pid << "   " << local_pT << "   " << local_pphi << "   " << result1 << "   " << result2[0] << "   " << result3 << endl;
+		result2[0] = 0.0;
+	}
+
+	delete [] result2;
+	/*current_level_of_output = 1;
+
+	res_sign_info = sign_of_dN_dypTdpTdphi_moments[local_pid];
+	res_log_info = ln_dN_dypTdpTdphi_moments[local_pid];
+	res_moments_info = dN_dypTdpTdphi_moments[local_pid];
+
+	double local_pT = 0.01, local_pphi = 0.01;
+	double result1 = Cal_dN_dypTdpTdphi_function(FOsurf_ptr, local_pid, local_pT, local_pphi);
+	double * result2 = new double [1];
+		result2[0] = 0.0;
+	Edndp3(local_pT, local_pphi, result2);
+	double result3 = Edndp3_original(local_pT, local_pphi, local_pid, 0);
+	cout << local_pid << "   " << local_pT << "   " << local_pphi << "   " << result1 << "   " << result2[0] << "   " << result3 << endl;
+
+	delete [] result2;*/
+
+	return;
+}
+
+double SourceVariances::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi)
+{
+	// set particle information
+	double sign = all_particles[local_pid].sign;
+	double degen = all_particles[local_pid].gspin;
+	double localmass = all_particles[local_pid].mass;
+	double mu = all_particles[local_pid].mu;
+
+	// set some freeze-out surface information that's constant the whole time
+	double prefactor = 1.0*degen/(8.0*M_PI*M_PI*M_PI)/(hbarC*hbarC*hbarC);
+	double Tdec = (&FOsurf_ptr[0])->Tdec;
+	double Pdec = (&FOsurf_ptr[0])->Pdec;
+	double Edec = (&FOsurf_ptr[0])->Edec;
+	double one_by_Tdec = 1./Tdec;
+	double deltaf_prefactor = 0.;
+	if (use_delta_f)
+		deltaf_prefactor = 1./(2.0*Tdec*Tdec*(Edec+Pdec));
+
+	// set the rapidity-integration symmetry factor
+	double eta_odd_factor = 1.0, eta_even_factor = 1.0;
+	if (ASSUME_ETA_SYMMETRIC)
+	{
+		eta_odd_factor = 0.0;
+		eta_even_factor = 2.0;
+	}
+
+	double sin_pphi = sin(pphi);
+	double cos_pphi = cos(pphi);
+	double px = pT*cos_pphi;
+	double py = pT*sin_pphi;
+
+	double dN_dypTdpTdphi = 0.0;
+
+	for(int isurf=0; isurf<FO_length; ++isurf)
+	{
+		FO_surf*surf = &FOsurf_ptr[isurf];
+
+		double tau = surf->tau;
+		double r = surf->r;
+		double sin_temp_phi = surf->sin_phi;
+		double cos_temp_phi = surf->cos_phi;
+
+		double vx = surf->vx;
+		double vy = surf->vy;
+		double gammaT = surf->gammaT;
+
+		double da0 = surf->da0;
+		double da1 = surf->da1;
+		double da2 = surf->da2;
+
+		double pi00 = surf->pi00;
+		double pi01 = surf->pi01;
+		double pi02 = surf->pi02;
+		double pi11 = surf->pi11;
+		double pi12 = surf->pi12;
+		double pi22 = surf->pi22;
+		double pi33 = surf->pi33;
+
+		for(int ieta=0; ieta < eta_s_npts; ++ieta)
+		{
+			double p0 = sqrt(pT*pT+localmass*localmass)*cosh(SP_p_y - eta_s[ieta]);
+			double pz = sqrt(pT*pT+localmass*localmass)*sinh(SP_p_y - eta_s[ieta]);
+			double expon, f0;
+	
+			//now get distribution function, emission function, etc.
+			if (TRUNCATE_COOPER_FRYE)
+			{
+				expon = (gammaT*(p0*1. - px*vx - py*vy) - mu)*one_by_Tdec;
+				if (expon > 20.) continue;
+				f0 = 1./(exp(expon)+sign);	//thermal equilibrium distributions
+			}
+			else
+				f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
+	
+			//viscous corrections
+			double deltaf = 0.;
+			if (use_delta_f)
+				deltaf = deltaf_prefactor * (1. - sign*f0)
+							* (p0*p0*pi00 - 2.0*p0*px*pi01 - 2.0*p0*py*pi02 + px*px*pi11 + 2.0*px*py*pi12 + py*py*pi22 + pz*pz*pi33);
+
+			//p^mu d^3sigma_mu factor: The plus sign is due to the fact that the DA# variables are for the covariant surface integration
+			double S_p = prefactor*(p0*da0 + px*da1 + py*da2)*f0*(1.+deltaf);
+
+			//ignore points where delta f is large or emission function goes negative from pdsigma
+			if ((1. + deltaf < 0.0) || (flagneg == 1 && S_p < tol))
+				S_p = 0.0;
+
+			dN_dypTdpTdphi += eta_even_factor*S_p*tau*eta_s_weight[ieta];
+		}
+	}
+
+	return dN_dypTdpTdphi;
+}
+
 
 //End of file
