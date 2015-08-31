@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 	}
 
    SourceVariances Source_function(&particle[particle_idx], particle, Nparticle, FOsurf_ptr, chosen_resonance_indices, particle_idx, output);
-   Source_function.read_in_all_dN_dypTdpTdphi = false;
+   Source_function.read_in_all_dN_dypTdpTdphi = true;
    Source_function.output_all_dN_dypTdpTdphi = !(Source_function.read_in_all_dN_dypTdpTdphi);
    Source_function.currentfolderindex = folderindex;
    Source_function.Set_path(currentworkingdirectory);

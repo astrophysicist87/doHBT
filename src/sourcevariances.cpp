@@ -87,7 +87,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 	if (USE_PLANE_PSI_ORDER)
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << "Determine nth-order plane angles..." << endl;
-		Determine_plane_angle(current_FOsurf_ptr, 0, true);	//uses only thermal pions...
+		Determine_plane_angle(current_FOsurf_ptr, 0);
 		if (VERBOSE > 0) *global_out_stream_ptr << "Analyzing source function w.r.t. " << iorder << " th-order participant plane angle..." << endl;
 		if (VERBOSE > 0) *global_out_stream_ptr << "psi = " << plane_psi << endl;
 		plane_psi = plane_angle[iorder];
@@ -104,7 +104,6 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 
 	if (read_in_all_dN_dypTdpTdphi)	//read in spectra if already calculated
 	{
-		//if (VERBOSE > 0) *global_out_stream_ptr << "currentfolderindex = " << currentfolderindex << endl;
 		Read_in_all_dN_dypTdpTdphi(currentfolderindex);
 		if (VERBOSE > 0) *global_out_stream_ptr << "************************************************************" << endl
 												<< "* Read in all (thermal) space-time moments!" << endl
@@ -168,7 +167,7 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 		// ************************************************************
 		// check whether to do this decay channel
 		// ************************************************************
-		if (thermal_pions_only)
+		if (decay_channels.resonance_particle_id[idc-1] == target_particle_id || thermal_pions_only)
 			break;
 		else if (!Do_this_decay_channel(idc))
 			continue;
@@ -415,6 +414,8 @@ void SourceVariances::Set_current_daughter_info(int dc_idx, int daughter_idx)
 	double m2ex = 0.0, m3ex = 0.0, m4ex = 0.0;
 	switch(current_reso_nbody)
 	{
+		case 1:
+			break;
 		case 2:
 			current_resonance_decay_masses[1] = 0.0;
 			current_m3_Gamma = decay_channels.resonance_decay_Gammas[dc_idx-1][0];
@@ -734,7 +735,7 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 					double p0 = p0_pTslice[ieta];
 					double pz = pz_pTslice[ieta];
 					double expon, f0;
-	
+
 					//now get distribution function, emission function, etc.
 					if (TRUNCATE_COOPER_FRYE)
 					{
@@ -744,6 +745,7 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 					}
 					else
 						f0 = 1./(exp( one_by_Tdec*(gammaT*(p0*1. - px*vx - py*vy) - mu) )+sign);	//thermal equilibrium distributions
+
 	
 					//viscous corrections
 					double deltaf = 0.;
@@ -809,193 +811,112 @@ void SourceVariances::Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr,
 	return;
 }
 
-void SourceVariances::Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi)
+void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx)
 {
-	for(int ipt = 0; ipt < n_SP_pT; ++ipt)
-	for(int iphi = 0; iphi < n_SP_pphi; ++iphi)
-	{
-		double pT = SP_pT[ipt];
-		double pphi = SP_pphi[iphi];
-		SV_dN_dypTdpTdphi[ipt][iphi] = interpolate2D(SPinterp_pT, SPinterp_pphi, dN_dypTdpTdphi_moments[0][0],
-							pT, pphi, n_interp_pT_pts, n_interp_pphi_pts, INTERPOLATION_KIND, UNIFORM_SPACING);
-		if (0) cout << "-2   " << pT << "  " << pphi << "  " << pT*cos(pphi) << "  " << pT*sin(pphi) << "  " << dN_dypTdpTdphi[ipt][iphi] << endl;
-	}
-
-   return;
-}
-
-void SourceVariances::Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx, bool thermal_particles_only /*= false*/)
-{
-   double localmass = particle_mass;
-   if (dc_idx > 0) return;	//don't really care about thermal resonance distributions at the moment,
+	double localmass = particle_mass;
+	if (dc_idx > 0) return;	//don't really care about thermal resonance distributions at the moment,
 				//so just skip this part
-   //if (dc_idx > 0) localmass = decay_channels.resonance_mass[dc_idx-1];
-   double* mT = new double [n_SP_pT];
-   double** px = new double* [n_SP_pT];
-   double** py = new double* [n_SP_pT];
-   double** p0 = new double* [n_SP_pT];
-   double** pz = new double* [n_SP_pT];
-   for(int ipt=0; ipt<n_SP_pT; ++ipt)
-   {
-      px[ipt] = new double [n_SP_pphi];
-      py[ipt] = new double [n_SP_pphi];
-      p0[ipt] = new double [eta_s_npts];
-      pz[ipt] = new double [eta_s_npts];
-   }
-   
-   for(int ipt=0; ipt<n_SP_pT; ++ipt)
-      mT[ipt] = sqrt(localmass*localmass + SP_pT[ipt]*SP_pT[ipt]);
-   for(int iphi = 0; iphi<n_SP_pphi; ++iphi)
-   {
-      double cos_phi = cos(SP_pphi[iphi]);
-      double sin_phi = sin(SP_pphi[iphi]);
-      for(int ipt=0; ipt<n_SP_pT; ++ipt)
-      {
-         px[ipt][iphi] = SP_pT[ipt]*cos_phi;
-         py[ipt][iphi] = SP_pT[ipt]*sin_phi;
-      }
-   }
-
-   for(int i=0; i<eta_s_npts; ++i)
-   {
-       double local_eta_s = eta_s[i];
-       double local_cosh = cosh(SP_p_y - local_eta_s);
-       double local_sinh = sinh(SP_p_y - local_eta_s);
-       for(int ipt=0; ipt<n_SP_pT; ++ipt)
-       {
-          p0[ipt][i] = mT[ipt]*local_cosh;
-          pz[ipt][i] = mT[ipt]*local_sinh;
-       }
-   }
-
-	if (thermal_particles_only)	//no interpolation at all; calculate everything exactly
+	double* mT = new double [n_SP_pT];
+	double** px = new double* [n_SP_pT];
+	double** py = new double* [n_SP_pT];
+	double** p0 = new double* [n_SP_pT];
+	double** pz = new double* [n_SP_pT];
+	for(int ipt=0; ipt<n_SP_pT; ++ipt)
 	{
-		Cal_dN_dypTdpTdphi(p0, px, py, pz, FOsurf_ptr);
-		if (VERBOSE > 0) *global_out_stream_ptr << "  --> No interpolation!  Calculating everything exactly..." << endl;
-	}
-	else						//using polar grid for interpolation (pT, pphi)
-	{
-   		Cal_dN_dypTdpTdphi_interpolate_polar_grid(SP_pT, SP_pphi);
-		if (VERBOSE > 0) *global_out_stream_ptr << "  --> Interpolating on a polar grid..." << endl;
+		px[ipt] = new double [n_SP_pphi];
+		py[ipt] = new double [n_SP_pphi];
+		p0[ipt] = new double [eta_s_npts];
+		pz[ipt] = new double [eta_s_npts];
 	}
    
-	if (thermal_particles_only)
+	for(int ipt=0; ipt<n_SP_pT; ++ipt)
+		mT[ipt] = sqrt(localmass*localmass + SP_pT[ipt]*SP_pT[ipt]);
+	for(int iphi = 0; iphi<n_SP_pphi; ++iphi)
 	{
+		double cos_phi = cos(SP_pphi[iphi]);
+		double sin_phi = sin(SP_pphi[iphi]);
 		for(int ipt=0; ipt<n_SP_pT; ++ipt)
- 	  	{
-			for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			{
-				dN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
-				pTdN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
-				dN_dypTdpT[ipt] += dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
-			}
-		}
-	   	double norm = 0.0e0;
-	   	for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			norm += dN_dydphi[iphi]*SP_pphi_weight[iphi];
-	   	for(int iorder=0; iorder < n_order; iorder++)
-	   	{
-			double cosine = 0.0e0;
-			double sine = 0.0e0;
-			for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			{
-				cosine += dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-				sine += dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-				//get pT-differential v_n here
-				for(int ipt=0; ipt<n_SP_pT; ++ipt)
-				{
-					cosine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-					sine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-				}
-			}
-			for(int ipt=0; ipt<n_SP_pT; ++ipt)
-			{
-				cosine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
-				sine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
-			}
-			cosine = cosine/norm;
-			sine = sine/norm;
-			if( sqrt(sine*sine + cosine*cosine) < 1e-8)
-				plane_angle[iorder] = 0.0e0;
-			else
-				plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
-	   	}
-		
-		for(int ipt=0; ipt<n_SP_pT; ++ipt)
-			dN_dypTdpT[ipt] /= (2.*M_PI);
-		//cout << "Currently getting <p_T> stuff..." << endl;
-		
-		mean_pT = 0.;
-		for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			mean_pT += pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
-		mean_pT /= norm;
-		plane_angle[0] = norm;
-	}
-	else	// if not doing thermal particles only
-	{
-		for(int ipt=0; ipt<n_SP_pT; ++ipt)
-	   	{
-			for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			{
-				SV_dN_dydphi[iphi] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
-				SV_pTdN_dydphi[iphi] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
-				SV_dN_dypTdpT[ipt] += SV_dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
-			}
-		}
-	   	double norm = 0.0e0;
-	   	for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			norm += SV_dN_dydphi[iphi]*SP_pphi_weight[iphi];
-	   	for(int iorder=0; iorder < n_order; ++iorder)
 		{
-			double cosine = 0.0e0;
-			double sine = 0.0e0;
-			for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			{
-				cosine += SV_dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-				sine += SV_dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-				//get pT-differential v_n here
-				for(int ipt=0; ipt<n_SP_pT; ++ipt)
-				{
-					cosine_iorder[ipt][iorder] += SV_dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-					sine_iorder[ipt][iorder] += SV_dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
-				}
-			}
+			px[ipt][iphi] = SP_pT[ipt]*cos_phi;
+			py[ipt][iphi] = SP_pT[ipt]*sin_phi;
+		}
+	}
+
+	for(int i=0; i<eta_s_npts; ++i)
+	{
+		double local_eta_s = eta_s[i];
+		double local_cosh = cosh(SP_p_y - local_eta_s);
+		double local_sinh = sinh(SP_p_y - local_eta_s);
+		for(int ipt=0; ipt<n_SP_pT; ++ipt)
+		{
+			p0[ipt][i] = mT[ipt]*local_cosh;
+			pz[ipt][i] = mT[ipt]*local_sinh;
+		}
+	}
+
+	Cal_dN_dypTdpTdphi(p0, px, py, pz, FOsurf_ptr);
+
+	for(int ipt=0; ipt<n_SP_pT; ++ipt)
+  	{
+		for(int iphi=0; iphi<n_SP_pphi; ++iphi)
+		{
+			dN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT_weight[ipt];
+			pTdN_dydphi[iphi] += dN_dypTdpTdphi[ipt][iphi]*SP_pT[ipt]*SP_pT[ipt]*SP_pT_weight[ipt];
+			dN_dypTdpT[ipt] += dN_dypTdpTdphi[ipt][iphi]*SP_pphi_weight[iphi];
+		}
+	}
+   	double norm = 0.0e0;
+   	for(int iphi=0; iphi<n_SP_pphi; ++iphi)
+		norm += dN_dydphi[iphi]*SP_pphi_weight[iphi];
+   	for(int iorder=0; iorder < n_order; iorder++)
+   	{
+		double cosine = 0.0e0;
+		double sine = 0.0e0;
+		for(int iphi=0; iphi<n_SP_pphi; ++iphi)
+		{
+			cosine += dN_dydphi[iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+			sine += dN_dydphi[iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+			//get pT-differential v_n here
 			for(int ipt=0; ipt<n_SP_pT; ++ipt)
 			{
-				cosine_iorder[ipt][iorder] /= SV_dN_dypTdpT[ipt];
-				sine_iorder[ipt][iorder] /= SV_dN_dypTdpT[ipt];
+				cosine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*cos(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
+				sine_iorder[ipt][iorder] += dN_dypTdpTdphi[ipt][iphi]*sin(iorder*SP_pphi[iphi])*SP_pphi_weight[iphi];
 			}
-			cosine = cosine/norm;
-			sine = sine/norm;
-			if( sqrt(sine*sine + cosine*cosine) < 1e-8)
-				plane_angle[iorder] = 0.0e0;
-			else
-				plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
 		}
-		
 		for(int ipt=0; ipt<n_SP_pT; ++ipt)
-			SV_dN_dypTdpT[ipt] /= (2.*M_PI);
-		//cout << "Currently getting <p_T> stuff..." << endl;
-		
-		mean_pT = 0.;
-		for(int iphi=0; iphi<n_SP_pphi; ++iphi)
-			mean_pT += SV_pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
-		mean_pT /= norm;
-		plane_angle[0] = norm;
-	}
+		{
+			cosine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
+			sine_iorder[ipt][iorder] /= dN_dypTdpT[ipt];
+		}
+		cosine = cosine/norm;
+		sine = sine/norm;
+		if( sqrt(sine*sine + cosine*cosine) < 1e-8)
+			plane_angle[iorder] = 0.0e0;
+		else
+			plane_angle[iorder] = atan2(sine, cosine)/double(iorder);
+   	}
 	
+	for(int ipt=0; ipt<n_SP_pT; ++ipt)
+		dN_dypTdpT[ipt] /= (2.*M_PI);
+	
+	mean_pT = 0.;
+	for(int iphi=0; iphi<n_SP_pphi; ++iphi)
+		mean_pT += pTdN_dydphi[iphi]*SP_pphi_weight[iphi];
+	mean_pT /= norm;
+	plane_angle[0] = norm;
+
 	delete[] mT;
 	for(int ipt=0; ipt<n_SP_pT; ++ipt)
 	{
-		delete[] px[ipt];
-		delete[] py[ipt];
-		delete[] p0[ipt];
-		delete[] pz[ipt];
+		delete [] px[ipt];
+		delete [] py[ipt];
+		delete [] p0[ipt];
+		delete [] pz[ipt];
 	}
-	delete[] px;
-	delete[] py;
-	delete[] p0;
-	delete[] pz;
+	delete [] px;
+	delete [] py;
+	delete [] p0;
+	delete [] pz;
 
 	return;
 }
@@ -1257,44 +1178,6 @@ void SourceVariances::Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double*
 	return;
 }
 
-double SourceVariances::weight_function(double zvec[], int weight_function_index)
-{
-	switch(weight_function_index)
-	{
-		case 0:
-			return (1.);					//<1>
-		case 1:
-			return (zvec[2]);				//<x_s>
-		case 2:
-			return (zvec[2]*zvec[2]);			//<x^2_s>
-		case 3:
-			return (zvec[1]);				//<x_o>
-		case 4:
-			return (zvec[1]*zvec[1]);			//<x^2_o>
-		case 5:
-			return (zvec[3]);				//<x_l>
-		case 6:
-			return (zvec[3]*zvec[3]);			//<x^2_l>
-		case 7:
-			return (zvec[0]);				//<t>
-		case 8:
-			return (zvec[0]*zvec[0]);			//<t^2>
-		case 9:
-			return (zvec[2]*zvec[1]);			//<x_s x_o>
-		case 10:
-			return (zvec[2]*zvec[3]);			//<x_s x_l>
-		case 11:
-			return (zvec[2]*zvec[0]);			//<x_s t>
-		case 12:
-			return (zvec[1]*zvec[3]);			//<x_o x_l>
-		case 13:
-			return (zvec[1]*zvec[0]);			//<x_o t>
-		case 14:
-			return (zvec[3]*zvec[0]);			//<x_l t>
-	}
-	return 0.0;
-}
-
 void SourceVariances::Compute_source_variances(int iKT, int iKphi)
 {
 	double phi_K = K_phi[iKphi];
@@ -1452,7 +1335,7 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 
 //***************************************************************************************************
 
-void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
+/*void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
 {
 	current_level_of_output = 0;
 
@@ -1479,21 +1362,6 @@ void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
 	}
 
 	delete [] result2;
-	/*current_level_of_output = 1;
-
-	res_sign_info = sign_of_dN_dypTdpTdphi_moments[local_pid];
-	res_log_info = ln_dN_dypTdpTdphi_moments[local_pid];
-	res_moments_info = dN_dypTdpTdphi_moments[local_pid];
-
-	double local_pT = 0.01, local_pphi = 0.01;
-	double result1 = Cal_dN_dypTdpTdphi_function(FOsurf_ptr, local_pid, local_pT, local_pphi);
-	double * result2 = new double [1];
-		result2[0] = 0.0;
-	Edndp3(local_pT, local_pphi, result2);
-	double result3 = Edndp3_original(local_pT, local_pphi, local_pid, 0);
-	cout << local_pid << "   " << local_pT << "   " << local_pphi << "   " << result1 << "   " << result2[0] << "   " << result3 << endl;
-
-	delete [] result2;*/
 
 	return;
 }
@@ -1590,7 +1458,7 @@ double SourceVariances::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int loc
 	}
 
 	return dN_dypTdpTdphi;
-}
+}*/
 
 
 //End of file

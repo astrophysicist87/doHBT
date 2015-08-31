@@ -28,9 +28,9 @@ using namespace std;
 							// only need this switch to see how much time this saves and make sure it's bug-free
 #define SPACETIME_MOMENTS_ONLY		false		// duh
 #define CHECK_FOR_LIFETIME		false		// true means skip particles which are too long-lived
-#define DO_ALL_DECAY_CHANNELS		false		// duh
+#define DO_ALL_DECAY_CHANNELS		true		// duh
 #define INCLUDE_SOURCE_VARIANCES	false		// false means do spectra only
-#define USE_INTERP_ALT			true		// uses routine from iS.e code for comparison
+#define USE_INTERP_ALT			false		// set to true to use interp. algorithm from iS.e
 
 const double hbarC=0.197327053;  //GeV*fm
 const double twopi = 2.*M_PI;

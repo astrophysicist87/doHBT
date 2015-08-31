@@ -359,38 +359,27 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 	}
 
 	dN_dypTdpTdphi = new double* [n_SP_pT];
-	SV_dN_dypTdpTdphi = new double* [n_SP_pT];
 	cosine_iorder = new double* [n_SP_pT];
 	sine_iorder = new double* [n_SP_pT];
 	for(int i=0; i<n_SP_pT; i++)
 	{
 		dN_dypTdpTdphi[i] = new double [n_SP_pphi];
-		SV_dN_dypTdpTdphi[i] = new double [n_SP_pphi];
 		cosine_iorder[i] = new double [n_order];
 		sine_iorder[i] = new double [n_order];
 	}
 	dN_dydphi = new double [n_SP_pphi];
 	dN_dypTdpT = new double [n_SP_pT];
 	pTdN_dydphi = new double [n_SP_pphi];
-	SV_dN_dydphi = new double [n_SP_pphi];
-	SV_dN_dypTdpT = new double [n_SP_pT];
-	SV_pTdN_dydphi = new double [n_SP_pphi];
 	for(int i=0; i<n_SP_pphi; i++)
 	{
 		dN_dydphi[i] = 0.0e0;
 		pTdN_dydphi[i] = 0.0e0;
-		SV_dN_dydphi[i] = 0.0e0;
-		SV_pTdN_dydphi[i] = 0.0e0;
 		for(int j=0; j<n_SP_pT; j++)
-		{
 			dN_dypTdpTdphi[j][i] = 0.0e0;
-			SV_dN_dypTdpTdphi[j][i] = 0.0e0;
-		}
 	}
 	for(int i=0; i<n_SP_pT; i++)
 	{
 		dN_dypTdpT[i] = 0.0e0;
-		SV_dN_dypTdpT[i] = 0.0e0;
 		for(int j=0; j<n_order; j++)
 		{
 			cosine_iorder[i][j] = 0.0e0;
@@ -1165,28 +1154,56 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 			double sign_of_f21 = temp_res_sign_info[npt][nphim1];
 			double sign_of_f22 = temp_res_sign_info[npt][nphi];
 	
+			//*******************************************************************************************************************
 			// set f1 first
+			//*******************************************************************************************************************
+			//f1 = sign_of_f11 * exp( lin_int(pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphim1], temp_res_log_info[npt][nphim1], ptr) );
+			//if (sign_of_f11 * sign_of_f21 < 0)
+			//	f1 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1], ptr);
+			//*******************************************************************************************************************
+			//if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			//	f1 = sign_of_f11 * exp( lin_int(pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphim1], temp_res_log_info[npt][nphim1], ptr) );
+			//else					// otherwise, just interpolate original vals
+			//	f1 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1], ptr);
+			//*******************************************************************************************************************
 			if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
-				f1 = sign_of_f11 * exp( lin_int(pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphim1], temp_res_log_info[npt][nphim1], ptr) );
+				f1 = sign_of_f11 * exp( lin_int2(ptr-pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphim1], temp_res_log_info[npt][nphim1]) );
 			else					// otherwise, just interpolate original vals
-				f1 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1], ptr);
-		
+				f1 = lin_int2(ptr-pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1]);
+
+			//*******************************************************************************************************************
 			// set f2 next
+			//*******************************************************************************************************************
+			//f2 = sign_of_f12 * exp( lin_int(pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphi], temp_res_log_info[npt][nphi], ptr) );
+			//if (sign_of_f12 * sign_of_f22 < 0)
+			//	f2 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi], ptr);
+			//*******************************************************************************************************************
+			//if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			//	f2 = sign_of_f12 * exp( lin_int(pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphi], temp_res_log_info[npt][nphi], ptr) );
+			//else					// otherwise, just interpolate original vals
+			//	f2 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi], ptr);
+			//*******************************************************************************************************************
 			if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
-				f2 = sign_of_f12 * exp( lin_int(pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphi], temp_res_log_info[npt][nphi], ptr) );
+				f2 = sign_of_f12 * exp( lin_int2(ptr-pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphi], temp_res_log_info[npt][nphi]) );
 			else					// otherwise, just interpolate original vals
-				f2 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi], ptr);
+				f2 = lin_int2(ptr-pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi]);
+			//*******************************************************************************************************************
 		}
 		else						// if pT is smaller than PTCHANGE, just use linear interpolation, no matter what
 		{
-			f1 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1], ptr);
-			f2 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi], ptr);
+			//f1 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1], ptr);
+			//f2 = lin_int(pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi], ptr);
+			f1 = lin_int2(ptr-pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1]);
+			f2 = lin_int2(ptr-pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi]);
+
 		}
 	
 		// now, interpolate f1 and f2 over the pphi direction
-		results[wfi] = lin_int(phi0, one_by_pphidiff, f1, f2, phir);
+		//results[wfi] = lin_int(phi0, one_by_pphidiff, f1, f2, phir);
+		results[wfi] = lin_int2(phir-phi0, one_by_pphidiff, f1, f2);
 	
-		if (isnan(results[wfi]) || abs(results[wfi]) > 0.5*(abs(f1)+abs(f2))*1.e5)
+		//if (isnan(results[wfi]) || abs(results[wfi]) > 0.5*(abs(f1)+abs(f2))*1.e5)
+		if ( isnan( results[wfi] ) )
 		{
 			*global_out_stream_ptr << "ERROR: problems encountered!" << endl
 				<< "results[" << wfi << "] = " << setw(8) << setprecision(15) << results[wfi] << endl
@@ -1200,8 +1217,7 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 				<< "  --> f2 = " << f2 << endl;
 			exit(1);
 		}
-			if (current_level_of_output > 10) cout << "Edndp3(): results[" << wfi << "] = "
-				<< setw(8) << setprecision(15) << results[wfi] << endl
+		if (current_level_of_output > 0) cout << "results[" << wfi << "] = " << setw(8) << setprecision(15) << results[wfi] << endl
 				<< "  --> ptr = " << ptr << endl
 				<< "  --> pt0 = " << pT0 << endl
 				<< "  --> pt1 = " << pT1 << endl
@@ -1214,6 +1230,20 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 				<< "  --> f22 = " << temp_res_moments_info[npt][nphi] << endl
 				<< "  --> f1 = " << f1 << endl
 				<< "  --> f2 = " << f2 << endl;
+		/*if (current_level_of_output > 10) cout << "Edndp3(): results[" << wfi << "] = "
+			<< setw(8) << setprecision(15) << results[wfi] << endl
+			<< "  --> ptr = " << ptr << endl
+			<< "  --> pt0 = " << pT0 << endl
+			<< "  --> pt1 = " << pT1 << endl
+			<< "  --> phir = " << phir << endl
+			<< "  --> phi0 = " << phi0 << endl
+			<< "  --> phi1 = " << phi1 << endl
+			<< "  --> f11 = " << temp_res_moments_info[npt-1][nphim1] << endl
+			<< "  --> f12 = " << temp_res_moments_info[npt-1][nphi] << endl
+			<< "  --> f21 = " << temp_res_moments_info[npt][nphim1] << endl
+			<< "  --> f22 = " << temp_res_moments_info[npt][nphi] << endl
+			<< "  --> f1 = " << f1 << endl
+			<< "  --> f2 = " << f2 << endl;*/
 	}
 
 	return;
@@ -1293,26 +1323,26 @@ double SourceVariances::Edndp3_original(double ptr, double phir, int pn, int wfi
 	if(ptr > PTCHANGE)
 		val = exp(val);
 
-	if (current_level_of_output > 0) cout << "\t" << dN_dypTdpTdphi_moments[pn][0][npt-1][nphim1] << "   "
+	/*if (current_level_of_output > 0) cout << "\t" << dN_dypTdpTdphi_moments[pn][0][npt-1][nphim1] << "   "
 		<< dN_dypTdpTdphi_moments[pn][0][npt-1][nphi] << "   "
 		<< dN_dypTdpTdphi_moments[pn][0][npt][nphim1] << "   "
 		<< dN_dypTdpTdphi_moments[pn][0][npt][nphi] << "   "
 		<< f1 << "   " << f2 << "   " << ptr << "   " << phir << "   "
 		<< pT0 << "   " << pT1 << "   " << phi0 << "   " << phi1 << endl;
-			if (current_level_of_output > 10) cout << "Edndp3_original(): val = "
-				<< setw(8) << setprecision(15) << val << endl
-				<< "  --> ptr = " << ptr << endl
-				<< "  --> pt0 = " << pT0 << endl
-				<< "  --> pt1 = " << pT1 << endl
-				<< "  --> phir = " << phir << endl
-				<< "  --> phi0 = " << phi0 << endl
-				<< "  --> phi1 = " << phi1 << endl
-				<< "  --> f11 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1] << endl
-				<< "  --> f12 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
-				<< "  --> f21 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1] << endl
-				<< "  --> f22 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
-				<< "  --> f1 = " << f1 << endl
-				<< "  --> f2 = " << f2 << endl;
+	if (current_level_of_output > 10) cout << "Edndp3_original(): val = "
+		setw(8) << setprecision(15) << val << endl
+		<< "  --> ptr = " << ptr << endl
+		<< "  --> pt0 = " << pT0 << endl
+		<< "  --> pt1 = " << pT1 << endl
+		<< "  --> phir = " << phir << endl
+		<< "  --> phi0 = " << phi0 << endl
+		<< "  --> phi1 = " << phi1 << endl
+		<< "  --> f11 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1] << endl
+		<< "  --> f12 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
+		<< "  --> f21 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1] << endl
+		<< "  --> f22 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
+		<< "  --> f1 = " << f1 << endl
+		<< "  --> f2 = " << f2 << endl;*/
 
 	return val;
 }

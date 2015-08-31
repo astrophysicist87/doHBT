@@ -178,35 +178,6 @@ void SourceVariances::Output_ev_plane_psis(int folderindex)
 	return;
 }*/
 
-void SourceVariances::Output_SVdN_dypTdpTdphi(int folderindex)
-{
-	ostringstream filename_stream_dN_dypTdpTdphi;
-	filename_stream_dN_dypTdpTdphi << global_path << "/SV_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_dN_dypTdpTdphi(filename_stream_dN_dypTdpTdphi.str().c_str());
-
-	for(int iphi=0; iphi<n_SP_pphi; iphi++)
-	for(int ipt=0; ipt<n_SP_pT; ipt++)
-		output_dN_dypTdpTdphi << SP_pT[ipt] << "   " << SP_pphi[iphi] << "   " << SV_dN_dypTdpTdphi[ipt][iphi] << endl;
-
-	output_dN_dypTdpTdphi.close();
-
-	return;
-}
-
-void SourceVariances::Output_SVdN_dypTdpT(int folderindex)
-{
-	ostringstream filename_stream_dN_dypTdpT;
-	filename_stream_dN_dypTdpT << global_path << "/SV_dN_dypTdpT_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_dN_dypTdpT(filename_stream_dN_dypTdpT.str().c_str());
-
-	for(int ipt=0; ipt<n_SP_pT; ipt++)
-		output_dN_dypTdpT << SP_pT[ipt] << "   " << SV_dN_dypTdpT[ipt] << endl;
-
-	output_dN_dypTdpT.close();
-
-	return;
-}
-
 void SourceVariances::Output_dN_dypTdpTdphi(int folderindex)
 {
 	ostringstream filename_stream_dN_dypTdpTdphi;
@@ -216,26 +187,6 @@ void SourceVariances::Output_dN_dypTdpTdphi(int folderindex)
 	for(int iphi=0; iphi<n_SP_pphi; iphi++)
 	for(int ipt=0; ipt<n_SP_pT; ipt++)
 		output_dN_dypTdpTdphi << SP_pT[ipt] << "   " << SP_pphi[iphi] << "   " << dN_dypTdpTdphi[ipt][iphi] << endl;
-
-	output_dN_dypTdpTdphi.close();
-
-	return;
-}
-
-void SourceVariances::Output_dN_dypTdpTdphi_grid(int folderindex, int dc_idx)
-{//assuming polar grid for interpolation for now
-	ostringstream filename_stream_dN_dypTdpTdphi;
-	filename_stream_dN_dypTdpTdphi << global_path << "/dN_dypTdpTdphi_polar_grid_ev" << folderindex << no_df_stem << ".dat";
-	ofstream output_dN_dypTdpTdphi(filename_stream_dN_dypTdpTdphi.str().c_str());
-
-	for(int imom=0; imom<n_weighting_functions; imom++)
-	{
-		for(int iphi=0; iphi<n_interp_pphi_pts; iphi++)
-		for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
-			output_dN_dypTdpTdphi << imom << "   " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[iphi]
-						<< "   " << dN_dypTdpTdphi_moments[dc_idx][imom][ipt][iphi] << endl;
-		output_dN_dypTdpTdphi << endl;
-	}
 
 	output_dN_dypTdpTdphi.close();
 
@@ -258,10 +209,6 @@ void SourceVariances::Output_dN_dypTdpT(int folderindex)
 
 void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 {
-	//ostringstream filename_stream_all_dN_dypTdpTdphi;
-	//filename_stream_all_dN_dypTdpTdphi << global_path << "/all_res_dN_dypTdpTdphi_ev" << folderindex << no_df_stem << ".dat";
-	//ofstream output_all_dN_dypTdpTdphi(filename_stream_all_dN_dypTdpTdphi.str().c_str());
-
 	for(int wfi = 0; wfi < n_weighting_functions; wfi++)
 	{
 		ostringstream filename_stream_all_dN_dypTdpTdphi;
@@ -277,8 +224,6 @@ void SourceVariances::Output_all_dN_dypTdpTdphi(int folderindex)
 		}
 		output_all_dN_dypTdpTdphi.close();
 	}
-
-	//output_all_dN_dypTdpTdphi.close();
 
 	return;
 }
@@ -347,9 +292,19 @@ void SourceVariances::Read_in_all_dN_dypTdpTdphi(int folderindex)
 		for(int ii = 0; ii < Nparticle; ii++)
 		for(int iphi = 0; iphi < n_interp_pphi_pts; iphi++)
 		for(int ipt = 0; ipt < n_interp_pT_pts; ipt++)
+		{
 			input_all_dN_dypTdpTdphi >> dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi];
+			if (abs(dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi]) > 1.e-100)
+			{
+				ln_dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi] = log(abs(dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi]));
+				sign_of_dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi] = sgn(dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi]);
+			}
+			//cout << "Read in (pT, pphi, EdNdp3 ST moms) = " << SPinterp_pT[ipt] << "   " << SPinterp_pphi[iphi] << "   "
+			//	<< scientific << setprecision(8) << setw(12) << dN_dypTdpTdphi_moments[ii][wfi][ipt][iphi] << endl;
+		}
 	
 		input_all_dN_dypTdpTdphi.close();
+		if (VERBOSE > 0) *global_out_stream_ptr << "Successfully read in " << filename_stream_all_dN_dypTdpTdphi.str().c_str() << endl;
 	}
 
 

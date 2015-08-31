@@ -151,9 +151,9 @@ class SourceVariances
 		//single particle spectra for plane angle determination
 		//int n_order;
 		double SP_p_y, global_plane_psi, mean_pT;
-		double * SP_pT, * SP_pphi, * SP_pT_weight, * SP_pphi_weight, * dN_dypTdpT, * SV_dN_dypTdpT;
-		double * dN_dydphi, * SV_dN_dydphi, * pTdN_dydphi, * SV_pTdN_dydphi, * plane_angle;
-		double ** dN_dypTdpTdphi, ** SV_dN_dypTdpTdphi, ** cosine_iorder, ** sine_iorder;
+		double * SP_pT, * SP_pphi, * SP_pT_weight, * SP_pphi_weight, * dN_dypTdpT;
+		double * dN_dydphi, * pTdN_dydphi, * plane_angle;
+		double ** dN_dypTdpTdphi, ** cosine_iorder, ** sine_iorder;
 		     
 		//pair momentum
 		double K_y, ch_K_y, sh_K_y;
@@ -243,24 +243,21 @@ class SourceVariances
 				FO_surf* FOsurf_ptr, vector<int> chosen_resonances, int particle_idx, ofstream& myout);
 		~SourceVariances();
 
-		void Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx, bool thermal_particles_only = false);
+		void Determine_plane_angle(FO_surf* FOsurf_ptr, int dc_idx);
 		void Analyze_sourcefunction(FO_surf* FOsurf_ptr);
-		void Analyze_sourcefunction_V1(FO_surf* FOsurf_ptr);
-		void Analyze_sourcefunction_V2(FO_surf* FOsurf_ptr);
-		void Analyze_sourcefunction_V3(FO_surf* FOsurf_ptr);
 		void Update_sourcefunction(particle_info* particle, int FOarray_length, int particle_idx);
 		bool fexists(const char *filename);
 
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int local_pid);
-		void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int local_pid);
-		void Cal_dN_dypTdpTdphi_interpolate_polar_grid(double* SP_pT, double* SP_pphi);
-		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
-		double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
-		double weight_function(double PK[], int weight_function_index);
+		//void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int local_pid);
+		//double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
+		//double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
+		//double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
+		void combine_sourcevariances(double * output, double * input, double * alpha_vec);
 		void Set_current_daughter_info(int dc_idx, int daughter_idx);
 		void Set_current_particle_info(int dc_idx);
 		bool Do_this_decay_channel(int dc_idx);
@@ -270,10 +267,9 @@ class SourceVariances
 		void Allocate_decay_channel_info();
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
-		void combine_sourcevariances(double * output, double * input, double * alpha_vec);
-		void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
+		//void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
 		void Compute_source_variances(int iKT, int iKphi);
-		void test_function(FO_surf* FOsurf_ptr, int local_pid);
+		//void test_function(FO_surf* FOsurf_ptr, int local_pid);
 
 		void Get_source_variances(int, int);
 		void Calculate_R2_side(int, int);
@@ -294,7 +290,7 @@ class SourceVariances
 		void Set_current_FOsurf_ptr(FO_surf* FOsurf_ptr);
 		double get_Q();
 		double g(double s);
-		inline void set_to_zero(double * array, int arraylength);
+		inline void set_to_zero(double * array, size_t arraylength);
 		void adaptive_simpson_integration(void (SourceVariances::*f) (double, double *), double a, double b, double * results);
 		double S_direct(double r, double eta, double tau, double MT, double PT, double cos_phi_m_Phi);
 		double place_in_range(double phi, double min, double max);
@@ -307,11 +303,8 @@ class SourceVariances
 		double Edndp3_original(double ptr, double phir, int local_pid, int wfi);
 
 		// input and output function prototypes
-		void Output_SVdN_dypTdpTdphi(int folderindex);
-		void Output_SVdN_dypTdpT(int folderindex);
 		void Output_dN_dypTdpTdphi(int folderindex);
 		void Output_dN_dypTdpT(int folderindex);
-		void Output_dN_dypTdpTdphi_grid(int folderindex, int dc_idx);
 		void Output_all_dN_dypTdpTdphi(int folderindex);
 		void Output_total_target_dN_dypTdpTdphi(int folderindex);
 		void Output_results(int folderindex);

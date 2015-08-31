@@ -37,14 +37,27 @@ def plotSVdata(givenSVdata, pxgrid, pygrid, filename):
 	return plt
 
 ####################################################################
-def reformatSVdata(givenSVdata, pxgrid, pygrid, filename):
-	
+def plotHBTcfsdata(HBTcfsFilepath, chosenR2ij, chosenHarmonic):
+	# chosenHarmonic = 'cos' or 'sin'
+	HBTcfsData = loadtxt(HBTcfsFilepath)[:,1:]	# first column is dummy index
+	columnEntries = ['pT', 'order',
+			'R2s(cos)', 'R2s(sin)', 'R2o(cos)', 'R2o(sin)', 'R2os(cos)', 'R2os(sin)',
+			'R2l(cos)', 'R2l(sin)', 'R2sl(cos)', 'R2sl(sin)', 'R2ol(cos)', 'R2ol(sin)']
+	allCols = dict([(x,y) for (x,y) in zip(columnEntries, range(len(columnEntries)))])
+	chosenColumn = chosenR2ij + '(' + chosenHarmonic + ')'
+	chosenR2ijIndex = allCols[chosenColumn]
+	pTvals = HBTcfsData[:,0]
+	chosenR2ijvals = HBTcfsData[:,chosenR2ijIndex]
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	ax.plot(pTvals, chosenR2ijvals)
+	plt.show()
 
 	return plt
 
 
 ####################################################################
-if __name__ == "__main__":
+def oldMain():
 	# set the names of all input files from the command line
 	#thermal_sourcevariance_grid_filenames = map(lambda x: path.basename(x), sys.argv[1:])
 	thermal_sourcevariance_grid_filenames = sys.argv[1:]
@@ -93,5 +106,30 @@ if __name__ == "__main__":
 			savetxt(outfile, finalResult, fmt='%10.8f   '*3)
 
 	print 'Finished all.'
+
+
+
+####################################################################
+if __name__ == "__main__":
+	workingParentDirectory = '/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08'
+	for R2ij in ['R2s','R2o','R2l']:
+		workingSubDirectory = 'COPY_resfrac_1.00_48pts_results-avg-1'
+		workingPath = workingParentDirectory + '/' + workingSubDirectory
+		plotHBTcfsdata(workingPath + '/HBTradii_cfs_ev1.dat', R2ij, 'cos')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # End of file
