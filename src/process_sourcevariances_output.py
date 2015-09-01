@@ -113,7 +113,7 @@ def oldMain():
 if __name__ == "__main__":
 	workingParentDirectory = '/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08'
 	for R2ij in ['R2s','R2o','R2l']:
-		workingSubDirectory = 'COPY_resfrac_1.00_48pts_results-avg-1'
+		workingSubDirectory = 'resfracRESULTS_maxtau_25_fmc/COPY_resfrac_0.10_results-avg-1'
 		workingPath = workingParentDirectory + '/' + workingSubDirectory
 		plotHBTcfsdata(workingPath + '/HBTradii_cfs_ev1.dat', R2ij, 'cos')
 

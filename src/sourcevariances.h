@@ -35,21 +35,21 @@ typedef struct
 
 typedef struct
 {
-   int * resonance_particle_id;		// keeps track of current resonance's index in all_particles array
-   int * resonance_idx;			// keeps track of current resonance's index in chosen_resonances vector
-   int * nbody;
-   int * resonance_sign;
-   double * resonance_mass;
-   double * resonance_mu;
-   double * resonance_gspin;
-   double * resonance_Gamma;
-   double * resonance_total_br;
-   double * resonance_direct_br;
-   double ** resonance_decay_masses;
-   double ** resonance_decay_monvals;
-   double ** resonance_decay_Gammas;
-   string * resonance_name;
-   bool * include_channel;
+   int resonance_particle_id;		// keeps track of current resonance's index in all_particles array
+   int resonance_idx;			// keeps track of current resonance's index in chosen_resonances vector
+   int nbody;
+   int resonance_sign;
+   double resonance_mass;
+   double resonance_mu;
+   double resonance_gspin;
+   double resonance_Gamma;
+   double resonance_total_br;
+   double resonance_direct_br;
+   double * resonance_decay_masses;
+   double * resonance_decay_monvals;
+   double * resonance_decay_Gammas;
+   string resonance_name;
+   bool include_channel;
 }decay_info;
 
 struct Correlationfunction1D_data
@@ -92,7 +92,7 @@ class SourceVariances
 		double S_xs_xo_r_to_part, S_xs_xl_r_to_part, S_xs_t_r_to_part, S_xo_xl_r_to_part, S_xo_t_r_to_part, S_xl_t_r_to_part;
 		
 		//array to hold previous and current resonance info
-		decay_info decay_channels;
+		decay_info * decay_channels;
 		int current_decay_channel_idx, current_resonance_particle_id, previous_resonance_idx, current_resonance_idx, current_reso_nbody;
 		double current_resonance_mu, current_resonance_mass, current_resonance_Gamma, current_m2_Gamma, current_m3_Gamma;
 		double current_resonance_total_br, current_resonance_direct_br, current_daughter_mass, current_daughter_Gamma;
