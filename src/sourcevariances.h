@@ -251,10 +251,8 @@ class SourceVariances
 		void Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int dc_idx);
 		void Cal_dN_dypTdpTdphi(double** SP_p0, double** SP_px, double** SP_py, double** SP_pz, FO_surf* FOsurf_ptr);
 		void Cal_dN_dypTdpTdphi_with_weights_polar(FO_surf* FOsurf_ptr, int local_pid);
-		//void Cal_dN_dypTdpTdphi_with_weights_polar_V2(FO_surf* FOsurf_ptr, int local_pid);
-		//double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
+		double Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi);
 		//double Emissionfunction(double p0, double px, double py, double pz, FO_surf* surf);
-		//double weight_function(double PK[], int weight_function_index);
 		void Do_resonance_integrals(int iKT, int iKphi, int dc_idx);
 		void get_rapidity_dependence(double * rap_indep_vector, double * rap_dep_vector, double rap_val);
 		void combine_sourcevariances(double * output, double * input, double * alpha_vec);
@@ -267,9 +265,8 @@ class SourceVariances
 		void Allocate_decay_channel_info();
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
-		//void compute_rap_indep_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx, double KTres, double Kphires, double * rapidity_independent_y_of_r);
 		void Compute_source_variances(int iKT, int iKphi);
-		//void test_function(FO_surf* FOsurf_ptr, int local_pid);
+		void test_function(FO_surf* FOsurf_ptr, int local_pid);
 
 		void Get_source_variances(int, int);
 		void Calculate_R2_side(int, int);

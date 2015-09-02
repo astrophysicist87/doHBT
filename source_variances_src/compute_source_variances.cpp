@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 
    //load freeze out and particle information
    int FO_length = 0;
-   int particle_idx=1;  //for pion+
+   int particle_idx = 1;  //for pion+
 
    ostringstream decdatfile;
    output << "Loading the decoupling data...." << endl;
@@ -104,14 +104,6 @@ int main(int argc, char *argv[])
    output << "read in data finished!" << endl;
    output << "Used " << sw.takeTime() << " sec." << endl;
 
-//	for(int i=0; i<FO_length; i++)
-//	{
-//		for(int j=0; j<Nparticle; j++)
-//			cerr << FOsurf_ptr[i].particle_mu[j] << "    ";
-//		cerr << endl;
-//	}
-//	if (1) exit(1);
-
    //HBT calculations begin ...
    double localy = 0.0e0;
    sw.tic();
@@ -157,7 +149,8 @@ int main(int argc, char *argv[])
    output << "Calculating HBT radii via source variances method..." << endl;
    Source_function.Analyze_sourcefunction(FOsurf_ptr);		//with previous function, this argument is redundant
    
-//Source_function.test_function(FOsurf_ptr, 75);
+Source_function.test_function(FOsurf_ptr, particle_idx);
+output << "Outputting interpolation test data for " << particle[particle_idx].name << endl;
 
    Source_function.Output_total_target_dN_dypTdpTdphi(folderindex);
    Source_function.Output_chosen_resonances();

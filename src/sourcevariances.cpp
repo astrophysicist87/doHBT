@@ -143,7 +143,8 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 												<< endl << "* Computed all (thermal) space-time moments!" << endl
 												<< "************************************************************" << endl << endl;
 		BIGsw.toc();
-		*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;	}
+		*global_out_stream_ptr << "\t ...finished all (thermal) space-time moments in " << BIGsw.takeTime() << " seconds." << endl;
+	}
 	if (output_all_dN_dypTdpTdphi)
 	{
 		Output_all_dN_dypTdpTdphi(currentfolderindex);
@@ -151,10 +152,9 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 												<< endl << "* Output all (thermal) space-time moments!" << endl
 												<< "************************************************************" << endl << endl;
 	}
-
+	
 	if (SPACETIME_MOMENTS_ONLY)
 		return;
-
 
 	*global_out_stream_ptr << "Computing all phase-space integrals..." << endl;
 	double current_dNd3p_00 = 249.013183, thermal_dNd3p_00 = 249.013183, previous_dNd3p_00 = 249.013183;
@@ -1335,18 +1335,22 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 
 //***************************************************************************************************
 
-/*void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
+void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
 {
+	ostringstream filename_stream_icpl;
+	filename_stream_icpl << global_path << "/interpolation_comparison_monval_" << all_particles[local_pid].monval << ".dat";
+	ofstream output_icpl(filename_stream_icpl.str().c_str());
+
 	current_level_of_output = 0;
 
 	res_sign_info = sign_of_dN_dypTdpTdphi_moments[local_pid];
 	res_log_info = ln_dN_dypTdpTdphi_moments[local_pid];
 	res_moments_info = dN_dypTdpTdphi_moments[local_pid];
 
-	double local_pT_min = 0.25, local_pT_max = 10.0, local_pphi_min = 0.0, local_pphi_max = 2.*M_PI;
-	double npt = 250., npphi = 25.;
+	double local_pT_min = 0.0, local_pT_max = 10.0, local_pphi_min = 0.0, local_pphi_max = 2.*M_PI;
+	double npt = 101., npphi = 1.;
 	double Del_pT = (local_pT_max - local_pT_min) / (npt - 1.);
-	double Del_pphi = (local_pphi_max - local_pphi_min) / (npphi - 1.);
+	double Del_pphi = (local_pphi_max - local_pphi_min) / npphi;
 	double * result2 = new double [1];
 	for (int ipt = 0; ipt < npt; ipt++)
 	for (int ipphi = 0; ipphi < npphi; ipphi++)
@@ -1355,13 +1359,19 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 		double local_pphi = local_pphi_min + ipphi * Del_pphi;
 		double result1 = Cal_dN_dypTdpTdphi_function(FOsurf_ptr, local_pid, local_pT, local_pphi);
 		result2[0] = 0.0;
+if (ipt==(int)npt-1 && ipphi==(int)npphi-1 && local_pid == 1)
+	current_level_of_output = 1;
+else
+	current_level_of_output = 0;
 		double result3 = Edndp3_original(local_pT, local_pphi, local_pid, 0);
 		Edndp3(local_pT, local_pphi, result2);
-		cout << local_pid << "   " << local_pT << "   " << local_pphi << "   " << result1 << "   " << result2[0] << "   " << result3 << endl;
+		output_icpl << local_pid << "   " << local_pT << "   " << local_pphi << "   " << result1 << "   " << result2[0] << "   " << result3 << endl;
 		result2[0] = 0.0;
 	}
 
 	delete [] result2;
+
+	output_icpl.close();
 
 	return;
 }
@@ -1458,7 +1468,7 @@ double SourceVariances::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int loc
 	}
 
 	return dN_dypTdpTdphi;
-}*/
+}
 
 
 //End of file

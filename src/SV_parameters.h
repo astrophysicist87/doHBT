@@ -27,9 +27,9 @@ using namespace std;
 #define RECYCLE_ST_MOMENTS		true		// decides whether to recompute spacetime moments for each decay channel
 							// only need this switch to see how much time this saves and make sure it's bug-free
 #define SPACETIME_MOMENTS_ONLY		false		// duh
-#define CHECK_FOR_LIFETIME		true		// true means skip particles which are too long-lived
-#define DO_ALL_DECAY_CHANNELS		false		// duh
-#define INCLUDE_SOURCE_VARIANCES	true		// false means do spectra only
+#define CHECK_FOR_LIFETIME		false		// true means skip particles which are too long-lived
+#define DO_ALL_DECAY_CHANNELS		true		// duh
+#define INCLUDE_SOURCE_VARIANCES	false		// false means do spectra only
 #define USE_INTERP_ALT			false		// set to true to use interp. algorithm from iS.e
 
 const double hbarC=0.197327053;  //GeV*fm
@@ -104,7 +104,7 @@ const size_t fit_max_iterations = 1000;  // stop at this point if not converged
 const double fit_tolarence = 1e-6;
 
 //misc. resonance info
-const double max_lifetime = 25.;	// fm/c
+const double max_lifetime = 100.;	// fm/c
 
 namespace patch
 {

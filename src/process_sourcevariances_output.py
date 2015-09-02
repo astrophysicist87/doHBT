@@ -19,6 +19,14 @@ n_resonances = 320
 chosen_resonance_to_plot = 1
 
 ####################################################################
+def relSymDiff(a,b):
+	return abs(200.*(a-b)/(a+b))
+
+####################################################################
+def relRtDiff(a,b):
+	return abs(100.*(a-b)/(b+1.e-100))
+
+####################################################################
 def plotSVdata(givenSVdata, pxgrid, pygrid, filename):
 	#fig, axs = plt.subplots(1, 1)
 	plotfontsize = 12
@@ -108,14 +116,44 @@ def oldMain():
 	print 'Finished all.'
 
 
+####################################################################
+def plotTestInterpolationData(testInterpolationPath):
+	testInterpolationData = loadtxt(testInterpolationPath)[:,1:]	# first column is dummy index
+	columnEntries = ['pT', 'pphi', 'exact', 'NEWinterp', 'OLDinterp']
+	allCols = dict([(x,y) for (x,y) in zip(columnEntries, range(len(columnEntries)))])
+	npt = 50
+	npphi = 50
+	testInterpolationData = testInterpolationData.reshape([npt,npphi,len(columnEntries)])
+	
+	pTvals = testInterpolationData[:,0,allCols['pT']]
+	pphivals = testInterpolationData[0,:,allCols['pphi']]
+	exactData = mean(testInterpolationData[:,:,allCols['exact']],1)
+	NEWinterpData = mean(testInterpolationData[:,:,allCols['NEWinterp']],1)
+	OLDinterpData = mean(testInterpolationData[:,:,allCols['OLDinterp']],1)
+	
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	ax.plot(pTvals, exactData)
+	ax.plot(pTvals, NEWinterpData)
+	ax.plot(pTvals, OLDinterpData)
+	#ax.plot(pTvals, relRtDiff(OLDinterpData, exactData))
+	#ax.plot(pTvals, relRtDiff(NEWinterpData, exactData))
+	#print relRtDiff(OLDinterpData, exactData)
+	#print relRtDiff(NEWinterpData, exactData)
+	ax.set_yscale('log')
+	plt.show()
+
+	return plt
+
 
 ####################################################################
 if __name__ == "__main__":
 	workingParentDirectory = '/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08'
-	for R2ij in ['R2s','R2o','R2l']:
-		workingSubDirectory = 'resfracRESULTS_maxtau_25_fmc/COPY_resfrac_0.10_results-avg-1'
-		workingPath = workingParentDirectory + '/' + workingSubDirectory
-		plotHBTcfsdata(workingPath + '/HBTradii_cfs_ev1.dat', R2ij, 'cos')
+	#for R2ij in ['R2s','R2o','R2l']:
+	workingSubDirectory = 'COPY_resfrac_1.00_results-avg-1'
+	workingPath = workingParentDirectory + '/' + workingSubDirectory
+	#plotHBTcfsdata(workingPath + '/HBTradii_cfs_ev1.dat', R2ij, 'cos')
+	plotTestInterpolationData(workingPath + '/interpolation_comparison_monval_9060225.dat')
 
 
 

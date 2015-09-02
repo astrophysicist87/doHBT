@@ -67,7 +67,7 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 	
 	//for SVs which don't change, just copy them over
 	//[{1}_r]_{r-->\pi}
-	rap_dep_vector[0] = rap_indep_vector[0];								//1
+	rap_dep_vector[0] = rap_indep_vector[0];									//1
 	if (INCLUDE_SOURCE_VARIANCES)
 	{
 		double ch_rap_val = cosh(rap_val);
@@ -107,7 +107,7 @@ void SourceVariances::get_rapidity_dependence(double * rap_indep_vector, double 
 		rap_dep_vector[12] = ch_rap_val * rap_indep_vector[12]					//xoxl					
 					+ sh_rap_val * rap_indep_vector[13];						//xot
 		//[{xo_t}_r]_{r-->\pi}
-		rap_dep_vector[13] = ch_rap_val * rap_indep_vector[13]							//xot
+		rap_dep_vector[13] = ch_rap_val * rap_indep_vector[13]					//xot
 					+ sh_rap_val * rap_indep_vector[12];						//xoxl
 		//[{xl_t}_r]_{r-->\pi}
 		rap_dep_vector[14] = (ch_rap_val * ch_rap_val + sh_rap_val * sh_rap_val) * rap_indep_vector[14]		//xlt
@@ -250,7 +250,12 @@ else
 
 			//update all gridpoints for daughter moments
 			for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
+			{
 				dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] += ssum_vec[iweight];
+				double temp = dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi];
+				ln_dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] = log(abs(temp));
+				sign_of_dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] = sgn(temp);
+			}
 	
 			if (isnan(dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi]))
 			{
@@ -331,7 +336,12 @@ else
 			}																								// end of s sum
 			//update all gridpoints for daughter moments
 			for (int iweight = 0; iweight < n_weighting_functions; ++iweight)
+			{
 				dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] += ssum_vec[iweight];
+				double temp = dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi];
+				ln_dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] = log(abs(temp));
+				sign_of_dN_dypTdpTdphi_moments[daughter_particle_id][iweight][ipt][ipphi] = sgn(temp);
+			}
 	
 			if (isnan(dN_dypTdpTdphi_moments[daughter_particle_id][0][ipt][ipphi]))
 			{
