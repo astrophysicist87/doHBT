@@ -230,12 +230,7 @@ else
 							PKphi = VEC_n2_PPhi_tildeFLIP[iv][izeta];		//also takes Pp --> Pm
 							alphavec = VEC_n2_alpha_m[iv][izeta];
 						}
-						if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
-							rap_indep_y_of_r[0] = Edndp3_original(PKT, PKphi, parent_resonance_particle_id, 0);
-						else
-							Edndp3(PKT, PKphi, rap_indep_y_of_r);
-//if (ipt==0 && ipphi==0) cout << parent_resonance_particle_id << "   " << daughter_particle_id << "   " << decay_channel
-//								<< "   " << PKT << "   " << PKphi << "   " << PKY << "   " << rap_indep_y_of_r[0] << endl;
+						Edndp3(PKT, PKphi, rap_indep_y_of_r);
 						get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 						combine_sourcevariances(Csum_vec, y_of_r, alphavec);
 					}																					// end of tempidx sum
@@ -315,12 +310,7 @@ else
 								PKphi = VEC_PPhi_tildeFLIP[is][iv][izeta];		//also takes Pp --> Pm
 								alphavec = VEC_alpha_m[is][iv][izeta];
 							}
-							if (USE_INTERP_ALT && !INCLUDE_SOURCE_VARIANCES)
-								rap_indep_y_of_r[0] = Edndp3_original(PKT, PKphi, parent_resonance_particle_id, 0);
-							else
-								Edndp3(PKT, PKphi, rap_indep_y_of_r);
-//if (ipt==0 && ipphi==0) cout << parent_resonance_particle_id << "   " << daughter_particle_id << "   " << decay_channel
-//								<< "   " << PKT << "   " << PKphi << "   " << PKY << "   " << rap_indep_y_of_r[0] << endl;
+							Edndp3(PKT, PKphi, rap_indep_y_of_r);
 							get_rapidity_dependence(rap_indep_y_of_r, y_of_r, PKY);
 							//now compute appropriate linear combinations
 							combine_sourcevariances(Csum_vec, y_of_r, alphavec);

@@ -86,23 +86,21 @@ def oldMain():
 	pxgrid = pTgrid * cos(pphigrid)
 	pygrid = pTgrid * sin(pphigrid)
 	
-	useSVdata = False
+	useSVdata = True
 
 	# for each source variance, read in appropriate file and plot results
 	if useSVdata:
 		for iSV in range(number_of_sourcevariances):
 			inFile = thermal_sourcevariance_grid_filenames[iSV]
+			temp = loadtxt(inFile)
+			#print temp.shape
 			SVdata = loadtxt(inFile).reshape([n_resonances, npT, npphi])
-			#SVplot = plotSVdata(SVdata[chosen_resonance_to_plot], pxgrid, pygrid, path.basename(inFile))
-			#outfile = path.splitext(inFile)[0] + '.pdf'
-			#print outfile
-			#SVplot.show()
-			#SVplot.savefig(outfile, format='pdf')
-			outfile = path.splitext(inFile)[0] + '_res' + str(chosen_resonance_to_plot) +'_reformatted.dat'
-			print 'Saving to $CWD/' + path.basename(outfile)
-			# this format is useful for gnuplot, which is a little easier to use for right now...
-			finalResult = vstack((pxgrid.flatten(), pygrid.flatten(), SVdata[chosen_resonance_to_plot].flatten())).T
-			savetxt(outfile, finalResult, fmt='%10.8f   '*3)
+			for ires in xrange(n_resonances):
+				outfile = path.splitext(inFile)[0] + '_res' + str(ires) +'_reformatted.dat'
+				print 'Saving to $CWD/' + path.basename(outfile)
+				# this format is useful for gnuplot, which is a little easier to use for right now...
+				finalResult = vstack((pxgrid.flatten(), pygrid.flatten(), SVdata[ires].flatten())).T
+				savetxt(outfile, finalResult, fmt='%10.8f   '*3)
 	else:
 		for iSV in range(number_of_sourcevariances):
 			inFile = thermal_sourcevariance_grid_filenames[iSV]
@@ -149,11 +147,12 @@ def plotTestInterpolationData(testInterpolationPath):
 ####################################################################
 if __name__ == "__main__":
 	workingParentDirectory = '/home/plumberg.1/HBTwidths_viscosity_dependence/RESULTS/RESULTS_etaBYs_0.08'
-	#for R2ij in ['R2s','R2o','R2l']:
-	workingSubDirectory = 'COPY_resfrac_1.00_results-avg-1'
-	workingPath = workingParentDirectory + '/' + workingSubDirectory
-	#plotHBTcfsdata(workingPath + '/HBTradii_cfs_ev1.dat', R2ij, 'cos')
-	plotTestInterpolationData(workingPath + '/interpolation_comparison_monval_9060225.dat')
+	for R2ij in ['R2s','R2o','R2l']:
+		workingSubDirectory = 'COPY_resfrac_1.00_results-avg-1'
+		workingPath = workingParentDirectory + '/' + workingSubDirectory
+		plotHBTcfsdata(workingPath + '/HBTradii_cfs_ev1.dat', R2ij, 'cos')
+	#plotTestInterpolationData(workingPath + '/interpolation_comparison_monval_9060225.dat')
+	#oldMain()
 
 
 

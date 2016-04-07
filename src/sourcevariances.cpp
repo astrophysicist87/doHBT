@@ -172,6 +172,9 @@ void SourceVariances::Analyze_sourcefunction(FO_surf* FOsurf_ptr)
 		else if (!Do_this_decay_channel(idc))
 			continue;
 
+//if (decay_channels[idc-1].resonance_particle_id == 12)	//omega
+//	break;
+
 		// ************************************************************
 		// if so, set decay channel info
 		// ************************************************************
@@ -538,7 +541,6 @@ void SourceVariances::Recycle_spacetime_moments()
 		dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
 		ln_dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = ln_dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
 		sign_of_dN_dypTdpTdphi_moments[current_resonance_particle_id][wfi][ipt][iphi] = sign_of_dN_dypTdpTdphi_moments[reso_particle_id_of_moments_to_recycle][wfi][ipt][iphi];
-		//N.B. - not dc_idx - 1, since spacetime moments for dc_idx = 0 are just thermal pions
 	}
 
 	return;
@@ -549,25 +551,23 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 //**************************************************************
 //Set resonance name
 //**************************************************************
-//debugger(__LINE__,__FILE__);
 	string local_name = "Thermal pion(+)";
 	if (dc_idx > 0)
 		local_name = decay_channels[dc_idx-1].resonance_name;
 //**************************************************************
 //Decide what to do with this resonance / decay channel
 //**************************************************************
-	if (recycle_previous_moments && RECYCLE_ST_MOMENTS && dc_idx > 1)	// similar (but different) earlier resonance
+	if (recycle_previous_moments && dc_idx > 1)	// similar (but different) earlier resonance
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
 			<< ": new parent resonance (" << decay_channels[current_decay_channel_idx-1].resonance_name << ", dc_idx = " << current_decay_channel_idx
-			<< ") same as preceding parent resonance \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
-		//Recycle_spacetime_moments();
+			<< " of " << n_decay_channels << ") same as preceding parent resonance \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
 	}
-	else if (recycle_similar_moments && RECYCLE_ST_MOMENTS && dc_idx > 1)	// similar (but different) earlier resonance
+	else if (recycle_similar_moments && dc_idx > 1)	// similar (but different) earlier resonance
 	{
 		if (VERBOSE > 0) *global_out_stream_ptr << local_name
 			<< ": new parent resonance (" << decay_channels[current_decay_channel_idx-1].resonance_name << ", dc_idx = " << current_decay_channel_idx
-			<< ") sufficiently close to preceding parent resonance (" << all_particles[reso_particle_id_of_moments_to_recycle].name
+			<< " of " << n_decay_channels << ") sufficiently close to preceding parent resonance (" << all_particles[reso_particle_id_of_moments_to_recycle].name
 			<< ", reso_particle_id = " << reso_particle_id_of_moments_to_recycle << ") \n\t\t--> reusing old dN_dypTdpTdphi_moments!" << endl;
 		Recycle_spacetime_moments();
 	}
@@ -583,32 +583,25 @@ void SourceVariances::Get_spacetime_moments(FO_surf* FOsurf_ptr, int dc_idx)
 		}
 		else			//if it's a later resonance
 		{
-			if (VERBOSE > 0 && !RECYCLE_ST_MOMENTS) *global_out_stream_ptr << local_name
-				<< ": RECYCLE_ST_MOMENTS currently set to false \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
-			else if (VERBOSE > 0 && !recycle_previous_moments && !recycle_similar_moments) *global_out_stream_ptr << local_name
+			if (VERBOSE > 0 && !recycle_previous_moments && !recycle_similar_moments) *global_out_stream_ptr << local_name
 				<< ": new parent resonance (" << decay_channels[current_decay_channel_idx-1].resonance_name << ", dc_idx = " << current_decay_channel_idx
-				<< ") dissimilar from all preceding decay_channels \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
+				<< " of " << n_decay_channels << ") dissimilar from all preceding decay_channels \n\t\t--> calculating new dN_dypTdpTdphi_moments!" << endl;
 			else
 			{
 				cerr << "You shouldn't have ended up here!" << endl;
 				exit(1);
 			}
 		}
-//debugger(__LINE__,__FILE__);
 		Set_dN_dypTdpTdphi_moments(FOsurf_ptr, current_resonance_particle_id);
 	}
 //**************************************************************
 //Spacetime moments now set
 //**************************************************************
-//debugger(__LINE__,__FILE__);
 	return;
 }
 
 void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int local_pid)
 {
-	time_t starttime, stoptime;
-   	struct tm * timeinfo;
-
 	double localmass = all_particles[local_pid].mass;
 	string local_name = "Thermal pion(+)";
 	if (local_pid != target_particle_id)
@@ -627,22 +620,7 @@ void SourceVariances::Set_dN_dypTdpTdphi_moments(FO_surf* FOsurf_ptr, int local_
 			SPinterp_pz[ipt][i] = mT*local_sinh;
 		}
 	}
-//debugger(__LINE__,__FILE__);
-	//**************************************************************
-	//Timing checks
-	//**************************************************************
-	time (&starttime);
- 	timeinfo = localtime (&starttime);
- 	if (VERBOSE > 0) *global_out_stream_ptr << local_name << ":" << endl << "   * Started setting spacetime moments at " << asctime(timeinfo);
-	//**************************************************************
 	Cal_dN_dypTdpTdphi_with_weights_polar(FOsurf_ptr, local_pid);
-	//**************************************************************
-	time (&stoptime);
- 	timeinfo = localtime (&stoptime);
- 	if (VERBOSE > 0) *global_out_stream_ptr << "   * Finished setting spacetime moments at " << asctime(timeinfo)
-						<< "   * Took " << difftime(stoptime, starttime) << " seconds." << endl;
-	//**************************************************************
-
 
 	return;
 }
@@ -940,8 +918,8 @@ void SourceVariances::Load_decay_channel_info(int dc_idx, double K_T_local, doub
 		while ((mass + m2) > Mres)
 		{
 			Mres += 0.25 * current_resonance_Gamma;
-		    mass -= 0.5 * current_daughter_Gamma;
-		    m2 -= 0.5 * current_m2_Gamma;
+			mass -= 0.5 * current_daughter_Gamma;
+			m2 -= 0.5 * current_m2_Gamma;
 		}
 
 		mT = sqrt(mass*mass + pT*pT);
@@ -1335,7 +1313,7 @@ void SourceVariances::R2_Fourier_transform(int iKT, double plane_psi)
 
 //***************************************************************************************************
 
-void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
+/*void SourceVariances::test_function(FO_surf* FOsurf_ptr, int local_pid)
 {
 	ostringstream filename_stream_icpl;
 	filename_stream_icpl << global_path << "/interpolation_comparison_monval_" << all_particles[local_pid].monval << ".dat";
@@ -1374,7 +1352,7 @@ else
 	output_icpl.close();
 
 	return;
-}
+}*/
 
 double SourceVariances::Cal_dN_dypTdpTdphi_function(FO_surf* FOsurf_ptr, int local_pid, double pT, double pphi)
 {

@@ -101,6 +101,7 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		thermal_pions_only = true;
 		if (VERBOSE > 0) *global_out_stream_ptr << "Thermal pion(+) only!" << endl;
 		decay_channels = new decay_info [n_decay_channels];
+		decay_channels[0].resonance_decay_masses = new double [Maxdecaypart];	// Maxdecaypart == 5
 	}
 	else
 	{
@@ -319,19 +320,12 @@ SourceVariances::SourceVariances(particle_info* particle, particle_info* all_par
 		//try just gaussian points...
 		//syntax:
 		//int gauss_quadrature(int order, int kind, double alpha, double beta, double a, double b, double x[], double w[]) 
-		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, dummywts3);
-		//for(int ipT=0; ipT<n_interp_pT_pts; ipT++)
-		//	if (VERBOSE > 0) *global_out_stream_ptr << "SPinterp_pT[" << ipT << "] = " << SPinterp_pT[ipT] << endl;
-		//logspace(SPinterp_pT, interp_pT_min, interp_pT_max, n_interp_pT_pts);
-		//scalepoints(SPinterp_pT, interp_pT_min, interp_pT_max, 0.25, n_interp_pT_pts);
-		//gauss_quadrature(n_interp_pT_pts, 1, 0.0, 0.0, interp_pT_min, interp_pT_max, SPinterp_pT, dummywts3);
-		//for(int ipt=0; ipt<n_interp_pT_pts; ipt++)
-		//	cerr << SPinterp_pT[ipt] << endl;
+		gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 13.0, SPinterp_pT, dummywts3);	//use this one to agree with iS.e
+		//gauss_quadrature(n_interp_pT_pts, 5, 0.0, 0.0, 0.0, 17.0, SPinterp_pT, dummywts3);
 		gauss_quadrature(n_interp_pphi_pts, 1, 0.0, 0.0, interp_pphi_min, interp_pphi_max, SPinterp_pphi, dummywts4);
 		for(int ipphi=0; ipphi<n_interp_pphi_pts; ipphi++)
 		{
 			//SPinterp_pphi[ipphi] = interp_pphi_min + (double)ipphi*Del2_pphi;
-			//if (VERBOSE > 0) *global_out_stream_ptr << setw(8) << setprecision(15) << "SPinterp_pphi[" << ipphi << "] = " << SPinterp_pphi[ipphi] << endl;
 			sin_SPinterp_pphi[ipphi] = sin(SPinterp_pphi[ipphi]);
 			cos_SPinterp_pphi[ipphi] = cos(SPinterp_pphi[ipphi]);
 		}
@@ -1063,6 +1057,10 @@ double SourceVariances::Edndp3(const double ptr, const double phir, const int pn
 			<< "  --> phir = " << phir << endl
 			<< "  --> phi0 = " << phi0 << endl
 			<< "  --> phi1 = " << phi1 << endl
+			<< "  --> f11 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1] << endl
+			<< "  --> f12 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
+			<< "  --> f21 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1] << endl
+			<< "  --> f22 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
 			<< "  --> f1 = " << f1 << endl
 			<< "  --> f2 = " << f2 << endl;
 		exit(1);
@@ -1136,7 +1134,10 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 			//*******************************************************************************************************************
 			// set f1 first
 			//*******************************************************************************************************************
-			if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			// if using extrapolation and spectra at pT1 has larger magnitude than at pT0, just return zero
+			if (ptr > pT1 && temp_res_log_info[npt][nphim1] > temp_res_log_info[npt-1][nphim1])
+				f1 = 0.0;
+			else if (sign_of_f11 * sign_of_f21 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 				f1 = sign_of_f11 * exp( lin_int2(ptr-pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphim1], temp_res_log_info[npt][nphim1]) );
 			else					// otherwise, just interpolate original vals
 				f1 = lin_int2(ptr-pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphim1], temp_res_moments_info[npt][nphim1]);
@@ -1144,7 +1145,9 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 			//*******************************************************************************************************************
 			// set f2 next
 			//*******************************************************************************************************************
-			if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
+			if (ptr > pT1 && temp_res_log_info[npt][nphi] > temp_res_log_info[npt-1][nphi])
+				f2 = 0.0;
+			else if (sign_of_f12 * sign_of_f22 > 0)	// if the two points have the same sign in the pT direction, interpolate logs
 				f2 = sign_of_f12 * exp( lin_int2(ptr-pT0, one_by_pTdiff, temp_res_log_info[npt-1][nphi], temp_res_log_info[npt][nphi]) );
 			else					// otherwise, just interpolate original vals
 				f2 = lin_int2(ptr-pT0, one_by_pTdiff, temp_res_moments_info[npt-1][nphi], temp_res_moments_info[npt][nphi]);
@@ -1162,7 +1165,7 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 	
 		if ( isnan( results[wfi] ) )
 		{
-			*global_out_stream_ptr << "ERROR: problems encountered!" << endl
+			*global_out_stream_ptr << "ERROR in Edndp3(double, double, double*): problems encountered!" << endl
 				<< "results[" << wfi << "] = " << setw(8) << setprecision(15) << results[wfi] << endl
 				<< "  --> ptr = " << ptr << endl
 				<< "  --> pt0 = " << pT0 << endl
@@ -1170,11 +1173,15 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 				<< "  --> phir = " << phir << endl
 				<< "  --> phi0 = " << phi0 << endl
 				<< "  --> phi1 = " << phi1 << endl
+				<< "  --> f11 = " << temp_res_moments_info[npt-1][nphim1] << endl
+				<< "  --> f12 = " << temp_res_moments_info[npt-1][nphi] << endl
+				<< "  --> f21 = " << temp_res_moments_info[npt][nphim1] << endl
+				<< "  --> f22 = " << temp_res_moments_info[npt][nphi] << endl
 				<< "  --> f1 = " << f1 << endl
 				<< "  --> f2 = " << f2 << endl;
 			exit(1);
 		}
-		if (current_level_of_output > 0) cout << "Edndp3(): results[" << wfi << "] = "
+		/*if (current_level_of_output > 0) cout << "Edndp3(): results[" << wfi << "] = "
 			<< setw(8) << setprecision(15) << results[wfi] << endl
 			<< "  --> ptr = " << ptr << endl
 			<< "  --> pt0 = " << pT0 << endl
@@ -1187,94 +1194,10 @@ void SourceVariances::Edndp3(double ptr, double phir, double * results)
 			<< "  --> f21 = " << temp_res_moments_info[npt][nphim1] << endl
 			<< "  --> f22 = " << temp_res_moments_info[npt][nphi] << endl
 			<< "  --> f1 = " << f1 << endl
-			<< "  --> f2 = " << f2 << endl;
+			<< "  --> f2 = " << f2 << endl;*/
 	}
 
 	return;
 }
-
-double SourceVariances::Edndp3_original(double ptr, double phir, int pn, int wfi)
-{
-	double val;
-	double f1, f2;
-	int npt, nphi, nphim1;
-	double phi0, phi1, pT0, pT1;
-	double spec0, spec1, spec2, spec3;
-
-	npt = 1;
-	while((ptr > SPinterp_pT[npt]) &&
-		(npt<(n_interp_pT_pts - 1))) npt++;
-
-	int nphi_max = n_interp_pphi_pts-1;
-	if(phir < SPinterp_pphi[0])
-	{
-		nphi = 0;
-		nphim1 = nphi_max;
-		phi0 = SPinterp_pphi[nphi_max]-2.*M_PI;
-		phi1 = SPinterp_pphi[0];
-	}
-	else if(phir > SPinterp_pphi[nphi_max])
-	{
-		nphi = 0;
-		nphim1 = nphi_max;
-		phi0 = SPinterp_pphi[nphi_max];
-		phi1 = SPinterp_pphi[0]+2.*M_PI;
-	}
-	else
-	{
-		nphi = 1;
-		while((phir > SPinterp_pphi[nphi])&&(nphi < nphi_max)) nphi++;
-		nphim1 = nphi - 1;
-		phi0 = SPinterp_pphi[nphim1];
-		phi1 = SPinterp_pphi[nphi];
-	}
-	double one_by_pphidiff = 1./(phi1 - phi0);
-	spec0 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1];
-	spec1 = dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi];
-	spec2 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1];
-	spec3 = dN_dypTdpTdphi_moments[pn][wfi][npt][nphi];
-	f1 = lin_int(phi0, one_by_pphidiff, spec0, spec1, phir);
-	f2 = lin_int(phi0, one_by_pphidiff, spec2, spec3, phir);
-
-	if(f1 < 0) f1 = 0.0;
-	if(f2 < 0) f2 = 0.0;
-	f1 = f1 + 1e-100;
-	f2 = f2 + 1e-100;
-	if(ptr > PTCHANGE)
-	{
-		f1 = log(f1);
-		f2 = log(f2);
-	}
-	pT0 = SPinterp_pT[npt-1];
-	pT1 = SPinterp_pT[npt];
-	double one_by_pTdiff = 1./(pT1 - pT0);
-	val = lin_int(pT0, one_by_pTdiff, f1, f2, ptr);
-	if(ptr > PTCHANGE)
-		val = exp(val);
-
-	/*if (current_level_of_output > 0) cout << "Edndp3_original(): \t" << setw(8) << setprecision(15) << val << "   " << dN_dypTdpTdphi_moments[pn][0][npt-1][nphim1] << "   "
-		<< dN_dypTdpTdphi_moments[pn][0][npt-1][nphi] << "   "
-		<< dN_dypTdpTdphi_moments[pn][0][npt][nphim1] << "   "
-		<< dN_dypTdpTdphi_moments[pn][0][npt][nphi] << "   "
-		<< f1 << "   " << f2 << "   " << ptr << "   " << phir << "   "
-		<< pT0 << "   " << pT1 << "   " << phi0 << "   " << phi1 << endl;*/
-	if (current_level_of_output > 0) cout << "Edndp3_original(): val = "
-		<< setw(8) << setprecision(15) << val << endl
-		<< "  --> ptr = " << ptr << endl
-		<< "  --> pt0 = " << pT0 << endl
-		<< "  --> pt1 = " << pT1 << endl
-		<< "  --> phir = " << phir << endl
-		<< "  --> phi0 = " << phi0 << endl
-		<< "  --> phi1 = " << phi1 << endl
-		<< "  --> f11 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphim1] << endl
-		<< "  --> f12 = " << dN_dypTdpTdphi_moments[pn][wfi][npt-1][nphi] << endl
-		<< "  --> f21 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphim1] << endl
-		<< "  --> f22 = " << dN_dypTdpTdphi_moments[pn][wfi][npt][nphi] << endl
-		<< "  --> f1 = " << f1 << endl
-		<< "  --> f2 = " << f2 << endl;
-
-	return val;
-}
-
 
 //End of file

@@ -266,7 +266,7 @@ class SourceVariances
 		void Load_decay_channel_info(int dc_idx, double K_T_local, double K_phi_local);
 		void Delete_decay_channel_info();
 		void Compute_source_variances(int iKT, int iKphi);
-		void test_function(FO_surf* FOsurf_ptr, int local_pid);
+		//void test_function(FO_surf* FOsurf_ptr, int local_pid);
 
 		void Get_source_variances(int, int);
 		void Calculate_R2_side(int, int);
@@ -297,7 +297,6 @@ class SourceVariances
 		static inline double lin_int2(double x_m_x1, double one_by_x2_m_x1, double f1, double f2);
 		double Edndp3(double ptr, double phir, int local_pid, int wfi);
 		void Edndp3(double ptr, double phir, double * results);
-		double Edndp3_original(double ptr, double phir, int local_pid, int wfi);
 
 		// input and output function prototypes
 		void Output_dN_dypTdpTdphi(int folderindex);
